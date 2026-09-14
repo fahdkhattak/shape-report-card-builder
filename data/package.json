@@ -1,0 +1,14 @@
+{
+  "name": "shape-survey-dataset-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Generates the synthetic 100-user / 3-round survey dataset used to back the Report Card Builder prototype.",
+  "scripts": {
+    "generate": "node generate-dataset.js && node -e \"require('fs').copyFileSync('dataset.json','../src/data/shape-survey-dataset.json')\"",
+    "export": "node export-to-excel.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
