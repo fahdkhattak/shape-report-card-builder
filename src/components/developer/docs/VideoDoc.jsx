@@ -1,20 +1,20 @@
 import { VideoStory } from "../../scope/stories/AddOnStories.jsx";
 import { makeDoc } from "./storyDoc.jsx";
 import { T } from "../docParts.jsx";
+import { EXPLAINER } from "../../scope/stories/explainerVideo.js";
 
-const TRANSCRIPT = "Your score runs from 0 to 100. It's the average of the Explorers behind it, and each Explorer is the average of its Drivers. A score of 80 or more is Flourishing, 60 to 79 is Striving, and under 60 is Struggling.";
-const V = (p = {}) => () => <VideoStory line="A two-minute walk through what your score is made of." caption="Recorded by the SHAPE research team." transcript={TRANSCRIPT} {...p} />;
+const V = (p = {}) => () => <VideoStory {...EXPLAINER} {...p} />;
 
 export const { meta, toc, Page } = makeDoc({
   id: "video", name: "Video", kind: "Video",
-  blurb: "An explanatory video with its transcript. Not designed in Figma yet: built from the system's parts and offered for design review.",
+  blurb: "An explanatory video with its transcript. Not designed in Figma yet: built from the system's parts and offered for design review. Ships with a real 30-second film about Stories.",
   source: "components/scope/stories/AddOnStories.jsx (VideoStory)", figma: "",
   purpose: {
     does: "explains an insight, a measure or a next step in a short video.",
     contains: "a poster, the duration, a caption, and the transcript.",
     boundary: "a video explains; it never replaces the result or the Methodology, and it always has a transcript.",
-    extra: ["There's no Figma frame for this family; the Stories board lists it but draws nothing. It's built from the same parts as the rest (Story card, radius/lg media, the dark pill language) so it sits in a Scope without looking foreign. Treat it as a proposal."],
-    where: "nowhere yet. The catalogue keeps it blocked until there's a real video to show.",
+    extra: ["The film is rendered, not recorded: explainer.html draws every frame from the live Story components as a pure function of time, and scripts/video/render.mjs captures 900 frames and encodes them to src/assets/video/stories-explainer.mp4. Change a Story, re-run npm run render in `scripts/video`, and the film follows. It has no soundtrack, so the transcript carries the words.", "There's no Figma frame for this family; the Stories board lists it but draws nothing. It's built from the same parts as the rest (Story card, radius/lg media, the dark pill language) so it sits in a Scope without looking foreign. Treat it as a proposal."],
+    where: "the Widget Builder's Add Story menu (not suggested by default). It plays the 30-second Stories explainer, made from the real components (see below).",
   },
   forms: [{ id: "form-video", name: "Video", shows: "A 16:9 poster with a centred play button and the duration, a caption, and a collapsible transcript.", when: "A concept is easier shown than read.", render: V() }],
   spec: [
@@ -39,11 +39,11 @@ export const { meta, toc, Page } = makeDoc({
     story: ["A Video Story carries no data. It's an explanation, so its value depends entirely on the video; the transcript makes it accessible and searchable."],
     idea: "Show, don't tell, but always offer the words too.",
     facts: [["Question it answers", "Can someone explain it?"], ["Data used", "None"], ["Status", "Proposal", "Not in Figma."]],
-    feeds: [["The video", "Produced content (none in this prototype)."]],
+    feeds: [["The video", "The 30-second Stories explainer, rendered from the real components."]],
     limits: [["Not everyone can watch.", "Hence the transcript, always."]],
     answers: ["Can someone walk me through this?"],
     nonAnswers: ["What's my result?"],
-    open: [["Hosting and production", "Who makes and hosts the videos?"]],
+    open: [["Hosting and production", "Who makes and hosts videos beyond this one? Does the film need a voice-over?"]],
   },
 });
 export default Page;

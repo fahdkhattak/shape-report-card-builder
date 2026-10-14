@@ -2,7 +2,6 @@ import { useState } from "react";
 import { T, font, radius, band } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsBorder } from "../../../lib/ds.js";
 import { statusName, countByStatus } from "../../../lib/bands.js";
-import SegmentedControl from "../../ui/SegmentedControl.jsx";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import ScopeRadar from "../ScopeRadar.jsx";
 import AreaChart from "./AreaChart.jsx";
@@ -26,8 +25,8 @@ import { RULES, fitForm } from "./breakdownRules.js";
 /*   list         a big number and a sentence per item                   */
 /*   distribution how many items are in each status, as one bar          */
 /*   zones        every item as a dot on the score line (ours, not in     */
-/*                the design); `zones` and `bars` share a Bars | Zones    */
-/*                switch                                                 */
+/*                the design); a form of its own, no longer behind a      */
+/*                Bars | Zones switch                                     */
 /* Controls follow the design: radar and area have Compare + Table View,  */
 /* bars have Filters + Table View, the table adds Compare, Chart View     */
 /* and Copy Table, list and distribution have none.                       */
@@ -47,7 +46,7 @@ export default function BreakdownStory({ title = "What's Behind Your Score", lin
   const variant = fit.variant;
   const [view, setView] = useState(initialView);
   const [showAll, setShowAll] = useState(false);
-  const [barStyle, setBarStyle] = useState(variant === "zones" ? "zones" : "bars");
+  const barStyle = variant === "zones" ? "zones" : "bars"; // Bars and Zones are separate forms now, so there is no switch between them
   const [statuses, setStatuses] = useState(STATUSES);
   const cmp = useCompare();
   const refName = roundName(cmp.refIdx);
@@ -110,7 +109,6 @@ export default function BreakdownStory({ title = "What's Behind Your Score", lin
         <EvidenceSection><StatusSplitBar counts={counts} /></EvidenceSection>
       ) : (
         <>
-          {variant === "zones" && <div><SegmentedControl options={[{ id: "bars", label: "Bars" }, { id: "zones", label: "Zones" }]} value={barStyle} onChange={setBarStyle} /></div>}
           {barStyle === "zones" ? (
             <>
               <ZoneChart rows={rows} cmpOn={cmp.on} refName={refName} noun={noun} />

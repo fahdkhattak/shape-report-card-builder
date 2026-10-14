@@ -1,7 +1,11 @@
+import { Users } from "lucide-react";
 import { ds } from "../../lib/ds.js";
 import { T, font, band, rand } from "../../lib/tokens.js";
 import trendCaretUp from "../../assets/trend-caret-up.svg";
 import trendCaretDown from "../../assets/trend-caret-down.svg";
+import rippleFlourishing from "../../assets/status-illustrations/flourishing.svg";
+import rippleStriving from "../../assets/status-illustrations/striving.svg";
+import rippleStruggling from "../../assets/status-illustrations/struggling.svg";
 import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../lib/bands.js";
 
 /* ================================================================== */
@@ -105,19 +109,11 @@ export function PersonIcon({ color, size = 12 }) {
   );
 }
 
-/* Two-person glyph — the real Org/Team Status breakdown (SH.PERF-STS 2x2)
-   exports a distinct "users" icon per status, not a recolored single-person
-   shape; this hand-drawn approximation swaps the silhouette count to match
-   until the real per-status assets are downloaded (same known compromise as
-   PersonIcon/StatusFaceIcon above — see CLAUDE.md). */
-const PERSON_PATH = "M10.999 10.5V9.5C10.999 8.56808 10.3616 7.78503 9.49902 7.56301M7.74902 1.64538C8.48198 1.94207 8.99902 2.66066 8.99902 3.5C8.99902 4.33934 8.48198 5.05793 7.74902 5.35462M8.49902 10.5C8.49902 9.56812 8.49902 9.10218 8.34678 8.73463C8.14379 8.24458 7.75445 7.85523 7.26439 7.65224C6.89685 7.5 6.43091 7.5 5.49902 7.5H3.99902C3.06714 7.5 2.6012 7.5 2.23366 7.65224C1.7436 7.85523 1.35425 8.24458 1.15126 8.73463C0.999023 9.10218 0.999023 9.56812 0.999023 10.5M6.74902 3.5C6.74902 4.60457 5.85359 5.5 4.74902 5.5C3.64445 5.5 2.74902 4.60457 2.74902 3.5C2.74902 2.39543 3.64445 1.5 4.74902 1.5C5.85359 1.5 6.74902 2.39543 6.74902 3.5Z";
-export function UsersIcon({ color, size = 12 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 15 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(-1.5, 0) scale(0.72)"><path d={PERSON_PATH} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
-      <g transform="translate(5, 0) scale(0.72)"><path d={PERSON_PATH} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></g>
-    </svg>
-  );
+/* Two-person glyph for the status counts (SH.PERF-STS 2x2 shows a "users" icon per status). Drawn with the
+   same Lucide "users" glyph the rest of the app uses, at 14px and a 2px stroke so it stays crisp at this size
+   (the earlier hand-scaled copy of the single-person path squashed into 12px and read as noise). */
+export function UsersIcon({ color, size = 14 }) {
+  return <Users size={size} color={color} strokeWidth={2} style={{ flexShrink: 0 }} aria-hidden="true" />;
 }
 
 /* Label row on top, value+icon row below (icon after the number) — the
@@ -316,41 +312,11 @@ export function StatusFaceIcon({ color, size = 51, status = "Flourishing" }) {
 
 const STATUS_COLOR = { Flourishing: T.green, Striving: T.amber, Struggling: T.red };
 
-/* The decorative concentric rings behind the face in the 2x2 Status forms:
-   clean rings for Flourishing, wobbling ones for Striving, tangled scribbles
-   for Struggling — the shape of the rings is the mood. Pure SVG, seeded so
-   a card never changes between renders. */
-function ripplePath(cx, cy, r, amp, seed) {
-  const N = 90;
-  let d = "";
-  for (let k = 0; k <= N; k++) {
-    const th = (k / N) * Math.PI * 2;
-    const wob = amp * (Math.sin(3 * th + seed) * 0.5 + Math.sin(5 * th + seed * 2.1) * 0.3 + Math.sin(7 * th + seed * 3.7) * 0.2);
-    const x = cx + (r + wob) * Math.cos(th), y = cy + (r + wob) * Math.sin(th);
-    d += `${k === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
-  }
-  return d + "Z";
-}
+/* The status illustration: concentric rings (clean, wobbly, tangled) around the face. These are the exact SVGs from
+   the design (status-illustrations/*), including the face, so nothing here is drawn by hand any more. */
+const RIPPLE = { Flourishing: rippleFlourishing, Striving: rippleStriving, Struggling: rippleStruggling };
 export function StatusRipple({ status, size = 190 }) {
-  const c = STATUS_COLOR[status];
-  const C = 100;
-  const rings = [];
-  if (status === "Flourishing") {
-    for (let i = 0; i < 9; i++) rings.push({ r: 27 + i * 2.6, amp: 0, o: 0.95 - i * 0.04, w: 0.9 });
-    for (let i = 0; i < 12; i++) rings.push({ r: 50 + i * 4, amp: 0, o: 0.32 - i * 0.015, w: 0.6 });
-  } else if (status === "Striving") {
-    for (let i = 0; i < 12; i++) rings.push({ r: 27 + i * 2.2, amp: 1.2 + i * 0.25, o: 0.9 - i * 0.03, w: 0.9, seed: i * 1.7 });
-    for (let i = 0; i < 12; i++) rings.push({ r: 55 + i * 3.6, amp: 3 + i * 0.4, o: 0.35 - i * 0.02, w: 0.6, seed: 20 + i * 2.3 });
-  } else {
-    for (let i = 0; i < 16; i++) rings.push({ r: 24 + i * 2.6, amp: 3 + i * 0.7, o: 0.85 - i * 0.025, w: 0.9, seed: i * 2.9, dx: Math.sin(i * 1.3) * 3, dy: Math.cos(i * 1.9) * 3 });
-    for (let i = 0; i < 16; i++) rings.push({ r: 58 + i * 2.4, amp: 6 + i * 0.5, o: 0.32 - i * 0.012, w: 0.6, seed: 40 + i * 2.1, dx: Math.sin(i * 2.3) * 5, dy: Math.cos(i * 1.1) * 5 });
-  }
-  return (
-    <svg width={size} height={size} viewBox="0 0 200 200" fill="none" style={{ display: "block" }}>
-      {rings.map((g, i) => <path key={i} d={ripplePath(C + (g.dx || 0), C + (g.dy || 0), g.r, g.amp, g.seed || 0)} stroke={c} strokeOpacity={Math.max(g.o, 0.06)} strokeWidth={g.w} />)}
-      <foreignObject x={C - 25.5} y={C - 25.5} width={51} height={51}><StatusFaceIcon color={c} status={status} /></foreignObject>
-    </svg>
-  );
+  return <img src={RIPPLE[status] || rippleStruggling} alt="" width={size} height={size} style={{ display: "block", objectFit: "contain" }} />;
 }
 
 /* Flat status icon, not a hand-drawn ring/donut (confirmed against
@@ -480,30 +446,33 @@ function arcPath(cx, cy, r, startAngle, endAngle) {
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 1 ${e.x} ${e.y}`;
 }
 
-export function Gauge({ value, size = 148 }) {
-  const b = band(value);
-  const cx = size / 2, cy = size / 2;
-  const r = size / 2 - 16;
-  const start = -135, end = 135;
-  const at = (v) => start + ((end - start) * Math.max(0, Math.min(100, v))) / 100;
-  const sweep = at(value);
-  const status = statusName(value);
-  // The status thresholds (lib/bands.js), as ticks across the track — a dial is only
-  // worth its space when it shows how close the value is to the next band.
-  const tick = (v) => { const a = polar(cx, cy, r - 9, at(v)), c = polar(cx, cy, r + 9, at(v)); return <line key={v} x1={a.x} y1={a.y} x2={c.x} y2={c.y} stroke={T.white} strokeWidth="2.5" />; };
+/* A score as a full ring (the same shape the Meaning story uses, so a score looks the same everywhere): the value
+   sweeps clockwise from 12 o'clock over a pale track, the number and its status word sit in the middle, and two
+   white notches mark where Striving (60) and Flourishing (80) begin. */
+export function ScoreDial({ value, size = 104, stroke = 11, numberSize = 26, wordSize = 9 }) {
+  const v = Math.max(0, Math.min(100, Math.round(value))), b = band(v), status = statusName(v);
+  const cx = size / 2, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  const at = (n) => (n / 100) * 360;
+  const tick = (n) => { const a = polar(cx, cx, r - stroke / 2 - 0.5, at(n)), e = polar(cx, cx, r + stroke / 2 + 0.5, at(n)); return <line key={n} x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke="#fff" strokeWidth={Math.max(1.5, stroke / 6)} />; };
+  return (
+    <div role="img" aria-label={`${v} out of 100, ${status}`} style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg aria-hidden="true" width={size} height={size} style={{ display: "block" }}>
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={T.gray75} strokeWidth={stroke} />
+        {v > 0 && <circle cx={cx} cy={cx} r={r} fill="none" stroke={b.c} strokeWidth={stroke} strokeLinecap="butt" strokeDasharray={`${(v / 100) * c} ${c}`} transform={`rotate(-90 ${cx} ${cx})`} />}
+        {[STRIVING_AT, FLOURISHING_AT].map(tick)}
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: font }}>
+        <span style={{ fontSize: numberSize, fontWeight: 700, letterSpacing: -numberSize * 0.02, lineHeight: 1, color: b.cs }}>{v}</span>
+        <span style={{ fontSize: wordSize, fontWeight: 600, color: b.cs, marginTop: 3 }}>{status}</span>
+      </div>
+    </div>
+  );
+}
+
+export function Gauge({ value, size = 112 }) {
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${Math.round(value)} out of 100, ${status}`}>
-        <path d={arcPath(cx, cy, r, start, end)} fill="none" stroke={T.gray75} strokeWidth={12} strokeLinecap="round" />
-        <path d={arcPath(cx, cy, r, start, sweep)} fill="none" stroke={b.c} strokeWidth={12} strokeLinecap="round" />
-        {[STRIVING_AT, FLOURISHING_AT].map(tick)}
-        <foreignObject x={cx - 60} y={cy - 28} width={120} height={56} style={{ overflow: "visible" }}>
-          <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-            <span style={{ fontFamily: font, fontSize: 32, fontWeight: 700, color: b.cs, letterSpacing: -0.64, lineHeight: 1 }}>{Math.round(value)}</span>
-            <span style={{ fontFamily: font, fontSize: 10, fontWeight: 600, color: b.cs, marginTop: 3 }}>{status}</span>
-          </div>
-        </foreignObject>
-      </svg>
+      <ScoreDial value={value} size={size} stroke={Math.round(size / 9.5)} numberSize={Math.round(size / 4)} wordSize={Math.max(9, Math.round(size / 11))} />
     </div>
   );
 }
@@ -516,54 +485,44 @@ export function Gauge({ value, size = 148 }) {
 /* (a dent on one spoke = the one driver dragging the group down) rather */
 /* than requiring a reader to scan a list of numbers.                    */
 /* ================================================================== */
-export function RadarChart({ items, size = 260 }) {
+/* Drawn like the Radar story (Scope): five circular rings at 20 to 100, a spoke per part that runs a little past the
+   outer ring, a grey node where each spoke meets it, and the orange series polygon through the real values. Names sit
+   beyond the spoke ends, wrapped to two lines, 11px. (This used to be a polygon grid with band-coloured dots, which read
+   as a different chart from the Story's.) */
+const RADAR_SERIES = "#EB5421"; // the design's series colour; not a design-system colour (see ScopeRadar.jsx)
+function wrapLabel(label, max = 12) {
+  const lines = []; let cur = "";
+  label.split(" ").forEach((w) => { if ((cur + " " + w).trim().length > max && cur) { lines.push(cur); cur = w; } else cur = (cur + " " + w).trim(); });
+  if (cur) lines.push(cur);
+  return lines.slice(0, 2);
+}
+export function RadarChart({ items, size = 286 }) {
   const n = items.length;
-  // Extra width on both sides so a long spoke label ("Engaging role") has room
-  // to run outward instead of being clipped at the edge.
-  const W = size + 48;
-  const cx = W / 2, cy = size / 2 - 4;
-  const rOuter = size / 2 - 54;
-  const angleStep = 360 / n;
-  const rings = [25, 50, 75, 100];
-
-  const pointFor = (i, value) => polar(cx, cy, (Math.max(0, Math.min(100, value)) / 100) * rOuter, i * angleStep);
-
+  const W = 312, H = size;
+  const cx = W / 2, cy = H / 2;
+  const R = 78;
+  const step = 360 / n;
+  const grey = ds.border.secondary;
+  const at = (i, v) => polar(cx, cy, (Math.max(0, Math.min(100, v)) / 100) * R, i * step);
   return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg width={W} height={size} viewBox={`0 0 ${W} ${size}`}>
-        {rings.map((ring) => (
-          <polygon
-            key={ring}
-            points={items.map((_, i) => { const p = pointFor(i, ring); return `${p.x},${p.y}`; }).join(" ")}
-            fill="none"
-            stroke={T.gray75}
-            strokeWidth={1}
-          />
-        ))}
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Radar of ${n} parts: ${items.map((it) => `${it.label} ${it.value}`).join(", ")}`} style={{ display: "block", overflow: "visible" }}>
+        {[0.2, 0.4, 0.6, 0.8, 1].map((f) => <circle key={f} cx={cx} cy={cy} r={R * f} fill="none" stroke={grey} strokeWidth="0.75" />)}
+        {items.map((_, i) => { const p = polar(cx, cy, R + 8, i * step); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={grey} strokeWidth="0.75" />; })}
+        <polygon points={items.map((it, i) => { const p = at(i, it.value); return `${p.x},${p.y}`; }).join(" ")} fill={RADAR_SERIES} fillOpacity="0.08" stroke={RADAR_SERIES} strokeWidth="2" strokeLinejoin="round" />
+        {items.map((it, i) => { const p = at(i, it.value); return <circle key={`v${i}`} cx={p.x} cy={p.y} r="3" fill={RADAR_SERIES} stroke="#fff" strokeWidth="1.2"><title>{`${it.label}: ${it.value}`}</title></circle>; })}
+        {items.map((_, i) => { const p = polar(cx, cy, R, i * step); return <circle key={`n${i}`} cx={p.x} cy={p.y} r="2.5" fill={ds.border.strong} />; })}
         {items.map((it, i) => {
-          const p = polar(cx, cy, rOuter, i * angleStep);
-          return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={T.gray75} strokeWidth={1} />;
-        })}
-        <polygon
-          points={items.map((it, i) => { const p = pointFor(i, it.value); return `${p.x},${p.y}`; }).join(" ")}
-          fill={T.accentBg2}
-          fillOpacity={0.65}
-          stroke={T.accent}
-          strokeWidth={2}
-        />
-        {items.map((it, i) => {
-          const p = pointFor(i, it.value);
-          const b = band(it.value);
-          return <circle key={i} cx={p.x} cy={p.y} r={3.5} fill={b.c} stroke={T.white} strokeWidth={1.5} />;
-        })}
-        {items.map((it, i) => {
-          const angle = i * angleStep;
-          const sin = Math.sin((angle * Math.PI) / 180);
-          const align = sin > 0.2 ? "start" : sin < -0.2 ? "end" : "middle";
+          const a = i * step, sin = Math.sin((a * Math.PI) / 180), cos = Math.cos((a * Math.PI) / 180);
+          const p = polar(cx, cy, R + 14, a);
+          const anchor = Math.abs(sin) < 0.2 ? "middle" : sin > 0 ? "start" : "end";
+          const lines = wrapLabel(it.label);
+          const lh = 12;
+          const y0 = Math.abs(sin) < 0.2 ? (cos > 0 ? p.y - (lines.length - 1) * lh : p.y + 8) : p.y - ((lines.length - 1) * lh) / 2 + 3;
           return (
-            <RingLabel key={i} cx={cx} cy={cy} angle={angle} radius={rOuter + 14} width={68} align={align} color={T.gray900} size={10} weight={600}>
-              {it.label}
-            </RingLabel>
+            <text key={`l${i}`} textAnchor={anchor} fontSize="11" fontFamily={font} fill={ds.text.secondary}>
+              {lines.map((ln, k) => <tspan key={k} x={p.x} y={y0 + k * lh}>{ln}</tspan>)}
+            </text>
           );
         })}
       </svg>

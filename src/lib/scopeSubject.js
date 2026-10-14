@@ -34,7 +34,7 @@ export function overallSubject() {
   return { kind: "overall", label: "Organisation", topics: [], series: overallSeries(), drivers, childNoun: "Explorer", children, scoreOf: (r) => r.overallScore };
 }
 
-const OVERALL_WORDS = /\b(overall|organi[sz]ation|organi[sz]ational|company|whole|entire|big picture|full (story|picture)|everyone|everything|how are we|org score|org report|wellbeing score|the business|across the)\b/i;
+const OVERALL_WORDS = /\b(overall|organi[sz]ation|organi[sz]ational|company|whole|entire|big picture|full (story|picture)|everyone|everything|how are we|org score|org report|wellbeing score|the business|across the|composition|make-?up|headcount|who works|who is in)\b/i;
 export const isOverallAsk = (prompt) => OVERALL_WORDS.test(prompt || "");
 
 /* An Explorer or a Driver as one side of a head-to-head. */

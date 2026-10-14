@@ -1,0 +1,9 @@
+{
+  "name": "shape-explainer-video",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build-time tooling: renders the Stories explainer to MP4. Separate from the app's package.json, like /data, so Vite never bundles it.",
+  "type": "module",
+  "scripts": { "render": "node render.mjs" },
+  "dependencies": { "ffmpeg-static": "^5.2.0", "puppeteer-core": "^23.0.0" }
+}

@@ -1,5 +1,5 @@
 import { T, band } from "../../lib/tokens.js";
-import { statusOf, sinceText, roundName, LAST, statusCountSeries, focusGroups, rankAmong } from "../../lib/scopeData.js";
+import { statusOf, sinceText, roundName, LAST, statusCountSeries, focusGroups, rankAmong, groupGaps, withinReach, scoreSpread } from "../../lib/scopeData.js";
 import { ROUNDS } from "../../lib/dataset.js";
 import { InsightSummaryStory, SummaryP, Strong, statusText, MeaningStory, MethodologyStory } from "../scope/stories/SummaryStories.jsx";
 import BreakdownStory from "../scope/stories/BreakdownStory.jsx";
@@ -10,10 +10,12 @@ import CompositionStory from "../scope/stories/CompositionStory.jsx";
 import TrendStory from "../scope/stories/TrendStory.jsx";
 import ScoreHistoryStory from "../scope/stories/ScoreHistoryStory.jsx";
 import { ActionsStoryBar } from "../scope/stories/ActionStories.jsx";
-import { ResourceStory, UpgradePathStory, QuestionnaireStory } from "../scope/stories/AddOnStories.jsx";
+import { ResourceStory, UpgradePathStory, QuestionnaireStory, VideoStory } from "../scope/stories/AddOnStories.jsx";
+import { EXPLAINER } from "../scope/stories/explainerVideo.js";
 import SeverityBreakdownStory from "../scope/stories/SeverityBreakdown.jsx";
 import { orgSeverity } from "../../lib/wellbeing.js";
 import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
+import { fitForm } from "../scope/stories/breakdownRules.js";
 
 /* ================================================================== */
 /* STORY CATALOG — the Stories taxonomy (Figma board 13622:35945) as    */
@@ -23,6 +25,10 @@ import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
 /*   Story is available. Unbuildable Stories stay listed — with their    */
 /*   reason — so the rules are visible, not hidden.                       */
 /*   `suggest` marks the Stories the builder proposes by default.         */
+/*   `forms(subject)` / `defaultForm(subject)` on a Story that can be drawn */
+/*   more than one way. The host keeps the choice in `options[id].form`    */
+/*   and passes it to render as `ctx.options`; an unavailable choice falls   */
+/*   back to the default (see formOf).                                      */
 /* Order here IS the taxonomy order; new Stories are slotted by it.       */
 /* ================================================================== */
 const blurbFor = (label, v) =>
@@ -37,6 +43,19 @@ export const MEANING = {
 /* The one-line headline of an Insight Summary, by status. Exported so the Developer docs show the real copy. */
 export const SUMMARY_HEADLINE = (label) => ({ Flourishing: `${label} is a strength right now.`, Striving: `${label} is doing okay, with room to improve.`, Struggling: `${label} is holding scores back.` });
 const NO_PARTS = (s) => (s.children.length < 2 ? "Needs two or more parts to break down" : null);
+
+/* Breakdown: the forms the number of parts allows (see breakdownRules.js), and Meaning: a number or the Explorer ring. */
+const BREAKDOWN_FORMS = [["radar", "Radar"], ["area", "Area"], ["bars", "Bars"], ["list", "List"], ["zones", "Zones"]];
+const breakdownForms = (s) => BREAKDOWN_FORMS.filter(([id]) => fitForm(id, s.children.length).variant === id).map(([id, label]) => ({ id, label }));
+/* The form a Story opens in. It follows the widget it belongs to where that makes sense (a Profile widget is a radar, so the
+   Breakdown opens as a radar; a Parts widget is a ranked list, so bars), then falls back to the count of parts. */
+const breakdownDefault = (s, spec) => {
+  const ids = breakdownForms(s).map((f) => f.id);
+  const hint = spec?.form === "profile" ? "radar" : spec?.form === "parts" ? "bars" : null;
+  if (hint && ids.includes(hint)) return hint;
+  return s.children.length >= 3 && s.children.length <= 12 ? "radar" : "bars";
+};
+const MEANING_FORMS = [{ id: "number", label: "Number" }, { id: "ring", label: "Ring" }];
 
 export const STORIES = [
   {
@@ -59,24 +78,30 @@ export const STORIES = [
   },
   {
     id: "meaning", name: "Score Meaning", family: "Score / Status Meaning", purpose: "What the current result means for the reader.", suggest: true,
-    blocked: () => null,
-    render: (s) => {
+    // Number and Ring are two looks for one message, not two different views, so it is never placed twice.
+    once: true,
+    blocked: () => null, forms: () => MEANING_FORMS, defaultForm: (s, spec) => (spec?.form === "gauge" ? "ring" : "number"),
+    render: (s, ctx) => {
       const v = s.series[LAST];
       const status = statusOf(v);
-      return <MeaningStory title="What This Score Is Telling You" value={v} unit="/100" values={s.series} headline={<>{s.label} scores <span style={{ color: band(v).cs }}>{v}</span>/100, which is {status}.</>} text={MEANING[status]} />;
+      const form = formOf(storyById("meaning"), s, ctx?.options, ctx?.spec);
+      return <MeaningStory title="What This Score Is Telling You" value={v} unit="/100" values={s.series} ring={form === "ring"} headline={<>{s.label} scores <span style={{ color: band(v).cs }}>{v}</span>/100, which is {status}.</>} text={MEANING[status]} />;
     },
   },
   {
     id: "breakdown", name: "Breakdown", family: "Breakdown", purpose: "What contributes to the result.", suggest: true,
-    blocked: NO_PARTS,
-    render: (s) => (
-      <BreakdownStory
-        title="What's Behind This Score" variant={s.children.length >= 3 && s.children.length <= 12 ? "radar" : "bars"} noun={s.childNoun}
-        line={`See how the ${s.children.length} ${s.childNoun}s behind ${s.label} compare.`}
-        items={s.children.map((c) => ({ ...c, blurb: blurbFor(c.label, c.values[LAST]) }))}
-        hint="Hover over the chart to see each score. For each answer, the higher the score, the better."
-      />
-    ),
+    blocked: NO_PARTS, forms: breakdownForms, defaultForm: breakdownDefault,
+    render: (s, ctx) => {
+      const form = formOf(storyById("breakdown"), s, ctx?.options, ctx?.spec);
+      return (
+        <BreakdownStory
+          title="What's Behind This Score" variant={form} noun={s.childNoun}
+          line={`See how the ${s.children.length} ${s.childNoun}s behind ${s.label} compare.`}
+          items={s.children.map((c) => ({ ...c, blurb: blurbFor(c.label, c.values[LAST]) }))}
+          hint={form === "radar" || form === "area" ? "Hover over the chart to see each score. For each answer, the higher the score, the better." : undefined}
+        />
+      );
+    },
   },
   {
     id: "distribution", name: "Who Is Where", family: "Breakdown", purpose: "How many people are Flourishing, Striving or Struggling.",
@@ -182,7 +207,7 @@ export const STORIES = [
     render: (s) => <GoalStory label={s.label} series={s.series} />,
   },
   {
-    id: "actions", name: "Actions", family: "Actions", purpose: "What people can do about a Driver — opens one layer deeper.", suggest: true,
+    id: "actions", name: "Actions", family: "Actions", purpose: "What people can do about a Driver — opens one layer deeper.", suggest: true, sample: "Sample copy",
     blocked: (s) => (s.drivers.length ? null : "Needs Drivers to act on"),
     render: (s) => <ActionsStoryBar drivers={s.drivers} />,
   },
@@ -192,7 +217,7 @@ export const STORIES = [
     render: () => null,
   },
   {
-    id: "resource", name: "Resource", family: "Resource", purpose: "A guide, service or link relevant to the insight.",
+    id: "resource", name: "Resource", family: "Resource", sample: "Sample", purpose: "A guide, service or link relevant to the insight.",
     blocked: () => null,
     render: (s) => <ResourceStory title={`Explore ${s.label} Further`} description={`A guide to what shapes ${s.label} and practical ways to improve it.`} />,
   },
@@ -207,25 +232,122 @@ export const STORIES = [
     render: () => <MethodologyStory kind="score" />,
   },
   {
-    id: "upgrade", name: "Upgrade Path", family: "Upgrade Path", purpose: "An add-on relevant to the insight.",
+    id: "upgrade", name: "Upgrade Path", family: "Upgrade Path", sample: "Sample", purpose: "An add-on relevant to the insight.",
     blocked: () => null,
     render: () => <UpgradePathStory />,
   },
   { id: "citation", name: "Citation", family: "Citation", purpose: "Sources behind the insight.", blocked: () => "Needs traceable sources", render: () => null },
-  { id: "questionnaire", name: "Questionnaire", family: "Questionnaire", purpose: "A short set of related questions.", blocked: () => null, render: (s) => <QuestionnaireStory line={`Three short questions about ${s.label}. They take under a minute.`} questions={[`I understand what is behind my ${s.label} score.`, `I know one thing I could change to improve ${s.label}.`, `My team talks openly about ${s.label}.`]} /> },
-  { id: "video", name: "Video", family: "Video", purpose: "An explanatory video.", blocked: () => "Needs a video to show (none in this prototype)", render: () => null },
+  { id: "questionnaire", name: "Questionnaire", family: "Questionnaire", sample: "Sample questions", purpose: "A short set of related questions.", blocked: () => null, render: (s) => <QuestionnaireStory line={`Three short questions about ${s.label}. They take under a minute.`} questions={[`I understand what is behind my ${s.label} score.`, `I know one thing I could change to improve ${s.label}.`, `My team talks openly about ${s.label}.`]} /> },
+  { id: "video", name: "Video", family: "Video", purpose: "An explanatory video.", blocked: () => null, render: () => <VideoStory {...EXPLAINER} /> },
 ];
 
-export const storyById = (id) => STORIES.find((s) => s.id === id);
-const order = (id) => STORIES.findIndex((s) => s.id === id);
+/* ---- Story placements ------------------------------------------------------------------------------------------ */
+/* A Scope is a list of placements. Each placement has a key: the Story's id for the first, `id~2`, `id~3`… for another
+   placement of the same Story. Only a Story with several forms can be placed again, and each placement must use a form no
+   other placement of that Story uses (the no-duplicates rule, with a pass for a multiple-in-one Story). Everything that takes
+   a key (storyById, order, insertStory) understands both. */
+export const baseId = (key) => String(key).split("~")[0];
+export const storyById = (key) => STORIES.find((s) => s.id === baseId(key));
+const order = (key) => STORIES.findIndex((s) => s.id === baseId(key));
+export const hasStory = (keys, id) => keys.some((k) => baseId(k) === id);
+export const placementsOf = (keys, id) => keys.filter((k) => baseId(k) === id);
+
+/* The forms a Story offers for a subject ([] when it has just one). */
+export const formsOf = (def, subject) => (def?.forms ? def.forms(subject) : []);
+/* The form a placement uses: its saved choice if still offered for this subject, else the Story's default for this widget. */
+export function formOf(def, subject, options, spec) {
+  const forms = formsOf(def, subject);
+  return forms.some((f) => f.id === options?.form) ? options.form : def?.defaultForm?.(subject, spec);
+}
+/* Forms already taken by the other placements of this Story. */
+export function formsInUse(keys, optionsMap, subject, spec, exceptKey) {
+  const def = storyById(exceptKey);
+  return placementsOf(keys, def.id).filter((k) => k !== exceptKey).map((k) => formOf(def, subject, optionsMap?.[k], spec));
+}
+/* The forms a placement can switch to: every form not taken by another placement. */
+export const availableForms = (keys, optionsMap, subject, spec, key) => {
+  const taken = formsInUse(keys, optionsMap, subject, spec, key);
+  return formsOf(storyById(key), subject).map((f) => ({ ...f, taken: taken.includes(f.id) }));
+};
+/* The first form no placement of this Story uses yet, or null. */
+export function unusedForm(keys, optionsMap, subject, spec, id) {
+  const def = storyById(id);
+  const used = placementsOf(keys, id).map((k) => formOf(def, subject, optionsMap?.[k], spec));
+  return formsOf(def, subject).find((f) => !used.includes(f.id))?.id ?? null;
+}
+/* Can this Story be placed (again)? A first placement, or another when a form is left. */
+export const canPlace = (keys, optionsMap, subject, spec, id) => !hasStory(keys, id) || (!storyById(id).once && formsOf(storyById(id), subject).length > 1 && unusedForm(keys, optionsMap, subject, spec, id) != null);
 
 /* The default Scope: every suggested Story this subject can support. */
 export const suggestStories = (subject) => STORIES.filter((s) => s.suggest && !s.blocked(subject)).map((s) => s.id);
 
-/* Insert after the last present Story that precedes it in the taxonomy. */
-export function insertStory(ids, id) {
-  if (ids.includes(id)) return ids;
+/* ---- Why a Story is added ------------------------------------------------------------------------------------------ */
+/* The default Scope is the eight Stories every subject starts with, plus up to `max` more whose rule fires on the subject's
+   real data. Each carries a one-line reason, shown on the Story and quoted by the chat. The numbers are starting points
+   a person can change here; the Story availability page prints this table. */
+export const SUGGEST_RULES = {
+  max: 3,
+  gap: { minPoints: 15, story: "gap", rule: "Groups on one way of grouping differ by at least this many points" },
+  reach: { within: 3, minParts: 2, story: "reach", rule: "At least two parts are this close to the next status line" },
+  spread: { minSpan: 30, story: "spread", rule: "The middle half of people spans at least this many points" },
+  changes: { minMove: 8, story: "changes", rule: "A part moved at least this many points since the round before" },
+  areas: { below: 10, story: "areas", rule: "The lowest group scores at least this far below the whole" },
+  who: { share: 0.5, story: "distribution", rule: "At least this share of people are Struggling" },
+  rank: { edge: 3, story: "rank", rule: "It ranks in the top or bottom this many of its peers" },
+};
+const R = SUGGEST_RULES;
+const signed = (d) => `${d > 0 ? "+" : "−"}${Math.abs(d)}`;
+const SUGGESTERS = {
+  [R.gap.story]: (s) => { const g = groupGaps(s.scoreOf)[0]; return g && g.gap >= R.gap.minPoints ? { strength: g.gap / R.gap.minPoints, why: `${g.axis} scores differ by ${g.gap} points` } : null; },
+  [R.reach.story]: (s) => { const n = withinReach(s.children, 99).filter((r) => r.gap <= R.reach.within).length; return n >= R.reach.minParts ? { strength: n / R.reach.minParts, why: `${n} ${s.childNoun}s are within ${R.reach.within} points of the next status line` } : null; },
+  [R.spread.story]: (s) => { const sp = scoreSpread(s.scoreOf), span = sp.p75 - sp.p25; return span >= R.spread.minSpan ? { strength: span / R.spread.minSpan, why: `People's scores are far apart: the middle half spans ${span} points` } : null; },
+  [R.changes.story]: (s) => {
+    if (LAST < 1) return null;
+    const moves = s.children.map((c) => ({ label: c.label, d: c.values[LAST] - c.values[LAST - 1] })).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+    return moves[0] && Math.abs(moves[0].d) >= R.changes.minMove ? { strength: Math.abs(moves[0].d) / R.changes.minMove, why: `${moves[0].label} moved ${signed(moves[0].d)} since ${roundName(LAST - 1)}` } : null;
+  },
+  [R.areas.story]: (s) => { const g = focusGroups(1, s.scoreOf)[0]; const diff = g ? s.series[LAST] - g.score : 0; return g && diff >= R.areas.below ? { strength: diff / R.areas.below, why: `${g.axis}: ${g.group} scores ${g.score}, ${diff} below ${s.label}` } : null; },
+  [R.who.story]: (s) => { const c = statusCountSeries(s.scoreOf), tot = c.flourishing[LAST] + c.striving[LAST] + c.struggling[LAST], share = tot ? c.struggling[LAST] / tot : 0; return share >= R.who.share ? { strength: share / R.who.share, why: `${c.struggling[LAST]} of ${tot} people are Struggling` } : null; },
+  [R.rank.story]: (s) => { const r = rankAmong(s); return r && (r.rank <= R.rank.edge || r.rank > r.total - R.rank.edge) ? { strength: 1, why: `Ranks number ${r.rank} of ${r.total} ${r.noun}s` } : null; },
+};
+
+/* { stories, reasons }: the default Scope with the Stories the data calls for, and why each extra is there. */
+export function suggestScope(subject) {
+  let stories = suggestStories(subject);
+  const reasons = {};
+  const hits = Object.entries(SUGGESTERS)
+    .map(([id, fn]) => { const def = storyById(id); if (!def || def.blocked(subject) || stories.includes(id)) return null; let hit = null; try { hit = fn(subject); } catch { hit = null; } return hit ? { id, ...hit } : null; })
+    .filter(Boolean).sort((a, b) => b.strength - a.strength).slice(0, R.max);
+  hits.forEach((h) => { stories = insertStory(stories, h.id); reasons[h.id] = h.why; });
+  return { stories, reasons };
+}
+
+/* Insert after the last present placement that precedes it in the taxonomy (or is the same Story). */
+export function insertStory(keys, key) {
+  if (keys.includes(key)) return keys;
   let at = 0;
-  ids.forEach((x, i) => { if (order(x) < order(id)) at = i + 1; });
-  return [...ids.slice(0, at), id, ...ids.slice(at)];
+  keys.forEach((x, i) => { if (order(x) <= order(key)) at = i + 1; });
+  return [...keys.slice(0, at), key, ...keys.slice(at)];
+}
+/* Place a Story: first time as itself, again as the next key with the first unused form. Returns { stories, options, key } or
+   null when it can't be placed. */
+export function placeStory(built, subject, id) {
+  const { stories, options = {}, spec } = built;
+  if (!canPlace(stories, options, subject, spec, id)) return null;
+  if (!hasStory(stories, id)) return { stories: insertStory(stories, id), options, key: id };
+  let n = 2;
+  while (stories.includes(`${id}~${n}`)) n++;
+  const key = `${id}~${n}`;
+  return { stories: insertStory(stories, key), options: { ...options, [key]: { form: unusedForm(stories, options, subject, spec, id) } }, key };
+}
+/* "Bars" for a placement of a multi-form Story, else null: shown in the "In this scope" rail. */
+export const placementForm = (built, subject, key) => { const def = storyById(key); const forms = formsOf(def, subject); return forms.length > 1 ? forms.find((f) => f.id === formOf(def, subject, built.options?.[key], built.spec))?.label ?? null : null; };
+/* Ids of Stories already in the Scope that can be placed once more in a form not yet used. */
+export const againIds = (built, subject) => STORIES.filter((s) => hasStory(built.stories, s.id) && formsOf(s, subject).length > 1 && canPlace(built.stories, built.options, subject, built.spec, s.id)).map((s) => s.id);
+/* Remove one placement of a Story, with their saved options. */
+export function removeStoryKeys(built, key) {
+  const { stories, options = {} } = built;
+  const next = stories.filter((k) => k !== key);
+  const { [key]: _gone, ...rest } = options;
+  return { stories: next, options: rest };
 }

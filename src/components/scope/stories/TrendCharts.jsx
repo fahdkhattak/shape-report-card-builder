@@ -110,34 +110,41 @@ function useView() { const [view, setView] = useState("chart"); return [view, se
    dashed line Health Age uses for actual age. */
 export function ScoreOverTime({ title = "Score Over Time", line, rounds, values, domain = [0, 100], ticks = [100, 80, 60, 40, 20, 0], axis = "Score", banded = true, reference, referenceLabel = "Actual age", unit = "" }) {
   const [view, setView] = useView();
-  const [hover, setHover] = useState(null);
-  const n = values.length, cx = spreadCentre(n);
-  const [lo, hi] = domain;
-  const y = (v) => (1 - (v - lo) / (hi - lo)) * PLOT_H;
   const columns = [{ key: "round", label: "Round" }, { key: "value", label: axis, align: "right", render: (r) => <b style={{ color: banded ? dsBand(r.value).cs : ds.text.primary }}>{r.value}{unit}</b>, text: (r) => r.value }, ...(reference ? [{ key: "ref", label: referenceLabel, align: "right" }] : [])];
   const rows = rounds.map((r, i) => ({ round: r.label, value: values[i], ref: reference?.[i] }));
   return (
     <StoryCard title={title} line={line} data-story="trend-line" controls={[<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows)} />]}>
       <EvidenceSection style={{ padding: dsSpace[16] }}>
-        {view === "table" ? <DataTable columns={columns} rows={rows} /> : (
-          <Frame title={axis} titleTone={banded ? "secondary" : "tertiary"} ticks={ticks} gridAt={evenGrid(ticks.length)} rounds={rounds} centre={cx}>
-            <svg width="100%" height={PLOT_H} viewBox={`0 0 1000 ${PLOT_H}`} preserveAspectRatio="none" style={{ position: "absolute", inset: 0, overflow: "visible" }} aria-hidden="true">
-              {reference && <polyline points={reference.map((v, i) => `${cx(i) * 1000},${y(v)}`).join(" ")} fill="none" stroke={DOT} strokeWidth="1" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />}
-              <polyline data-part="line" points={values.map((v, i) => `${cx(i) * 1000},${y(v)}`).join(" ")} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" style={{ stroke: LINE }} />
-            </svg>
-            {values.map((v, i) => (
-              <div key={i} role="img" aria-label={`${rounds[i].label}: ${v}${unit}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}
-                style={{ position: "absolute", left: `${cx(i) * 100}%`, top: y(v), transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", cursor: "default" }}>
-                {banded && <span data-part="point-value" style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[4], ...dsText("Text 2xs", 600), lineHeight: 1, color: dsBand(v).cs }}>{v}</span>}
-                <span data-part="dot" style={{ width: banded ? 6 : 8, height: banded ? 6 : 8, borderRadius: "50%", background: DOT, boxShadow: hover === i ? `0 0 0 3px ${ds.surface.general.card}, 0 0 0 4px ${DOT}` : "none" }} />
-                {hover === i && !banded && <span style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[8], ...dsText("Text 2xs", 600), color: ds.text.primary, background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, boxShadow: dsShadow("sm"), whiteSpace: "nowrap" }}>{v}{unit}{reference ? ` · ${referenceLabel.toLowerCase()} ${reference[i]}${unit}` : ""}</span>}
-              </div>
-            ))}
-          </Frame>
-        )}
+        {view === "table" ? <DataTable columns={columns} rows={rows} /> : <ScoreLine rounds={rounds} values={values} domain={domain} ticks={ticks} axis={axis} banded={banded} reference={reference} unit={unit} />}
       </EvidenceSection>
       {reference && view === "chart" && <p style={noteText}>The dashed line is {referenceLabel.toLowerCase()}. Below it is younger than {referenceLabel.toLowerCase()}.</p>}
     </StoryCard>
+  );
+}
+
+/* The line chart on its own (no Story card): every place that draws one measure across rounds uses this, so the Trend
+   Story, the Score History row that opens into a line, and the Explorer's own history all look and respond alike.
+   `ticks` run top to bottom. It draws at the width it is given (11 to 12px text, no sideways scroll). */
+export function ScoreLine({ rounds, values, domain = [0, 100], ticks = [100, 80, 60, 40, 20, 0], axis = "Score", banded = true, reference, referenceLabel = "Actual age", unit = "" }) {
+  const [hover, setHover] = useState(null);
+  const n = values.length, cx = spreadCentre(n);
+  const [lo, hi] = domain;
+  const y = (v) => (1 - (v - lo) / (hi - lo)) * PLOT_H;
+  return (
+    <Frame title={axis} titleTone={banded ? "secondary" : "tertiary"} ticks={ticks} gridAt={evenGrid(ticks.length)} rounds={rounds} centre={cx}>
+      <svg width="100%" height={PLOT_H} viewBox={`0 0 1000 ${PLOT_H}`} preserveAspectRatio="none" style={{ position: "absolute", inset: 0, overflow: "visible" }} aria-hidden="true">
+        {reference && <polyline points={reference.map((v, i) => `${cx(i) * 1000},${y(v)}`).join(" ")} fill="none" stroke={DOT} strokeWidth="1" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />}
+        <polyline data-part="line" points={values.map((v, i) => `${cx(i) * 1000},${y(v)}`).join(" ")} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" style={{ stroke: LINE }} />
+      </svg>
+      {values.map((v, i) => (
+        <div key={i} role="img" aria-label={`${rounds[i].label}: ${v}${unit}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}
+          style={{ position: "absolute", left: `${cx(i) * 100}%`, top: y(v), transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", cursor: "default" }}>
+          {banded && <span data-part="point-value" style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[4], ...dsText("Text 2xs", 600), lineHeight: 1, color: dsBand(v).cs }}>{v}{unit}</span>}
+          <span data-part="dot" style={{ width: banded ? 6 : 8, height: banded ? 6 : 8, borderRadius: "50%", background: DOT, boxShadow: hover === i ? `0 0 0 3px ${ds.surface.general.card}, 0 0 0 4px ${DOT}` : "none" }} />
+          {hover === i && !banded && <span style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[8], ...dsText("Text 2xs", 600), color: ds.text.primary, background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, boxShadow: dsShadow("sm"), whiteSpace: "nowrap" }}>{v}{unit}{reference ? ` · ${referenceLabel.toLowerCase()} ${reference[i]}${unit}` : ""}</span>}
+        </div>
+      ))}
+    </Frame>
   );
 }
 

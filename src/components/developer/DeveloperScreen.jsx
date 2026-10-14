@@ -20,9 +20,12 @@ import UpgradeDoc, { meta as upgradeMeta, toc as upgradeToc } from "./docs/Upgra
 import CitationDoc, { meta as citationMeta, toc as citationToc } from "./docs/CitationDoc.jsx";
 import VideoDoc, { meta as videoMeta, toc as videoToc } from "./docs/VideoDoc.jsx";
 import QuestionnaireDoc, { meta as questionnaireMeta, toc as questionnaireToc } from "./docs/QuestionnaireDoc.jsx";
+import GoalPaceDoc, { meta as goalMeta, toc as goalToc } from "./docs/GoalPaceDoc.jsx";
 import ControlsDoc, { meta as controlsMeta, toc as controlsToc } from "./docs/ControlsDoc.jsx";
 import TokenAuditDoc, { meta as auditMeta, toc as auditToc } from "./docs/TokenAuditDoc.jsx";
 import StoryFamiliesDoc, { meta as famMeta, toc as famToc } from "./docs/StoryFamiliesDoc.jsx";
+import StoryAvailabilityDoc, { meta as availMeta, toc as availToc } from "./docs/StoryAvailabilityDoc.jsx";
+import StorySweepDoc, { meta as sweepMeta, toc as sweepToc } from "./docs/StorySweepDoc.jsx";
 import { FAMILY_INFO, FAMILY_FORMS, DOCS_BY_STORY } from "./storyFamilies.js";
 
 /* ================================================================== */
@@ -52,8 +55,9 @@ const DOCS = [
   { meta: citationMeta, toc: citationToc, Page: CitationDoc },
   { meta: videoMeta, toc: videoToc, Page: VideoDoc },
   { meta: questionnaireMeta, toc: questionnaireToc, Page: QuestionnaireDoc },
+  { meta: goalMeta, toc: goalToc, Page: GoalPaceDoc },
 ];
-const FOUNDATIONS = [{ meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
+const FOUNDATIONS = [{ meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: availMeta, toc: availToc, Page: StoryAvailabilityDoc }, { meta: sweepMeta, toc: sweepToc, Page: StorySweepDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
 const COMPONENTS = [{ meta: controlsMeta, toc: controlsToc, Page: ControlsDoc }];
 const ALL_DOCS = [...DOCS, ...COMPONENTS, ...FOUNDATIONS];
 DOCS.forEach((d) => { DOCS_BY_STORY[d.meta.name] = d.meta.id; });
@@ -61,7 +65,6 @@ DOCS.forEach((d) => { DOCS_BY_STORY[d.meta.name] = d.meta.id; });
 ["Mental Well-Being", "Health Age Drivers", "Who Is Where", "How Scores Are Spread"].forEach((n) => { DOCS_BY_STORY[n] = breakdownMeta.id; });
 DOCS_BY_STORY["Composition (Donut)"] = compositionMeta.id;
 DOCS_BY_STORY["Who Answered"] = methodologyMeta.id;
-DOCS_BY_STORY["Goal & Pace"] = trendMeta.id;
 /* Stories grouped by family, in catalogue order. */
 const FAMILIES = [...new Set(STORIES.map((s) => s.family))].map((name) => ({ name, stories: STORIES.filter((s) => s.family === name) }));
 const familyOf = (docName) => STORIES.find((s) => s.name === docName)?.family;

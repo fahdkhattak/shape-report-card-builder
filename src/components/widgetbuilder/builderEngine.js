@@ -2,7 +2,7 @@ import { buildSpec } from "../../lib/generativeEngine.js";
 import { extractTopics } from "../../lib/topicResolver.js";
 import { subjectFromPrompt, isOverallAsk } from "../../lib/scopeSubject.js";
 import { dimensionRankedRows } from "../../lib/dataset.js";
-import { STORIES, storyById, suggestStories, insertStory } from "./storyCatalog.jsx";
+import { STORIES, storyById, suggestScope, placeStory, removeStoryKeys, hasStory, placementsOf, availableForms, formsOf, formOf } from "./storyCatalog.jsx";
 import { VIZ_OPTIONS } from "../chat/GeneratedWidgetPreview.jsx";
 import { rankForms } from "../../lib/generativeEngine.js";
 import { FORMS, formById, rankSubjectForms, buildFormSpec, rebuildFormSpec, axisFromText, optionsFromPrompt, pickGroup, pickPair, GROUP_AXES } from "../../lib/subjectForms.js";
@@ -32,7 +32,8 @@ export function caseIdeas() {
   return [
     { label: "Org score", prompt: "Give me the overall picture" },
     { label: "The full story", prompt: "Tell me the full story of the organisation" },
-    { label: "A team's score", prompt: "How is the IT team doing?" },
+    { label: "A group's score", prompt: "How is the IT group doing?" },
+    { label: "Who is in the organisation", prompt: "Show the department composition" },
     { label: "Remote vs Onsite", prompt: "Compare Remote and Onsite" },
     { label: `${a} vs ${b}`, prompt: `Compare ${a} vs ${b}` },
     { label: "Health check", prompt: "Run a health check on the organisation" },
@@ -53,8 +54,8 @@ function openingChips(built, subject) {
   const out = [sizeChip(built.spec)];
   if (subject.kind === "overall") out.push(f === "story" ? "Show it as an index" : "Tell me the full story", "Run a health check");
   else if (subject.pair) out.push("What if we lifted the weakest?", "Show it as a heat strip");
-  else if (subject.scoreOf) out.push(f === "team" ? "Compare it with Remote" : "How is the IT team doing?", f === "check" ? "Make it a gauge" : "Run a health check");
-  else out.push("Make it a gauge");
+  else if (subject.scoreOf) out.push(f === "team" ? "Compare it with Remote" : "How is the IT group doing?", f === "check" ? "Make it a ring" : "Run a health check");
+  else out.push("Make it a ring");
   if (f === "goal") out.push("Set a target of 80");
   return out.filter(Boolean).slice(0, 3);
 }
@@ -81,14 +82,21 @@ export function buildWidget(prompt) {
   if (!subject) return null;
   // The widget is built from the same topics the Scope reads, so the two always agree.
   const spec = buildFormSpec(rankSubjectForms(prompt, subject)[0], subject, { options: optionsFromPrompt(prompt) });
-  return { prompt, spec, stories: suggestStories(subject) };
+  const scope = suggestScope(subject);
+  return { prompt, spec, stories: scope.stories, options: {}, reasons: scope.reasons };
 }
+
+/* "Added because of what the data shows: Where Gaps Are Widest (Job Level scores differ by 17 points)…" */
+const extrasSentence = (built) => {
+  const items = Object.entries(built.reasons || {}).filter(([id]) => hasStory(built.stories, id)).map(([id, why]) => `${storyById(id).name} (${why.charAt(0).toLowerCase()}${why.slice(1)})`);
+  return items.length ? `\n\nBecause of what the data shows, I also added ${items.join("; ")}.` : "";
+};
 
 export function openingReply(built) {
   const subject = subjectFromPrompt(built.prompt);
   const names = built.stories.map((id) => storyById(id).name);
   return {
-    text: `I built **${built.spec.title}** as a ${vizLabel(kindOf(built.spec)).toLowerCase()} widget (${built.spec.size}), and opened a Scope for it with ${names.length} Stories: ${names.join(", ")}.\n\nChange the widget type, size or options above, remove, reorder or add Stories on the right — or tell me what to change.`,
+    text: `I built **${built.spec.title}** as a ${vizLabel(kindOf(built.spec)).toLowerCase()} widget (${built.spec.size}), and opened a Scope for it with ${names.length} Stories: ${names.join(", ")}.${extrasSentence(built)}\n\nChange the widget type, size or options above, remove, reorder or add Stories on the right — or tell me what to change.`,
     chips: openingChips(built, subject),
   };
 }
@@ -141,8 +149,9 @@ const FORM_WORDS = [
   ["heat", /\b(heat ?strip|heat ?map|heat|grid|matrix)\b/],
   ["momentum", /\b(momentum|streak)\b/],
   ["duel", /\b(head to head|head-to-head|versus|vs)\b/],
+  ["composition", /\b(composition|make-?up)\b/],
   ["team", /\bteam\b/],
-  ["gauge", /\b(gauge|dial)\b/],
+  ["gauge", /\b(gauge|dial|ring)\b/],
   ["profile", /\b(radar|spider|profile)\b/],
   ["scatter", /\bscatter/],
   ["spread", /\b(spread|histogram|distribution)\b/],
@@ -156,13 +165,16 @@ const FORM_WORDS = [
   ["status", /\b(status badge|status)\b/],
   ["score", /\b(number|single number|metric|score)\b/],
 ];
-const CASE_FORMS = new Set(["story", "index", "check", "whatif", "heat", "momentum", "duel", "team"]);
+const CASE_FORMS = new Set(["story", "index", "check", "whatif", "heat", "momentum", "duel", "team", "composition"]);
 /* A spec to carry the title forward from when the current widget isn't one of the new forms. */
 const prevOf = (spec) => (spec.vizType === "form" ? spec : { ...spec, autoTitle: spec.title, options: {} });
 
 // Match at a word start so "source" never fires inside "resource".
 const has = (t, words) => words.some((w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(t));
 // "composition donut" names the Donut form, not both forms of Composition.
+/* Words that ask for a Story to be drawn another way (see `forms` in storyCatalog.jsx). */
+const STORY_FORM_ASK = /\b(as an?|as the|make (?:the |it |this )?|show (?:the |it |this )?|switch|change|use|turn)\b/;
+const STORY_FORM_WORDS = [["radar", ["radar", "spider"]], ["area", ["area chart", "area graph", "area"]], ["zones", ["zones"]], ["list", [" list"]], ["bars", ["bar chart", "bars"]], ["ring", ["ring"]], ["number", ["number"]]];
 const findStories = (t) => { const ids = Object.entries(STORY_WORDS).filter(([, w]) => has(t, w)).map(([id]) => id); return ids.includes("composition-donut") ? ids.filter((id) => id !== "composition") : ids; };
 
 /* Returns { reply: {text, chips?}, built? , reset? } given the user's message. */
@@ -230,6 +242,28 @@ export function refine(text, built) {
     return { built: { ...built, spec: rebuildFormSpec(prevOf(built.spec), subject, { form: "groups", options: { axis } }) }, reply: { text: `Showing ${subject.label} by **${label}**. Groups under 5 people are never shown.` } };
   }
 
+  // draw a Story another way: "show the breakdown as a radar", "make the meaning a ring"
+  const formAsk = STORY_FORM_ASK.exec(t);
+  if (formAsk) {
+    const wanted = STORY_FORM_WORDS.find(([, words]) => words.some((w) => t.includes(w)));
+    const targetId = findStories(t).find((id) => hasStory(built.stories, id) && formsOf(storyById(id), subject).some((f) => f.id === wanted?.[0]));
+    if (wanted && targetId) {
+      const def = storyById(targetId);
+      const key = placementsOf(built.stories, targetId)[0];
+      const choice = availableForms(built.stories, built.options, subject, built.spec, key).find((f) => f.id === wanted[0]);
+      const label = choice.label.toLowerCase();
+      const a = /s$/.test(label) ? "" : /^[aeiou]/.test(label) ? "an " : "a "; // "as bars", "as a radar", "as an area chart"
+      if (formOf(def, subject, built.options?.[key], built.spec) === wanted[0]) return { reply: { text: `${def.name} is already shown as ${a}${label}.` } };
+      if (choice.taken) return { reply: { text: `${def.name} is already in the Scope as ${a}${label}. A form can only be used once for each Story.` } };
+      return { built: { ...built, options: { ...built.options, [key]: { ...built.options?.[key], form: wanted[0] } } }, reply: { text: `Showing ${def.name} as ${a}${label}.` } };
+    }
+    if (wanted && findStories(t).some((id) => hasStory(built.stories, id) && formsOf(storyById(id), subject).length)) {
+      const id = findStories(t).find((x) => hasStory(built.stories, x) && formsOf(storyById(x), subject).length);
+      const offered = formsOf(storyById(id), subject).map((f) => f.label.toLowerCase());
+      return { reply: { text: `${storyById(id).name} can be shown as ${offered.slice(0, -1).join(", ")}${offered.length > 1 ? " or " : ""}${offered[offered.length - 1]} for this topic.` } };
+    }
+  }
+
   // widget type
   const wantsChart = /\b(make|turn|change|switch|show|display|use)\b/.test(t) && !/\b(remove|drop|add|include)\b/.test(t);
   const viz = FORM_WORDS.find(([, re]) => re.test(t));
@@ -252,22 +286,31 @@ export function refine(text, built) {
   const removing = /\b(remove|drop|delete|without|hide|get rid of|no more)\b/.test(t);
   const adding = /\b(add|include|with|want|need|also|show me|put in)\b/.test(t);
   if (targets.length && (removing || adding)) {
-    let stories = built.stories;
+    let work = built;
     const notes = [];
     targets.forEach((id) => {
       const def = storyById(id);
       if (removing) {
-        if (stories.includes(id)) { stories = stories.filter((x) => x !== id); notes.push(`removed ${def.name}`); }
+        const keys = placementsOf(work.stories, id);
+        if (keys.length) { keys.forEach((k) => { work = { ...work, ...removeStoryKeys(work, k) }; }); notes.push(`removed ${def.name}`); }
         else notes.push(`${def.name} wasn't in the Scope`);
       } else {
         const why = def.blocked(subject);
         if (why) notes.push(`can't add ${def.name} — ${why.charAt(0).toLowerCase() + why.slice(1)}`);
-        else if (stories.includes(id)) notes.push(`${def.name} is already in the Scope`);
-        else { stories = insertStory(stories, id); notes.push(`added ${def.name}`); }
+        else {
+          const had = hasStory(work.stories, id);
+          const placed = placeStory(work, subject, id);
+          if (!placed) notes.push(`${def.name} is already in the Scope${formsOf(def, subject).length > 1 ? ", in every form it has for this topic" : ""}`);
+          else {
+            work = { ...work, stories: placed.stories, options: placed.options };
+            const f = had ? formsOf(def, subject).find((x) => x.id === work.options[placed.key]?.form)?.label.toLowerCase() : null;
+            notes.push(had ? `added ${def.name} again as ${f}` : `added ${def.name}`);
+          }
+        }
       }
     });
     const msg = notes.join("; ");
-    return { built: { ...built, stories }, reply: { text: msg.charAt(0).toUpperCase() + msg.slice(1) + "." } };
+    return { built: work, reply: { text: msg.charAt(0).toUpperCase() + msg.slice(1) + "." } };
   }
 
   // a new subject → a fresh widget
@@ -277,7 +320,7 @@ export function refine(text, built) {
   return {
     reply: {
       text: "I can add or remove Stories, change the chart type, rename the widget, or start a new one from a topic.",
-      chips: ["Add a resource", "Remove the trend", "Make it a gauge"],
+      chips: ["Add a resource", "Remove the trend", "Make it a ring"],
     },
   };
 }

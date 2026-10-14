@@ -6,6 +6,7 @@ import { ds, dsText, dsRadius, dsSpace, dsBorder, dsShadow } from "../../../lib/
 import { ROUNDS } from "../../../lib/dataset.js";
 import { LAST, roundName, fmtMonth } from "../../../lib/scopeData.js";
 import SegmentedControl from "../../ui/SegmentedControl.jsx";
+import Dropdown from "../../ui/Dropdown.jsx";
 import { useStoryStyle } from "./storyStyle.js";
 
 /* ================================================================== */
@@ -51,19 +52,15 @@ export function useCompare() {
 
 export function CompareControl({ cmp }) {
   const options = ROUNDS.map((_, i) => i).filter((i) => i < LAST);
+  // Wraps: on a phone the round picker drops to its own line instead of pushing the card wider.
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8], fontFamily: font }}>
+    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: dsSpace[8], rowGap: dsSpace[4], fontFamily: font, maxWidth: "100%" }}>
       <label style={{ display: "flex", alignItems: "center", gap: dsSpace[8], padding: `${dsSpace[2]}px ${dsSpace[6]}px`, ...dsText("Text 2xs"), color: ds.button.brand.ghost.items.defaultText, cursor: "pointer", whiteSpace: "nowrap" }}>
         Compare previous rounds
         <Switch on={cmp.on} onChange={cmp.setOn} label="Compare previous rounds" />
       </label>
       {cmp.on && options.length > 1 && (
-        <select
-          className="field-soft" value={cmp.idx} onChange={(e) => cmp.setIdx(Number(e.target.value))} aria-label="Round to compare with"
-          style={{ fontFamily: font, ...dsText("Text xs"), padding: `${dsSpace[4]}px ${dsSpace[8]}px`, borderRadius: dsRadius.sm, color: ds.text.primary, background: ds.bg.primary }}
-        >
-          {options.map((i) => <option key={i} value={i}>{roundName(i)} · {fmtMonth(ROUNDS[i].date)}</option>)}
-        </select>
+        <Dropdown value={cmp.idx} onChange={cmp.setIdx} ariaLabel="Round to compare with" options={options.map((i) => ({ value: i, label: `${roundName(i)} · ${fmtMonth(ROUNDS[i].date)}` }))} />
       )}
     </div>
   );

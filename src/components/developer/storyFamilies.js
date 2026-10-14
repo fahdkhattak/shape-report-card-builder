@@ -77,7 +77,7 @@ FAMILY_FORMS.Comparison = {
 };
 FAMILY_FORMS.Trend = {
   doc: "trend",
-  covers: ["Trend", "Goal & Pace"],
+  covers: ["Trend"],
   forms: [
     { id: "form-history", label: "Score History" },
     { id: "form-line", label: "Score Over Time" },
@@ -86,7 +86,6 @@ FAMILY_FORMS.Trend = {
     { id: "form-state", label: "State Over Time" },
     { id: "form-level", label: "Level Over Time" },
     { id: "form-enps", label: "eNPS Over Time" },
-    { id: "form-goal", label: "Goal & Pace" },
   ],
 };
 FAMILY_FORMS.Resource = {
@@ -110,3 +109,6 @@ FAMILY_FORMS["Insight & Methodology"] = {
     { id: "form-coverage", label: "Who Answered" },
   ],
 };
+
+/* The Developer page that documents a Story: the page of the family form group it belongs to, else its own page. */
+export const docIdForStory = (def) => Object.values(FAMILY_FORMS).find((f) => f.covers.includes(def.name))?.doc ?? DOCS_BY_STORY[def.name] ?? null;

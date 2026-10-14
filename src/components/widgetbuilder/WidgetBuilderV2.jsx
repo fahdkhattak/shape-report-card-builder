@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowUp, ArrowDown, ArrowRight, X, Plus, Hash, TrendingUp, Gauge, BarChart3, ListOrdered, Radar, Smile, ScatterChart, Lightbulb, History, Users, BarChartHorizontal, Crosshair, ArrowUpDown, BarChart2, Flag, Scale, BookOpen, Target, Swords, ClipboardCheck, Sparkles, Grid3x3, Activity, Building2, GitCompare } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowRight, X, Plus, Hash, TrendingUp, CircleDot, BarChart3, ListOrdered, Radar, Smile, ScatterChart, Lightbulb, History, Users, BarChartHorizontal, Crosshair, ArrowUpDown, BarChart2, Flag, Scale, BookOpen, Target, Swords, ClipboardCheck, Sparkles, Grid3x3, Activity, Building2, GitCompare } from "lucide-react";
 import { T, font, radius, band } from "../../lib/tokens.js";
 import { subjectFromPrompt } from "../../lib/scopeSubject.js";
 import { dimensionRankedRows } from "../../lib/dataset.js";
@@ -14,12 +14,14 @@ import mascot from "../../assets/mascot-avatar.svg";
 import { buildWidget, refine, openingReply, noMatchReply, pickerOptions, chooseKind, caseIdeas } from "./builderEngine.js";
 import WidgetOptions from "./WidgetOptions.jsx";
 import ScopeOutline from "./ScopeOutline.jsx";
-import { storyById, insertStory } from "./storyCatalog.jsx";
+import { storyById, placeStory, removeStoryKeys, againIds, baseId, placementForm } from "./storyCatalog.jsx";
+import StoryToolbar from "./StoryToolbar.jsx";
 import { ScopeNavContext } from "../scope/scopeNav.js";
 import { useLayerStack, LayerBody, Breadcrumb } from "../scope/layers.jsx";
 import { RichText, AddStoryMenu } from "./WidgetBuilderV1.jsx";
 import { WidgetBuilderVersions } from "./WidgetBuilderVersions.jsx";
 import { StoryStyleToggle } from "./StoryStyleToggle.jsx";
+import { PreviewWidthToggle, PreviewFrame } from "./PreviewWidth.jsx";
 import { useStoryStyle, StoryMetaContext } from "../scope/stories/storyStyle.js";
 
 /* ================================================================== */
@@ -55,7 +57,7 @@ const SHADOW = "0 1px 2px rgba(35,31,32,0.06), 0 12px 28px -12px rgba(35,31,32,0
 const SHADOW_SOFT = "0 1px 2px rgba(35,31,32,0.05), 0 6px 16px -8px rgba(35,31,32,0.14)";
 const LEFT_W = 340; // the outline + conversation column
 
-const TYPE_ICONS = { score: Hash, gauge: Gauge, status: Smile, history: TrendingUp, parts: ListOrdered, profile: Radar, people: Users, groups: BarChartHorizontal, focus: Crosshair, movers: ArrowUpDown, spread: BarChart2, goal: Flag, story: BookOpen, index: Target, team: Building2, versus: GitCompare, duel: Swords, check: ClipboardCheck, whatif: Sparkles, heat: Grid3x3, momentum: Activity, bar: Scale, scatter: ScatterChart, insight: Lightbulb };
+const TYPE_ICONS = { score: Hash, gauge: CircleDot, status: Smile, history: TrendingUp, parts: ListOrdered, profile: Radar, people: Users, groups: BarChartHorizontal, focus: Crosshair, movers: ArrowUpDown, spread: BarChart2, goal: Flag, story: BookOpen, index: Target, team: Building2, versus: GitCompare, duel: Swords, check: ClipboardCheck, whatif: Sparkles, heat: Grid3x3, momentum: Activity, bar: Scale, scatter: ScatterChart, insight: Lightbulb };
 
 /* Observe an element's width so the layout can drop the outline rail on narrow panes. */
 function useWidth(ref) {
@@ -273,22 +275,26 @@ function Stage({ built, subject, thinking, onChange }) {
 }
 
 /* ---- the Scope ---------------------------------------------------------- */
-function StoryBlock({ id, index, subject, stories, lit }) {
+function StoryBlock({ id, index, count, subject, built, onMove, onRemove, onOption, onAddAnother, lit }) {
+  const [hover, setHover] = useState(false);
   const def = storyById(id);
+  const options = built.options?.[id];
   const refined = useStoryStyle() === "refined";
   return (
     <motion.div
-      id={`wb2-story-${id}`} layout="position"
+      id={`wb2-story-${id}`} layout="position" tabIndex={0} aria-label={def.name}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onFocus={() => setHover(true)} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setHover(false); }}
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }}
       transition={{ ...SPRING, delay: Math.min(index, 6) * 0.04 }}
-      style={{ borderRadius: refined ? 24 : radius.widget + 4, outline: lit ? `2px solid ${T.accent}` : "2px solid transparent", outlineOffset: 4, transition: "outline-color 150ms ease", scrollMarginTop: 72 }}
+      style={{ position: "relative", borderRadius: refined ? 24 : radius.widget + 4, outline: lit ? `2px solid ${T.accent}` : "2px solid transparent", outlineOffset: 4, transition: "outline-color 150ms ease", scrollMarginTop: 72 }}
     >
-      <StoryMetaContext.Provider value={{ kind: def.family }}>{def.render(subject, { stories })}</StoryMetaContext.Provider>
+      <StoryToolbar visible={hover} storyKey={id} subject={subject} built={built} index={index} count={count} onMove={onMove} onRemove={onRemove} onOption={onOption} onAddAnother={onAddAnother} />
+      <StoryMetaContext.Provider value={{ kind: def.family }}>{def.render(subject, { stories: built.stories, options, spec: built.spec })}</StoryMetaContext.Provider>
     </motion.div>
   );
 }
 
-function ScopeBlock({ built, subject, scrollRef, litId, onChange }) {
+function ScopeBlock({ built, subject, scrollRef, litId, onChange, onMove, onRemove, onAddStory }) {
   const { stories } = built;
   const refined = useStoryStyle() === "refined";
   const layers = useLayerStack(built.prompt);
@@ -315,9 +321,11 @@ function ScopeBlock({ built, subject, scrollRef, litId, onChange }) {
         <div style={{ display: "flex", flexDirection: "column", gap: refined ? 20 : 24 }}>
           {layers.layer && <div style={refined ? { background: T.white, borderRadius: 24, padding: "28px 32px 32px", boxShadow: "0 1px 2px rgba(35,31,32,0.05), 0 8px 24px -12px rgba(35,31,32,0.14)" } : undefined}><LayerBody layer={layers.layer} /></div>}
           <div style={{ display: layers.depth ? "none" : "contents" }}>
+            <PreviewFrame>
             <AnimatePresence initial={false}>
-              {stories.map((id, i) => <StoryBlock key={id} id={id} index={i} subject={subject} stories={stories} lit={litId === id} />)}
+              {stories.map((id, i) => <StoryBlock key={id} id={id} index={i} count={stories.length} subject={subject} built={built} onMove={onMove} onRemove={onRemove} onOption={(patch) => onChange({ ...built, options: { ...built.options, [id]: { ...built.options?.[id], ...patch } } })} onAddAnother={() => onAddStory(baseId(id))} lit={litId === id} />)}
             </AnimatePresence>
+            </PreviewFrame>
             {stories.length === 0 && (
               <p style={{ margin: 0, padding: "40px 0", fontSize: 15, color: T.gray500, textAlign: "left" }}>This scope is empty. Add a story from the list, or ask for one below.</p>
             )}
@@ -416,7 +424,7 @@ function Dock({ messages, typing, onSend, left, rightInset }) {
             </Press>
           </div>
         )}
-        <CommandInput onSend={onSend} flat placeholder="Ask for a change — “add actions”, “make it a gauge”…" />
+        <CommandInput onSend={onSend} flat placeholder="Ask for a change — “add actions”, “make it a ring”…" />
         </div>
       </div>
     </div>
@@ -442,8 +450,8 @@ export default function WidgetBuilderV2({ state, setState, navExpanded, onNavExp
     [next[i], next[j]] = [next[j], next[i]];
     setBuilt({ ...built, stories: next });
   };
-  const remove = (id) => setBuilt({ ...built, stories: built.stories.filter((s) => s !== id) });
-  const add = (id) => setBuilt({ ...built, stories: insertStory(built.stories, id) });
+  const remove = (key) => setBuilt({ ...built, ...removeStoryKeys(built, key) });
+  const add = (id) => { const placed = placeStory(built, subject, id); if (placed) setBuilt({ ...built, stories: placed.stories, options: placed.options }); };
 
   return (
     <div className="wb2" style={{ display: "flex", flex: 1, minHeight: 0, fontFamily: font }}>
@@ -452,12 +460,13 @@ export default function WidgetBuilderV2({ state, setState, navExpanded, onNavExp
         <div style={{ height: 44, flexShrink: 0, background: T.white, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 32px", position: "relative" }}>
           <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.gray700 }}>Widget builder</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {built && <PreviewWidthToggle />}
             {built && <StoryStyleToggle value={storyStyle} onChange={onStoryStyleChange} />}
             <WidgetBuilderVersions value={version} onChange={onVersionChange} />
             {built && (
               <>
                 <Button theme="brand" variation="ghost" size="xs" onClick={() => setState({ messages: [], built: null })}>Start over</Button>
-                <Button theme="accent" variation="primary" size="xs" onClick={() => onAddToReport({ spec: built.spec, scope: { prompt: built.prompt, stories: built.stories } })}>Add to report</Button>
+                <Button theme="accent" variation="primary" size="xs" onClick={() => onAddToReport({ spec: built.spec, scope: { prompt: built.prompt, stories: built.stories, options: built.options } })}>Add to report</Button>
               </>
             )}
           </div>
@@ -475,7 +484,7 @@ export default function WidgetBuilderV2({ state, setState, navExpanded, onNavExp
             {wide && (
               <aside aria-label="Scope and conversation" style={{ width: LEFT_W, flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0, borderRight: `1px solid ${T.gray75}`, background: T.gray25 }}>
                 <div style={{ flex: "0 1 auto", maxHeight: "52%", minHeight: 120, overflowY: "auto" }}>
-                  <ScopeOutline panel stories={built.stories} litId={litId} setLitId={setLitId} onMove={move} onRemove={remove} renderAdd={(trigger) => <AddStoryMenu subject={subject} present={built.stories} onAdd={add} trigger={trigger} />} />
+                  <ScopeOutline formOf={(k) => placementForm(built, subject, k)} reasons={built.reasons} panel stories={built.stories} litId={litId} setLitId={setLitId} onMove={move} onRemove={remove} renderAdd={(trigger) => <AddStoryMenu subject={subject} present={built.stories} again={againIds(built, subject)} onAdd={add} trigger={trigger} />} />
                 </div>
                 <Conversation messages={messages} typing={typing} onSend={send} />
               </aside>
@@ -483,8 +492,8 @@ export default function WidgetBuilderV2({ state, setState, navExpanded, onNavExp
             <div ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto" }}>
               <div style={{ maxWidth: 944, padding: wide ? "40px 48px 64px 40px" : "40px 40px 240px 48px", boxSizing: "border-box" }}>
                 <Stage built={built} subject={subject} thinking={typing} onChange={setBuilt} />
-                {!wide && <ScopeOutline inline stories={built.stories} litId={litId} setLitId={setLitId} onMove={move} onRemove={remove} renderAdd={(trigger) => <AddStoryMenu subject={subject} present={built.stories} onAdd={add} trigger={trigger} />} />}
-                <ScopeBlock built={built} subject={subject} scrollRef={scrollRef} litId={litId} onChange={setBuilt} />
+                {!wide && <ScopeOutline formOf={(k) => placementForm(built, subject, k)} reasons={built.reasons} inline stories={built.stories} litId={litId} setLitId={setLitId} onMove={move} onRemove={remove} renderAdd={(trigger) => <AddStoryMenu subject={subject} present={built.stories} again={againIds(built, subject)} onAdd={add} trigger={trigger} />} />}
+                <ScopeBlock built={built} subject={subject} scrollRef={scrollRef} litId={litId} onChange={setBuilt} onMove={move} onRemove={remove} onAddStory={add} />
               </div>
             </div>
             {!wide && <Dock messages={messages} typing={typing} onSend={send} left={0} rightInset={0} />}

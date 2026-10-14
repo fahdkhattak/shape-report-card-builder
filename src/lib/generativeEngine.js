@@ -31,7 +31,7 @@ export const EXPLANATIONS = {
   insight: () => `A pattern found in the data — useful when the link between two things isn't obvious from one chart.`,
   metric: () => `The number, and how it moved since last round — best when there is one figure that matters most.`,
   radar: () => `Several related drivers on one shape — a dent on one spoke is the driver pulling the rest down.`,
-  gauge: () => `The score on a dial with the 60 and 80 status thresholds marked, so you can see how close it is to the next band.`,
+  gauge: () => `The score as a ring with the 60 and 80 status thresholds marked, so you can see how close it is to the next band.`,
 };
 
 /* ------------------------------------------------------------------ */
@@ -59,7 +59,7 @@ const ASKS = [
   ["bar", /breakdown|distribution|split|composition|across|by (team|department|gender|location)/],
   ["ranking", /top|best|worst|rank|leaderboard|driver/],
   ["status", /flourish|struggl|striv|mood|sentiment|status/],
-  ["gauge", /gauge|dial/],
+  ["gauge", /gauge|dial|\bring\b/],
   ["metric", /number|how many|how much|score/],
 ];
 

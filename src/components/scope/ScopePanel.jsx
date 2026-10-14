@@ -142,7 +142,7 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
         <div style={{ zoom: zoom / DEFAULT_ZOOM, display: "flex", flexDirection: "column", gap: 16, maxWidth: 808, margin: "0 auto" }}>
           {layers.layer && <LayerBody layer={layers.layer} />}
           <div style={{ display: layers.depth ? "none" : "contents" }}>
-          {widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
+          {widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
           </div>
         </div>
         </ScopeNavContext.Provider>

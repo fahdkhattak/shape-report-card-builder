@@ -29,7 +29,7 @@ export function useWidth(ref) {
 
 export const storyDomId = (id) => `wb2-story-${id}`;
 
-export default function ScopeOutline({ stories, litId, setLitId, onMove, onRemove, renderAdd, inline, panel }) {
+export default function ScopeOutline({ stories, litId, setLitId, onMove, onRemove, renderAdd, inline, panel, formOf, reasons }) {
   const iconBtn = { border: "none", background: "transparent", color: T.gray500, width: 24, height: 24, borderRadius: radius.sm, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 };
   return (
     <nav aria-label="Stories in this scope" style={panel ? { padding: "20px 12px 8px 16px", boxSizing: "border-box" } : inline ? { marginTop: 32 } : { position: "sticky", top: 0, width: RAIL_W, flexShrink: 0, alignSelf: "flex-start", height: "100%", overflowY: "auto", padding: "40px 24px 220px 8px", boxSizing: "border-box" }}>
@@ -42,11 +42,11 @@ export default function ScopeOutline({ stories, litId, setLitId, onMove, onRemov
           const def = storyById(id);
           const lit = litId === id;
           return (
-            <li key={id} onMouseEnter={() => setLitId(id)} onMouseLeave={() => setLitId(null)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 4px 6px 8px", borderRadius: radius.md, background: lit ? T.white : "transparent", boxShadow: lit ? SHADOW_SOFT : "none", transition: "background 120ms ease, box-shadow 120ms ease" }}>
+            <li key={id} title={reasons?.[def.id] ? `Added because ${reasons[def.id].charAt(0).toLowerCase()}${reasons[def.id].slice(1)}` : undefined} onMouseEnter={() => setLitId(id)} onMouseLeave={() => setLitId(null)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 4px 6px 8px", borderRadius: radius.md, background: lit ? T.white : "transparent", boxShadow: lit ? SHADOW_SOFT : "none", transition: "background 120ms ease, box-shadow 120ms ease" }}>
               <span style={{ width: 16, fontSize: 11, color: T.gray400, fontVariantNumeric: "tabular-nums" }}>{i + 1}</span>
               <button onClick={() => document.getElementById(storyDomId(id))?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ flex: 1, minWidth: 0, textAlign: "left", border: "none", background: "transparent", cursor: "pointer", padding: 0, fontFamily: font, display: "flex", flexDirection: "column" }}>
                 <span style={{ fontSize: 13, fontWeight: 500, color: T.gray900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{def.name}</span>
-                <span style={{ fontSize: 11, color: T.gray400 }}>{def.family}</span>
+                <span style={{ fontSize: 11, color: T.gray400 }}>{def.family}{formOf?.(id) ? ` · ${formOf(id)}` : ""}</span>
               </button>
               <button aria-label={`Move ${def.name} up`} disabled={i === 0} onClick={() => onMove(id, -1)} style={{ ...iconBtn, opacity: i === 0 ? 0.3 : 1 }}><ArrowUp size={14} /></button>
               <button aria-label={`Move ${def.name} down`} disabled={i === stories.length - 1} onClick={() => onMove(id, 1)} style={{ ...iconBtn, opacity: i === stories.length - 1 ? 0.3 : 1 }}><ArrowDown size={14} /></button>

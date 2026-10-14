@@ -28,8 +28,9 @@ function arc(a0, a1, ro, ri) {
   return `M${x0},${y0} A${ro},${ro} 0 ${large} 1 ${x1},${y1} L${x2},${y2} A${ri},${ri} 0 ${large} 0 ${x3},${y3} Z`;
 }
 
-/* rows: groupRows() output. `selected`: index of the chosen segment or null. `size` scales the whole ring. */
-export default function DonutChart({ axisKey, label, rows, selected, onSelect, size = BOX }) {
+/* rows: groupRows() output. `selected`: index of the chosen segment or null. `size` scales the whole ring. `bare` draws
+   the ring without the icon and name in the middle (a 1x1 widget is too small for them). */
+export default function DonutChart({ axisKey, label, rows, selected, onSelect, size = BOX, bare = false }) {
   const total = rows.reduce((a, r) => a + r.n, 0) || 1;
   let a = 0;
   const slices = rows.map((r, i) => {
@@ -62,10 +63,10 @@ export default function DonutChart({ axisKey, label, rows, selected, onSelect, s
           );
         })}
       </svg>
-      <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: dsSpace[8] * k, pointerEvents: "none" }}>
+      {!bare && <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: dsSpace[8] * k, pointerEvents: "none" }}>
         <AxisIcon axis={axisKey} size={24 * k} />
         <span data-part="ring-label" style={{ ...dsText("Text sm", 500), fontSize: 14 * k, lineHeight: `${20 * k}px`, color: ds.text.secondary, textAlign: "center", maxWidth: (RI * 2 - 12) * k, textWrap: "balance" }}>{label}</span>
-      </div>
+      </div>}
     </div>
   );
 }

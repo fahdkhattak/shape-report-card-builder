@@ -352,7 +352,7 @@ function DeveloperView({ style }) {
           ["List", "Area level. It introduces the parts of a result, so \"what's behind your score\" reads as bigger and more important: a large number and a sentence for each. 2 to 6 parts.", "None"],
           ["Distribution", "How many parts are Flourishing, Striving, and Struggling, as one bar.", "None"],
           ["Table", "Any of the above as rows and columns. Always one click away.", "Compare, Chart View, Copy Table"],
-          ["Zones", "Every part as a dot against the three status ranges. Ours; not in the design.", "Compare, Table View, Bars or Zones"],
+          ["Zones", "Every part as a dot against the three status ranges. Ours; not in the design.", "Compare, Table View"],
           ["Mental Well-Being", "How many people sit in each of five severity bands for each measure. Personal, Team, and Org.", "Table View"],
           ["Health Age drivers", "How much each driver makes someone younger or older. Sample data only.", "Table View"],
           ["Who Is Where", "How many people are Flourishing, Striving, and Struggling on the topic. People, not parts: Distribution counts parts.", "Compare, Table View"],

@@ -783,6 +783,44 @@ radar did it on any card under 645px, even with five short names.
   when the mouse left (leave was gated on `compact`, which is now also the numbered state); it now checks for a mouse.
 - `BreakdownDoc.jsx`'s rule text and responsive table were updated to match.
 
+## Widget Builder: Story toolbar, forms, repeats, suggestions, phone preview, sweep
+
+How the Story system plugs into the Widget Builder (`components/widgetbuilder/`). Supersedes the earlier "Show as" switch in the Story header, which was removed.
+- **Floating Story toolbar** (`StoryToolbar.jsx`): hover or focus a Story in either builder screen and a dark toolbar appears above it with
+  the Story's name (tooltip: why it is here, or its purpose), a **Sample** tag where the Story's copy is sample, **Show as ▾** (forms),
+  **Add again in another form**, move up, move down, **About** (opens its Developer page via `docIdForStory()` and `openDeveloper`),
+  and remove. A Story is focusable (`tabIndex 0`), so a tap or the keyboard opens it too. The "In this scope" rail keeps its always-visible
+  move/remove. The header switch and `storyForm.js` are gone, so no Story knows about forms.
+- **Forms** are declared in the catalogue: `forms(subject)` and `defaultForm(subject, spec)`. Breakdown: Radar, Area, Bars, List, Zones (only
+  those `fitForm()` allows for the number of parts). Score Meaning: Number, Ring. The default follows the widget: a Profile widget opens
+  its Breakdown as a radar, a Parts widget as bars, a Gauge widget its Meaning as a ring (`spec` is passed in `ctx`).
+- **Placements.** `built.stories` is still a flat array, but each entry is a placement key: the Story id, or `id~2`, `id~3` for another
+  placement of the same Story. Only a Story with more than one form can be placed again, and **never twice in the same form**: the menu
+  shows a form another placement uses as disabled ("In use"), "Add again" appears only while a form is left, and the new placement takes
+  the first unused form. Helpers in `storyCatalog.jsx`: `baseId`, `storyById` (understands keys), `hasStory`, `placementsOf`, `formsOf`,
+  `formOf(def, subject, options, spec)`, `formsInUse`, `availableForms`, `unusedForm`, `canPlace`, `placeStory`, `removeStoryKeys`,
+  `againIds`, `placementForm`. `insertStory` puts a repeat next to its siblings. The Add Story menu lists a placed multi-form Story as
+  "Name · another form". Chat: "add the breakdown" again adds another form; "remove the breakdown" removes every placement; asking for a
+  form already used says so.
+- **Options are saved with the widget**: `built.options[key] = { form }` goes into `scope.options` on "Add to Report"; `BuiltScope` takes
+  `scope` and the widget's `spec` and draws what was built. The report shows no toolbar.
+- **Data-driven default Scope** (`suggestScope(subject)`, `SUGGEST_RULES` in `storyCatalog.jsx`): the eight base Stories plus up to 3 whose
+  rule fires on the subject's data, each with a reason stored in `built.reasons`, shown in the toolbar tooltip, the rail row tooltip, and the
+  opening chat reply. Starting thresholds, changeable in one table: Where Gaps Are Widest at a 15-point gap, Within Reach with 2 parts within 3
+  points of a status line, How Scores Are Spread when the middle half spans 30 points, What Changed at an 8-point move, Areas to Focus On when
+  the lowest group is 10 points under the whole, Who Is Where when half of people are Struggling, How It Ranks in the top or bottom 3. What
+  Moves With This has no rule: in the prototype data every link is strong, so it would always fire.
+- **Phone preview** (`PreviewWidth.jsx`): a Preview Desktop | Phone toggle in both builder headers narrows the Scope to a 360px column
+  (remembered in `widget-builder-preview-width`). Stories already measure their own card, so they show their compact layouts.
+- **Developer pages**: **Story availability** (every Story by five real subjects using each Story's `blocked()`, the default Scope per subject,
+  the suggestion rules and what they add right now, and the forms offered) and **Story sweep** (draws every Story, in every form, for every
+  subject that supports it, at 320, 560 and 808px, off screen, and reports errors, empty drawings, and overflow; the overflow check ignores
+  tables, charts, scrolling areas, and boxless elements such as `display: contents`). Both use `developer/sampleSubjects.js`.
+- Verified in-browser: toolbar on both builder screens (focus), move, forms menu with in-use forms disabled, Add again, About opening the
+  Developer page, phone preview (all Stories 360px, no overflow), rail labels, reasons in the opening reply, a report Scope showing the chosen
+  forms, and a clean sweep (336 renders, 0 errors, 0 overflows, 0 empty).
+- **Not done:** forms for Stories beyond Breakdown and Meaning, a toolbar on the report's own Scope pane, and thresholds tuned on real data.
+
 ## Status color rule
 
 Flourishing/Striving/Struggling and any status-coded data → brand Red/Amber/Green
@@ -2833,3 +2871,60 @@ are flagged inline above and in `docs/figma-widget-audit-*.md`/`docs/figma-chat-
 the floating-chat state) — none silently dropped. `npm install` + `npm run dev` both verified
 working; `.claude/launch.json` runs it via `cmd /c "set PATH=...nodejs...&& npm run dev"` since
 this machine's Node install didn't propagate to the harness's preview-server PATH by default.
+
+## Stories explainer video (30 s) — `explainer.html`, `src/explainer/`, `scripts/video/`
+
+A real 30-second film about Stories, shown in the **Video Story** (Developer → Video; Widget Builder → Add Story → Video).
+It's the one video this prototype ships, so the Video Story is no longer blocked and carries no "Sample" tag
+(`src/components/scope/stories/explainerVideo.js` holds the title, line, transcript and the file imports).
+- **Rendered, not recorded.** `explainer.html` (dev-only entry, not in the production build's pages) mounts `src/explainer/Explainer.jsx`,
+  a pure function of time that draws the real Story components (Insight Summary, Breakdown, Diagnostic, Composition, Trend,
+  Actions, the form chips) inside a dark stage. `main.jsx` exposes `window.__seek(t)`, `window.__duration` (30) and
+  `window.__ready`; open `explainer.html?play` to watch it live.
+- **Re-render** after changing a Story or the script: start `npm run dev` in the root, then in `scripts/video` run
+  `npm install` (first time) and `npm run render`. It drives system Google Chrome through puppeteer-core (set `CHROME_PATH` if it
+  isn't in `/Applications`), captures 900 frames at 1920×1080, and encodes `src/assets/video/stories-explainer.mp4`
+  (1280×720, 30 fps, H.264, no audio, ~3 MB) with ffmpeg-static, plus `stories-explainer-poster.jpg` (the fan of Stories at 8 s).
+  `scripts/video` has its own package.json, like `/data`; the frames folder is git-ignored.
+- Scenes: intro (0–3.7 s) · fan of Stories · six questions at ~2.1 s each (How is it doing? … What can I do?) · forms
+  (Radar / Bars / List / Zones with the hover toolbar) · outro.
+- **No soundtrack**, so the transcript carries the words and the caption says so. A voice-over would be a new asset, not a re-render.
+
+## Widget and Story fixes pass (status art, Index, Group Composition, Score History, dropdown)
+
+- **Status illustrations are the design's SVGs** (`assets/status-illustrations/{flourishing,striving,struggling}.svg`, supplied by the
+  user, face included); `StatusRipple` is now just that `<img>`. The hand-drawn wobbling-ring code is gone. The Org Score / status
+  counts use `UsersIcon` = Lucide `users` at 14px, 2px stroke (the hand-scaled path it replaced squashed to noise at 12px).
+- **Gauge is a ring** (`ScoreDial` in `primitives.jsx`, full circle from 12 o'clock, notches at 60 and 80). The builder form's name is
+  "Ring" (id stays `gauge`; chat also understands "ring"); the older `Gauge` primitive wraps `ScoreDial`.
+- **Index 3×3** (`RingIndex.jsx`): the "tiny" ring was a layout bug (the form's `alignItems: center` shrink-wrapped the ring's
+  `width: 100%`), fixed. Every inner wedge is named outside the rim (two lines max) and shows only its score inside; the outer ring's
+  cells show a score only when the cell is wide enough (hover names any cell); the caption line is gone. 2×2 is unchanged.
+- **Heat strip** shows at most 11 rows; past that the weakest 9 and a "N more Explorers" line (`MoreLine`, same as Parts).
+- **Profile (radar) widget** is drawn like the Radar story: circular rings 20 to 100, grey nodes on the spoke ends, orange series
+  polygon, 11px two-line names.
+- **Areas to Focus sizes read off Figma 11318:27848**: group label 13/400 accent, name 11/600, tag 11/400 on `bg/primary`, change
+  pill 20px, score 16/700 in the status's strong text colour, caption 11/400 under a 2px status rule, plus the "N more Areas" line.
+  Captions say "employees are struggling" as the design does.
+- **Group, not Team.** The builder's "Team" form is named **Group** ("IT Group Score", prompt chip "How is the IT group doing?").
+  The id is still `team` in code. Real teams (manager-led, from "your network") are left for later.
+- **New builder form: Composition** (`subjectForms.js` `composition`, `CompositionForm` in `SubjectBody.jsx`; Figma 11318:27838 and
+  the 1×1s beside it). 2×2: a 180px ring of one grouping (axis icon and name inside) with "Largest Group …" under it; 1×1: up to four
+  groups as headcount tiles over a proportion bar, more groups a small bare ring and the same line. Option: the grouping
+  (`axis`, default Department, named as the design does: Departments / Work / Employment Duration / Site). Chat: "department
+  composition", "who is in the organisation", "tenure composition". It describes people, not the topic's score. Other Extras frames
+  not built: Benchmark (no external data), Age (no age field); Time and Money composition already exist in the Library.
+- **Phantom rules**: no more `People` 2×2 gap; `DonutChart` has a `bare` prop.
+- **Breakdown Zones** no longer has its Bars | Zones switch (they are separate forms).
+- **Score Meaning is placed once** (`once: true` on the catalogue entry; Number and Ring are two looks for one message, so "Add
+  again" is never offered). Breakdown can still be placed once per form.
+- **Goal & Pace** draws at its card's width (it was a fixed 776px picture scaled down, so text was ~5px on a phone) and zooms its
+  axis to the scores, the target and the estimate. It has its own Developer page (`docs/GoalPaceDoc.jsx`, id `goal-pace`).
+- **Score History changes chart**: on a compact card each part is two lines (name, change, score; then a full-width track) on an
+  axis zoomed to the range the scores span; at the designed width a change number sits right of the track. The part's own line
+  graph now uses the Trend family's `ScoreLine` (exported from `TrendCharts.jsx`; `HistoryLineChart` is a thin wrapper), so it looks
+  and responds like every other line chart.
+- **`ui/Dropdown.jsx`** replaces the browser `<select>` in the Compare control: a portalled floating list in the design's tokens
+  (keeps 8px inside the window, sized to its trigger, Dark mode follows), and the compare row wraps so it never pushes a phone-width
+  card wider.
+- Verified: story sweep 351 renders, 0 errors / overflows / empty; lint clean (the five known warnings); build passes.

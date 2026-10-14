@@ -1,5 +1,6 @@
 import { Lock, Heart, Building2, User, Users } from "lucide-react";
 import { T, font, band } from "../../lib/tokens.js";
+import { ds, dsBand } from "../../lib/ds.js";
 import { StatusFaceIcon, TrendPill, polar, describeArc } from "./primitives.jsx";
 import { statusName } from "../../lib/bands.js";
 
@@ -118,7 +119,7 @@ function MiniPeople({ color }) {
 }
 
 export function MoreLine({ children }) {
-  return <span style={{ fontSize: 11, color: T.gray300, borderLeft: `2px solid ${T.gray200}`, paddingLeft: 6, lineHeight: "14px" }}>{children}</span>;
+  return <span style={{ fontSize: 11, color: ds.text.tertiary, borderLeft: `2px solid ${ds.border.strong}`, padding: "0 6px", lineHeight: "12px" }}>{children}</span>;
 }
 
 /* ---- Mental well-being ---------------------------------------------- */
@@ -304,18 +305,22 @@ export function HistoryChart({ points, labels, w = 312, h = 150 }) {
 }
 
 /* ---- Focus (Areas to Focus) -------------------------------------------- */
+/* Sizes read off Figma 11318:27848: the group name 11/600, its category tag 11/400 on a bg/primary pill, the change
+   as a 20px pill, the score 16/700 in the status's strong text colour, and the caption 11/400 under a 2px status
+   rule. (It used to be 9px tag and caption text on a 1px outline, which read much smaller than the design.) */
+const strongOf = (v) => ds.status[dsBand(v).key].textStrong;
 export function FocusRow({ name, value, tag, delta, sub }) {
-  const b = band(value);
+  const b = dsBand(value);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, borderLeft: `2px solid ${b.c}`, paddingLeft: 6, minHeight: 20 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: T.gray900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: tag ? "0 1 auto" : 1, minWidth: 0 }}>{name}</span>
-        {tag && <span style={{ background: T.gray50, border: `1px solid ${T.gray75}`, borderRadius: 46, padding: "0 6px", fontSize: 9, color: T.gray500, whiteSpace: "nowrap", flexShrink: 0 }}>{tag}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, borderLeft: `2px solid ${b.c}`, borderRadius: "0 4px 4px 0", paddingLeft: 6, minHeight: 20 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: ds.text.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: tag ? "0 1 auto" : 1, minWidth: 0, lineHeight: "16px" }}>{name}</span>
+        {tag && <span style={{ background: ds.bg.primary, borderRadius: 9999, padding: "2px 6px", fontSize: 11, lineHeight: "12px", color: ds.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, flexShrink: 1 }}>{tag}</span>}
         {tag && <span style={{ flex: 1 }} />}
         {delta !== undefined && delta !== 0 && <TrendPill delta={delta} numberOnly />}
-        <span style={{ fontSize: 16, fontWeight: 700, color: b.cs, flexShrink: 0 }}>{value}</span>
+        <span style={{ fontSize: 16, lineHeight: "24px", fontWeight: 700, color: strongOf(value), flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{value}</span>
       </div>
-      {sub && <span style={{ fontSize: 9, color: T.gray500, paddingLeft: 8, lineHeight: "12px" }}>{sub}</span>}
+      {sub && <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "12px", borderLeft: `2px solid ${b.c}`, padding: "0 6px" }}>{sub}</span>}
     </div>
   );
 }

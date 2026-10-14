@@ -1,11 +1,13 @@
 import { Check, AlertTriangle, X, ArrowRight } from "lucide-react";
 import { T, font, band } from "../../lib/tokens.js";
 import {
-  TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, StatusRing, StatusRipple, RadarChart, polar,
+  TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, StatusRing, StatusRipple, RadarChart, polar, ScoreDial,
 } from "./primitives.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, GroupBars, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
 import { FLOURISHING_AT, STRIVING_AT, statusName, nextLine } from "../../lib/bands.js";
+import { ds } from "../../lib/ds.js";
+import DonutChart, { segmentColor } from "../scope/stories/DonutChart.jsx";
 
 /* ================================================================== */
 /* SUBJECT BODY — draws the widget forms in lib/subjectForms.js.         */
@@ -82,38 +84,14 @@ function Score({ p, size }) {
   );
 }
 
-/* ---- Gauge ---------------------------------------------------------------- */
-const arcPath = (cx, cy, r, a0, a1) => {
-  const s = polar(cx, cy, r, a0), e = polar(cx, cy, r, a1);
-  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${e.x} ${e.y}`;
-};
-function Dial({ value, size, stroke, numberSize, wordSize }) {
-  const b = band(value), cx = size / 2, cy = size / 2, r = size / 2 - stroke;
-  const at = (v) => -135 + (270 * Math.max(0, Math.min(100, v))) / 100;
-  const H = cy + r * 0.74 + stroke / 2 + 2;
-  const status = statusName(value);
-  const tick = (v) => { const a = polar(cx, cy, r - stroke * 0.75, at(v)), c = polar(cx, cy, r + stroke * 0.75, at(v)); return <line key={v} x1={a.x} y1={a.y} x2={c.x} y2={c.y} stroke={T.white} strokeWidth={Math.max(2, stroke / 5)} />; };
-  return (
-    <svg width={size} height={H} viewBox={`0 0 ${size} ${H}`} role="img" aria-label={`${value} out of 100, ${status}`} style={{ display: "block", overflow: "visible" }}>
-      <path d={arcPath(cx, cy, r, -135, 135)} fill="none" stroke={T.gray75} strokeWidth={stroke} strokeLinecap="round" />
-      {value > 0 && <path d={arcPath(cx, cy, r, -135, at(value))} fill="none" stroke={b.c} strokeWidth={stroke} strokeLinecap="round" />}
-      {[STRIVING_AT, FLOURISHING_AT].map(tick)}
-      <foreignObject x={cx - r} y={cy - numberSize * 0.62} width={r * 2} height={numberSize * 1.5} style={{ overflow: "visible" }}>
-        <div xmlns="http://www.w3.org/1999/xhtml" style={{ display: "flex", flexDirection: "column", alignItems: "center", fontFamily: font }}>
-          <span style={{ fontSize: numberSize, fontWeight: 700, letterSpacing: -numberSize * 0.02, lineHeight: 1, color: b.cs }}>{value}</span>
-          <span style={{ fontSize: wordSize, fontWeight: 600, color: b.cs, marginTop: 3 }}>{status}</span>
-        </div>
-      </foreignObject>
-    </svg>
-  );
-}
+/* ---- Ring (was a 270° gauge; a full ring matches the Meaning story) ---- */
 function GaugeForm({ p, size }) {
-  if (size === "1x1") return <div style={col({ alignItems: "center", justifyContent: "center" })}><Dial value={p.value} size={104} stroke={11} numberSize={26} wordSize={9} /></div>;
+  if (size === "1x1") return <div style={col({ alignItems: "center", justifyContent: "center" })}><ScoreDial value={p.value} size={104} stroke={11} numberSize={26} wordSize={9} /></div>;
   const nl = nextLine(p.value), next = nl ? { at: nl, name: statusName(nl) } : null;
   return (
     <div style={col({ justifyContent: "space-between" })}>
       <div style={{ display: "flex", justifyContent: "flex-end" }}><TrendPill delta={p.delta} /></div>
-      <div style={{ display: "flex", justifyContent: "center" }}><Dial value={p.value} size={220} stroke={18} numberSize={52} wordSize={13} /></div>
+      <div style={{ display: "flex", justifyContent: "center" }}><ScoreDial value={p.value} size={190} stroke={18} numberSize={50} wordSize={13} /></div>
       <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
         {next ? <><B c={band(p.value).cs}>{pts(next.at - p.value)}</B> from <B>{next.name}</B> (a score of {next.at}).</> : <>Above the Flourishing line of <B>{FLOURISHING_AT}</B> by <B c={T.greenStrong}>{pts(p.value - FLOURISHING_AT)}</B>.</>}
       </span>
@@ -225,7 +203,7 @@ function PeopleForm({ p, size }) {
     );
   }
   return (
-    <div style={col({ justifyContent: "space-between" })}>
+    <div style={col({ gap: 24 })}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>How the <B>{q.total}</B> people who answered are spread across the three statuses.</span>
         <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
@@ -256,6 +234,55 @@ function GroupsForm({ p }) {
     <div style={col({ gap: 8, justifyContent: "space-between" })}>
       <div style={{ display: "flex", flexDirection: "column", height: Math.min(236, p.rows.length * 34 + 22) }}><GroupBars rows={p.rows} /></div>
       <span style={{ ...muted11, fontSize: 10 }}>{p.axisLabel}{p.hidden ? ` · ${p.hidden} group${p.hidden === 1 ? "" : "s"} under 5 people not shown` : ""}</span>
+    </div>
+  );
+}
+
+/* ---- Composition (Figma 11318:27838 and the 1x1s beside it) ----------------------- */
+/* Who is in the organisation: a ring of one grouping with the axis icon and name inside and "Largest Group …" under it
+   (2x2); a few groups on a 1x1 are headcount tiles over a proportion bar, many groups a small ring and the same line. */
+const largestText = (p) => (p.largest ? `${p.largest.group} (${p.largest.pct}%)` : "No one to show");
+const quiet12 = { fontSize: 11, lineHeight: "12px", color: ds.text.quaternary };
+function CompositionForm({ p, size }) {
+  const rows = p.rows;
+  if (!rows.length) return <span style={muted11}>No one to show yet.</span>;
+  if (size === "2x2") {
+    return (
+      <div style={col({ alignItems: "center", gap: 6 })}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
+          <DonutChart axisKey={p.axis} label={p.axisLabel} rows={rows} size={180} />
+        </div>
+        <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
+          <span style={quiet12}>Largest Group</span>
+          <span style={quiet12}>{largestText(p)}</span>
+        </div>
+      </div>
+    );
+  }
+  if (rows.length <= 4) {
+    return (
+      <div style={col({ justifyContent: "space-between" })}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          {rows.map((r, i) => (
+            <div key={r.group} title={`${r.group}: ${r.n} people (${r.pct}%)`} style={{ minWidth: 0, borderLeft: `2px solid ${segmentColor(p.axis, i)}`, padding: "2px 0 2px 6px", display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontSize: 11, lineHeight: "12px", color: ds.text.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.group}</span>
+              <span style={{ fontSize: 16, lineHeight: "20px", fontWeight: 700, color: ds.text.primary, fontVariantNumeric: "tabular-nums" }}>{r.n}</span>
+            </div>
+          ))}
+        </div>
+        <div role="img" aria-label={rows.map((r) => `${r.group} ${r.pct}%`).join(", ")} style={{ display: "flex", gap: 1, height: 8, borderRadius: 9999, overflow: "hidden" }}>
+          {rows.map((r, i) => <span key={r.group} style={{ flex: r.n, background: segmentColor(p.axis, i) }} />)}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={col({ alignItems: "center", gap: 6 })}>
+      <DonutChart axisKey={p.axis} label={p.name} rows={rows} size={75} bare />
+      <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
+        <span style={quiet12}>Largest Group</span>
+        <span style={{ ...quiet12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{largestText(p)}</span>
+      </div>
     </div>
   );
 }
@@ -465,7 +492,7 @@ function StoryForm({ p }) {
 
 /* ---- Index ---------------------------------------------------------------- */
 function IndexForm({ p, size }) {
-  return <div style={col({ alignItems: "center", justifyContent: "center", overflow: "hidden" })}>{p.dimension ? <DimensionIndex dimension={p.dimension} variant={size} /> : <IndexRing variant={size} overall={p.value} />}</div>;
+  return <div style={col({ justifyContent: "center", overflow: "hidden" })}>{p.dimension ? <DimensionIndex dimension={p.dimension} variant={size} /> : <IndexRing variant={size} overall={p.value} />}</div>;
 }
 
 /* ---- Team ---------------------------------------------------------------- */
@@ -653,11 +680,16 @@ function WhatIfForm({ p }) {
 }
 
 /* ---- Heat strip ------------------------------------------------------------------ */
+/* The card's content box is ~286px: a 16px header row, then rows. More than 11 parts can't fit, so the weakest
+   9 (the ones worth a look) show and a "N more" line says the rest exist (the same line the Parts widget uses). */
+const HEAT_FIT = 11;
 function HeatForm({ p }) {
-  const rows = p.rows;
-  const rowH = rows.length > 10 ? 21 : 24;
+  const all = p.rows;
+  const capped = all.length > HEAT_FIT;
+  const rows = capped ? all.slice(-(HEAT_FIT - 2)) : all;
+  const rowH = 22;
   return (
-    <div style={col({ gap: 4, minHeight: 0 })}>
+    <div style={col({ gap: 4, minHeight: 0, overflow: "hidden" })}>
       <div style={{ display: "grid", gridTemplateColumns: `minmax(0, 1fr) repeat(${p.labels.length}, 44px)`, gap: 4, paddingBottom: 2 }}>
         <span />
         {p.labels.map((l) => <span key={l} style={{ fontSize: 10, color: T.gray500, textAlign: "center" }}>{l}</span>)}
@@ -670,6 +702,7 @@ function HeatForm({ p }) {
           ))}
         </div>
       ))}
+      {capped && <MoreLine>{all.length - rows.length} more {p.noun}s</MoreLine>}
     </div>
   );
 }
@@ -719,7 +752,7 @@ function MomentumForm({ p, size }) {
   );
 }
 
-const RENDER = { story: StoryForm, index: IndexForm, team: TeamForm, versus: VersusForm, duel: DuelForm, check: CheckForm, whatif: WhatIfForm, heat: HeatForm, momentum: MomentumForm, score: Score, gauge: GaugeForm, status: StatusForm, history: HistoryForm, parts: PartsForm, people: PeopleForm, groups: GroupsForm, focus: FocusForm, movers: MoversForm, spread: SpreadForm, goal: GoalForm };
+const RENDER = { composition: CompositionForm, story: StoryForm, index: IndexForm, team: TeamForm, versus: VersusForm, duel: DuelForm, check: CheckForm, whatif: WhatIfForm, heat: HeatForm, momentum: MomentumForm, score: Score, gauge: GaugeForm, status: StatusForm, history: HistoryForm, parts: PartsForm, people: PeopleForm, groups: GroupsForm, focus: FocusForm, movers: MoversForm, spread: SpreadForm, goal: GoalForm };
 
 export default function SubjectBody({ spec }) {
   const { form, payload, size } = spec;

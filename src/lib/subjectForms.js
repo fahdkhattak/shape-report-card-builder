@@ -57,7 +57,13 @@ function groupData(s, axisKey) {
   return { axis: axis.key, axisLabel: axis.label, rows, hidden: all.filter((g) => g.hidden).length };
 }
 
-/* Which group a Team widget is about: the one asked for, else the biggest department. */
+/* The grouping a Composition widget shows: the one asked for, else Department (the design's own example). Names
+   follow the design where it has one ("Departments Composition", "Work Composition", "Employment Duration"). */
+const COMPOSITION_NAME = { department: "Departments", workModel: "Work", tenure: "Employment Duration", location: "Site" };
+const axisOf = (o) => GROUP_AXES.find((a) => a.key === o?.axis) || GROUP_AXES.find((a) => a.key === "department") || GROUP_AXES[0];
+const compositionName = (a) => COMPOSITION_NAME[a.key] || a.label;
+
+/* Which group a Group widget is about: the one asked for, else the biggest department. */
 function pickGroup(s, o) {
   const axes = GROUPS_BY_AXIS();
   const ax = axes.find((a) => a.key === o?.axis) || axes.find((a) => a.key === "department") || axes[0];
@@ -99,9 +105,9 @@ export const FORMS = [
     },
   },
   {
-    id: "gauge", name: "Gauge", sizes: ["1x1", "2x2"], blocked: () => null,
+    id: "gauge", name: "Ring", sizes: ["1x1", "2x2"], blocked: () => null,
     title: (s) => (s.kind === "overall" ? "Org Score" : s.label),
-    why: "The score on a dial with the 60 and 80 status lines marked, so you can see how close it is to the next band.",
+    why: "The score as a ring with the 60 and 80 status lines marked, so you can see how close it is to the next band.",
     build: (s) => base(s),
   },
   {
@@ -145,6 +151,16 @@ export const FORMS = [
     title: (s, o) => `${nm(s)} by ${groupData(s, o?.axis).axisLabel}`,
     why: "How each group scores on this topic, on one 0–100 scale. Groups under 5 people are never shown.",
     build: (s, o) => ({ ...base(s), ...groupData(s, o?.axis) }),
+  },
+  {
+    id: "composition", name: "Composition", sizes: ["1x1", "2x2"], blocked: () => null, options: ["axis"],
+    title: (s, o) => `${compositionName(axisOf(o))} Composition`,
+    why: "Who is in the organisation: how people split across one way of grouping them, and which group is biggest. It describes the people, not the topic's score.",
+    build: (s, o) => {
+      const axis = axisOf(o);
+      const rows = groupRows(axis.key, LAST).map((g) => ({ group: g.group, n: g.n, pct: g.pct }));
+      return { axis: axis.key, axisLabel: axis.label, name: compositionName(axis), rows, total: rows.reduce((a, r) => a + r.n, 0), largest: rows[0] || null };
+    },
   },
   {
     id: "focus", name: "Focus", sizes: ["1x1", "2x2"], blocked: needsScores,
@@ -212,9 +228,9 @@ export const FORMS = [
     build: (s) => ({ ...base(s), dimension: s.kind === "dimension" ? s.label : null }),
   },
   {
-    id: "team", name: "Team", sizes: ["1x1", "2x2"], blocked: needsScores, options: ["group"],
-    title: (s, o) => { const g = pickGroup(s, o); return `${g.group} ${g.axis === "department" ? "Team" : "Group"} Score${s.kind === "overall" ? "" : ` · ${s.label}`}`; },
-    why: "One team's (or group's) score, how it compares with the organisation, and how its people are spread. Groups under 5 people are never shown.",
+    id: "team", name: "Group", sizes: ["1x1", "2x2"], blocked: needsScores, options: ["group"],
+    title: (s, o) => { const g = pickGroup(s, o); return `${g.group} Group Score${s.kind === "overall" ? "" : ` · ${s.label}`}`; },
+    why: "One group's score (a department, a work model, a tenure band…), how it compares with the organisation, and how its people are spread. Groups under 5 people are never shown.",
     build: (s, o) => {
       const g = pickGroup(s, o), snap = groupSnapshot(g.axis, g.group, scoreFn(s));
       const org = s.series[LAST];
@@ -312,11 +328,11 @@ export const formById = (id) => FORMS.find((f) => f.id === id);
 
 /* ---- ranking: what is the data's job? ---------------------------------- */
 const BASE = {
-  overall: { score: 9, story: 4, index: 5, parts: 5, history: 4, momentum: 4, check: 4, heat: 4, whatif: 3, people: 3, status: 3, gauge: 3, groups: 3, focus: 2, movers: 2, spread: 2, profile: 2, team: 2, versus: 2, goal: 1 },
-  dimension: { score: 6, parts: 5, profile: 4, history: 4, index: 3, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, status: 3, gauge: 3, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
-  driver: { score: 6, history: 5, gauge: 4, status: 3, people: 3, momentum: 3, groups: 3, story: 2, check: 2, spread: 2, focus: 2, goal: 2, team: 1, versus: 1 },
-  cluster: { score: 6, parts: 5, duel: 5, profile: 4, history: 4, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, gauge: 3, status: 2, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
-  concept: { score: 6, history: 5, gauge: 4, status: 3, momentum: 3, story: 2, check: 2, goal: 1 },
+  overall: { score: 9, composition: 1, story: 4, index: 5, parts: 5, history: 4, momentum: 4, check: 4, heat: 4, whatif: 3, people: 3, status: 3, gauge: 3, groups: 3, focus: 2, movers: 2, spread: 2, profile: 2, team: 2, versus: 2, goal: 1 },
+  dimension: { score: 6, composition: 1, parts: 5, profile: 4, history: 4, index: 3, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, status: 3, gauge: 3, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
+  driver: { score: 6, composition: 1, history: 5, gauge: 4, status: 3, people: 3, momentum: 3, groups: 3, story: 2, check: 2, spread: 2, focus: 2, goal: 2, team: 1, versus: 1 },
+  cluster: { score: 6, composition: 1, parts: 5, duel: 5, profile: 4, history: 4, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, gauge: 3, status: 2, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
+  concept: { score: 6, composition: 1, history: 5, gauge: 4, status: 3, momentum: 3, story: 2, check: 2, goal: 1 },
 };
 const ASKS = [
   ["history", /trend|over time|history|across rounds|round by round|improv|declin/],
@@ -326,7 +342,8 @@ const ASKS = [
   ["movers", /mover|biggest change|gains|drops|risers|fallers|moved|what changed/],
   ["spread", /spread|distribution|histogram|range of|variation/],
   ["goal", /goal|target|on track|pace|reach \d+/],
-  ["gauge", /gauge|dial/],
+  ["composition", /composition|make-?up|who works|who is in|who are we|headcount|how many (people|employees)|split of people/],
+  ["gauge", /gauge|dial|\bring\b/],
   ["status", /status|flourish|struggl|striv/],
   ["profile", /radar|spider|profile|snapshot/],
   ["parts", /rank|top |worst|best|drivers|factors|breakdown|parts|what's behind|what is behind|contribut/],
@@ -345,6 +362,8 @@ export function rankSubjectForms(prompt, subject) {
   const p = (prompt || "").toLowerCase();
   const score = { ...(BASE[subject.kind] || BASE.dimension) };
   ASKS.forEach(([id, re]) => { if (re.test(p) && id in score) score[id] += 8; });
+  // "department composition" is about who is in a group, not how the group scores (which "department" alone would suggest).
+  if (/composition|make-?up|who is in|who works|who are we|headcount/.test(p) && "composition" in score) score.composition += 12;
   // A named group is a Team widget; two named groups are a Versus; two named topics are a Head to head.
   const groups = findGroups(prompt || "");
   if (groups.length === 1) score.team = (score.team || 0) + 14;
@@ -359,6 +378,9 @@ export function optionsFromPrompt(prompt) {
   const g = findGroups(prompt || "");
   if (g.length) { o.axis = g[0].axis; o.group = g[0].group; }
   if (g.length >= 2 && g[0].axis === g[1].axis) { o.a = g[0].group; o.b = g[1].group; }
+  // "Tenure composition", "work model make-up": the grouping is named, not asked for with "by".
+  const named = axisFromText((prompt || "").toLowerCase());
+  if (!o.axis && named && /composition|make-?up|who (is|works)|headcount/i.test(prompt || "")) o.axis = named;
   const lift = (prompt || "").toLowerCase().match(/(?:lift|raise|bring up|improve|fix)\D{0,24}?(\d)\b|weakest (\d)/);
   if (lift) o.lift = Number(lift[1] || lift[2]);
   return o;

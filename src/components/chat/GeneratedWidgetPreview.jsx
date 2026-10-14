@@ -30,7 +30,7 @@ const NATIVE = { "1x1": 164, "2x2": 344 };
 export const VIZ_OPTIONS = [
   { id: "metric", label: "Number" },
   { id: "trend", label: "Trend Line" },
-  { id: "gauge", label: "Gauge" },
+  { id: "gauge", label: "Ring" },
   { id: "bar", label: "Bar Chart" },
   { id: "ranking", label: "Ranked List" },
   { id: "radar", label: "Radar Chart" },

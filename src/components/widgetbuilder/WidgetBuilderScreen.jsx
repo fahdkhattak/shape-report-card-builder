@@ -3,6 +3,7 @@ import { font } from "../../lib/tokens.js";
 import WidgetBuilderV1 from "./WidgetBuilderV1.jsx";
 import WidgetBuilderV2 from "./WidgetBuilderV2.jsx";
 import { StoryStyleContext } from "../scope/stories/storyStyle.js";
+import { PreviewWidthProvider } from "./PreviewWidth.jsx";
 
 const VERSION_KEY = "widget-builder-version";
 const STYLE_KEY = "widget-builder-story-style";
@@ -38,7 +39,9 @@ export default function WidgetBuilderScreen(props) {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", fontFamily: font }}>
       <StoryStyleContext.Provider value={storyStyle}>
-        <Screen {...props} version={version} onVersionChange={choose} storyStyle={storyStyle} onStoryStyleChange={chooseStyle} />
+        <PreviewWidthProvider>
+          <Screen {...props} version={version} onVersionChange={choose} storyStyle={storyStyle} onStoryStyleChange={chooseStyle} />
+        </PreviewWidthProvider>
       </StoryStyleContext.Provider>
     </div>
   );

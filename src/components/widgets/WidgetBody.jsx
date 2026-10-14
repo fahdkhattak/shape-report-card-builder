@@ -1,4 +1,5 @@
 import { T } from "../../lib/tokens.js";
+import { ds } from "../../lib/ds.js";
 import {
   BigNumber,
   TrendPill,
@@ -315,17 +316,22 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       if (formIndex === 2) {
         const CATEGORIES = [["People", ["Gender"]], ["Organisation", ["Department", "Job Level"]], ["Employment", ["Tenure", "Employment Status", "Work Model"]], ["Locations", ["Location"]]];
         return (
-          <div style={col({ gap: 10, overflow: "hidden" })}>
+          <div style={col({ gap: 12, overflow: "hidden" })}>
             {CATEGORIES.map(([title, axes]) => {
               const g = groups.find((x) => axes.includes(x.axis));
               if (!g) return null;
               return (
-                <div key={title} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: T.accent }}>{title}</span>
-                  <FocusRow name={g.group} value={g.value} tag={g.axis} delta={g.delta} sub={`${g.struggling}/${g.n} (${Math.round((g.struggling / g.n) * 100)}%) people are struggling`} />
+                <div key={title} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: 13, lineHeight: "16px", fontWeight: 400, color: ds.text.accent }}>{title}</span>
+                  <FocusRow name={g.group} value={g.value} tag={g.axis} delta={g.delta} sub={`${g.struggling}/${g.n} (${Math.round((g.struggling / g.n) * 100)}%) employees are struggling`} />
                 </div>
               );
             })}
+            {(() => {
+              const shown = CATEGORIES.filter(([, axes]) => groups.some((x) => axes.includes(x.axis))).length;
+              const more = groups.filter((g) => g.value < FLOURISHING_AT).length - shown;
+              return more > 0 ? <MoreLine>{more} more Areas</MoreLine> : null;
+            })()}
           </div>
         );
       }

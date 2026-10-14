@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { T, font, radius, band } from "../../../lib/tokens.js";
 import { ROUNDS } from "../../../lib/dataset.js";
 import { LAST, roundName, fmtDate, fmtMonth, groupGaps, connections, priorityPoints, responseCoverage, scoreSpread, brightSpots, withinReach, rankAmong, SUPPRESS_BELOW } from "../../../lib/scopeData.js";
@@ -7,6 +7,7 @@ import { StoryCard, noteText, bodyText } from "./StoryCard.jsx";
 import { ViewSwitch, CopyTable } from "./controls.jsx";
 import { DataTable, ScoreCell, tableText } from "./DataTable.jsx";
 import { useStoryStyle } from "./storyStyle.js";
+import { useElementWidth } from "./storyWidth.js";
 import { FLOURISHING_AT, STRIVING_AT, nextLine } from "../../../lib/bands.js";
 
 /* ================================================================== */
@@ -272,10 +273,10 @@ export function PriorityMapStoryLegacy({ items, noun = "Driver" }) {
 
 /* ---- Goal & Pace ------------------------------------------------------ */
 const nextTarget = (v) => nextLine(v) ?? 90;
-export function GoalStory({ label, series }) {
+export function GoalStory({ label, series, initialTarget }) {
   const refined = useStoryStyle() === "refined";
   const cur = series[LAST];
-  const [target, setTarget] = useState(nextTarget(cur));
+  const [target, setTarget] = useState(initialTarget ?? nextTarget(cur));
   const t = Math.max(1, Math.min(100, Number(target) || 1));
   const pace = (series[LAST] - series[0]) / Math.max(1, LAST);
   const gap = t - cur;
@@ -284,10 +285,22 @@ export function GoalStory({ label, series }) {
   const eta = k ? new Date(new Date(ROUNDS[LAST].date).getTime() + k * msPerRound) : null;
 
   const m = LAST + Math.min(k ?? 3, 8);
-  const W = 776, H = 240, PL = 48, PR = 24, PT = 20, PB = 36;
+  // The chart draws at the width it is given (never a 776px picture shrunk to fit), so its text stays 11 to 12px on a phone.
+  const boxRef = useRef(null);
+  const bw = useElementWidth(boxRef, 776);
+  const compact = bw < 520;
+  const W = Math.max(240, Math.min(776, bw)), H = compact ? 220 : 240, PL = compact ? 32 : 48, PR = compact ? 16 : 24, PT = 24, PB = 36;
   const x = (i) => PL + (i / m) * (W - PL - PR);
-  const y = (v) => PT + (1 - v / 100) * (H - PT - PB);
+  // The axis is zoomed to what matters (the past scores, the target and the estimate, with room round them), so a move of
+  // a few points is a visible slope instead of a flat line on a 0 to 100 scale. The axis says where it starts.
+  const reach = k ? Math.min(100, cur + pace * Math.min(k, 8)) : cur;
+  const all = [...series, t, reach];
+  const lo = Math.max(0, Math.floor((Math.min(...all) - 8) / 10) * 10), hi = Math.min(100, Math.ceil((Math.max(...all) + 8) / 10) * 10);
+  const tickStep = hi - lo > 50 ? 20 : 10;
+  const ticks = Array.from({ length: Math.floor((hi - lo) / tickStep) + 1 }, (_, i) => lo + i * tickStep);
+  const y = (v) => PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB);
   const proj = k ? [[x(LAST), y(cur)], [x(LAST + Math.min(k, 8)), y(Math.min(100, cur + pace * Math.min(k, 8)))]] : null;
+
 
   let headline;
   if (gap <= 0) headline = <>You're already at or above <b>{t}</b>.</>;
@@ -317,8 +330,9 @@ export function GoalStory({ label, series }) {
           </div>
         ))}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", maxWidth: W, margin: "0 auto" }}>
-        {[0, 25, 50, 75, 100].map((g) => (
+      <div ref={boxRef} data-part="goal-chart" style={{ width: "100%", maxWidth: 776, margin: "0 auto" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: "block", maxWidth: "100%" }}>
+        {ticks.map((g) => (
           <g key={g}><line x1={PL} x2={W - PR} y1={y(g)} y2={y(g)} stroke={T.gray75} /><text x={PL - 8} y={y(g)} textAnchor="end" dominantBaseline="middle" fontSize="11" fontFamily={font} fill={T.gray500}>{g}</text></g>
         ))}
         <line x1={PL} x2={W - PR} y1={y(t)} y2={y(t)} stroke={T.gray800} strokeWidth="1.5" strokeDasharray="6 4" />
@@ -328,7 +342,8 @@ export function GoalStory({ label, series }) {
         {series.map((v, i) => <g key={i}><circle cx={x(i)} cy={y(v)} r="3.5" fill="#908d8e" /><text x={x(i)} y={y(v) - 10} textAnchor="middle" fontSize="12" fontWeight="700" fontFamily={font} fill={band(v).cs}>{v}</text><text x={x(i)} y={H - 10} textAnchor="middle" fontSize="11" fontFamily={font} fill={T.gray500}>{fmtMonth(ROUNDS[i].date)}</text></g>)}
         {proj && <><circle cx={proj[1][0]} cy={proj[1][1]} r="4" fill={T.white} stroke={T.teamBlue} strokeWidth="2" /><text x={proj[1][0]} y={H - 10} textAnchor="end" fontSize="11" fontFamily={font} fill={T.teamBlue}>{k > 8 ? `+${Math.min(k, 8)} rounds` : `≈ ${fmtMonth(eta)}`}</text></>}
       </svg>
-      <p style={noteText}>A straight line from past rounds, not a forecast — real results depend on what changes. Only {ROUNDS.length} rounds exist, so treat it as a rough guide.</p>
+      </div>
+      <p style={noteText}>A straight line from past rounds, not a forecast — real results depend on what changes. Only {ROUNDS.length} rounds exist, so treat it as a rough guide. The chart's scale runs from {lo} to {hi}.</p>
     </StoryCard>
   );
 }
