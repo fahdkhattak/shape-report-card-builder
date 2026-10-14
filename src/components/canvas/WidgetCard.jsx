@@ -26,8 +26,9 @@ import { DotsButton, WidgetMenu } from "./WidgetMenu.jsx";
 /* ================================================================== */
 const LIFT = { type: "spring", bounce: 0.3, duration: 0.35 };
 const PRESS = { type: "spring", bounce: 0.45, duration: 0.4 };
+const GLIDE = { type: "spring", bounce: 0, duration: 0.5 }; // the report reflow (same spring as the Scope, CanvasScreen.jsx)
 
-export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onRename, dragProps, onOpenModal, selected = false, startHere = false }) {
+export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onRename, dragProps, onOpenModal, selected = false, startHere = false, layoutKey }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [hover, setHover] = useState(false);
@@ -45,17 +46,22 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
   return (
     <div
       {...dragProps}
+      data-widget-id={widget.id}
       style={{ gridColumn: `span ${span.col}`, gridRow: `span ${span.row}`, width: pxForSpan(span.col), height: pxForSpan(span.row), position: "relative", zIndex: menuOpen ? 5 : undefined }}
     >
       <motion.div
         ref={setCardEl}
+        // When the report changes its column count (a Scope opening or closing), each card glides from its old cell to
+        // its new one instead of jumping. Only then: `layoutKey` changes with the column count and the card's place.
+        layout="position"
+        layoutDependency={layoutKey}
         onClick={() => !renaming && onOpenModal(widget)}
         onHoverStart={() => setHover(true)}
         onHoverEnd={() => setHover(false)}
         initial={false}
         animate={{ y: raised && !selected ? -2 : 0 }}
         whileTap={renaming ? undefined : { scale: 0.97, y: 0, transition: { duration: 0.08 } }}
-        transition={PRESS}
+        transition={{ ...PRESS, layout: GLIDE }}
         style={{
           width: "100%", height: "100%",
           background: surface.background || T.white,

@@ -6,7 +6,8 @@ import { ds, dsBand, dsText, dsSpace, dsRadius } from "../../../lib/ds.js";
 import { ROUNDS } from "../../../lib/dataset.js";
 import { LAST, fmtMonth } from "../../../lib/scopeData.js";
 import { StoryCard } from "./StoryCard.jsx";
-import { ViewSwitch, CopyTable } from "./controls.jsx";
+import { ViewSwitch, CopyTable, PillTabs } from "./controls.jsx";
+import { ClassicHistoryCards, ClassicChanges } from "./ScoreHistoryClassic.jsx";
 import { DataTable, ScoreCell, tableText } from "./DataTable.jsx";
 import { HistoryCards } from "./HistoryCards.jsx";
 import HistoryLineChart from "./HistoryLineChart.jsx";
@@ -28,6 +29,7 @@ import { ShowAll } from "./BreakdownStory.jsx";
 /* Story is already about change over rounds.                              */
 /* ================================================================== */
 const spring = { type: "spring", bounce: 0, duration: 0.35 };
+const LOOK_KEY = "score-history-style";
 const refinedEyebrow = { fontSize: 13, fontWeight: 600, color: T.gray600, fontFamily: font };
 
 export default function ScoreHistoryStory({ title = "Your Score History", line = "Explore your past performance and trends in this detailed score history.", overall, items, noun = "Explorer" }) {
@@ -36,6 +38,9 @@ export default function ScoreHistoryStory({ title = "Your Score History", line =
   const [sel, setSel] = useState(LAST);
   const [open, setOpen] = useState(null); // label of the expanded row
   const [, setHoverRow] = useState(null);
+  // New | Previous: the tidied layout or the one before it (ScoreHistoryClassic.jsx). Remembered across Scopes.
+  const [look, setLook] = useState(() => { try { return localStorage.getItem(LOOK_KEY) === "previous" ? "previous" : "new"; } catch { return "new"; } });
+  const chooseLook = (v) => { setLook(v); setOpen(null); try { localStorage.setItem(LOOK_KEY, v); } catch { /* storage unavailable */ } };
 
   const rows = items.map((it) => ({ label: it.label, values: it.values, prev: sel > 0 ? it.values[sel - 1] : null, cur: it.values[sel] }));
   const counts = rows.reduce((c, r) => { if (r.prev == null) return c; const d = r.cur - r.prev; c[d > 0 ? "up" : d < 0 ? "down" : "same"] += 1; return c; }, { up: 0, down: 0, same: 0 });
@@ -46,13 +51,23 @@ export default function ScoreHistoryStory({ title = "Your Score History", line =
     { key: "label", label: noun },
     ...ROUNDS.map((r, i) => ({ key: `r${i}`, label: fmtMonth(r.date), align: "right", render: (row) => <ScoreCell v={row.values[i]} />, text: (row) => row.values[i] ?? "" })),
   ];
-  const controls = [<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(cols, matrix)} />];
+  const controls = [
+    view === "chart" && <PillTabs key="l" label="Layout" tone="default" tabs={["New", "Previous"]} value={look === "new" ? "New" : "Previous"} onChange={(t) => chooseLook(t === "New" ? "new" : "previous")} />,
+    <ViewSwitch key="v" view={view} onChange={setView} />,
+    view === "table" && <CopyTable key="c" getText={() => tableText(cols, matrix)} />,
+  ];
 
   return (
     <StoryCard title={title} controls={controls} line={line}>
       {view === "table" ? (
         <DataTable columns={cols} rows={matrix} />
       ) : (
+        look === "previous" ? (
+          <>
+            <ClassicHistoryCards values={overall} sel={sel} onSelect={setSel} />
+            <ClassicChanges rows={rows} sel={sel} noun={noun} open={open} onToggle={(l) => setOpen((o) => (o === l ? null : l))} />
+          </>
+        ) : (
         <>
           <HistoryCards values={overall} sel={sel} onSelect={(i) => { setSel(i); }} />
           <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[4], fontFamily: font, paddingTop: dsSpace[4] }}>
@@ -69,6 +84,7 @@ export default function ScoreHistoryStory({ title = "Your Score History", line =
           </div>
           <Dumbbell rows={rows} noun={noun} onHover={setHoverRow} open={open} onToggle={(l) => setOpen((o) => (o === l ? null : l))} />
         </>
+        )
       )}
     </StoryCard>
   );

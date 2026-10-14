@@ -37,7 +37,7 @@ function useCountUp(to, delay, skip) {
   return n;
 }
 
-export default function ExplorerRingCard({ name, value, selected, onClick, index = 0 }) {
+export default function ExplorerRingCard({ name, value, selected, onClick, index = 0, layoutKey }) {
   const [hover, setHover] = useState(false);
   const reduce = useReducedMotion();
   const b = dsBand(value);
@@ -56,7 +56,9 @@ export default function ExplorerRingCard({ name, value, selected, onClick, index
       initial={false}
       animate={{ y: hover && !selected ? -2 : 0 }}
       whileTap={{ scale: 0.97, y: 0, transition: { duration: 0.08 } }}
-      transition={PRESS}
+      layout="position"
+      layoutDependency={layoutKey}
+      transition={{ ...PRESS, layout: { type: "spring", bounce: 0, duration: 0.5 } }}
       style={{
         width: 164, height: 164, boxSizing: "border-box", padding: 16, background: ds.surface.general.card, borderRadius: radius.widget, cursor: "pointer", fontFamily: font,
         border: `1px solid ${selected ? ds.border.strong : ds.border.secondary}`, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 12,

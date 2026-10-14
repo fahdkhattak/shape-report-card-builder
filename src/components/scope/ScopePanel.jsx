@@ -119,6 +119,9 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
   // one layer before it closes the Scope.
   const layers = useLayerStack(widget.id);
   const scrollRef = useRef(null);
+  const firstWidget = useRef(widget.id);
+  // A different widget's Scope starts at its top, not wherever the last one was scrolled to.
+  useLayoutEffect(() => { if (scrollRef.current && firstWidget.current !== widget.id) scrollRef.current.scrollTop = 0; }, [widget.id]);
   const savedScroll = useRef(0);
   const nav = { depth: layers.depth, open: (l) => { savedScroll.current = scrollRef.current?.scrollTop || 0; layers.push(l); } };
   useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = layers.depth ? 0 : savedScroll.current; }, [layers.depth]);
@@ -156,9 +159,11 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
         <StoryStyleContext.Provider value={storyStyle}>
         <div style={{ zoom: zoom / DEFAULT_ZOOM, display: "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16, maxWidth: 808, margin: "0 auto" }}>
           {layers.layer && <LayerBody layer={layers.layer} />}
-          <div style={{ display: layers.depth ? "none" : "contents" }}>
+          {/* Switching to another widget's Scope: the new content settles in (a short fade and a 6px rise) from the top
+              of the pane. The first open has no fade; the sheet's own slide carries that. */}
+          <motion.div key={widget.id} initial={firstWidget.current === widget.id ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: layers.depth ? "none" : "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16 }}>
           {widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
-          </div>
+          </motion.div>
         </div>
         </StoryStyleContext.Provider>
         </ScopeNavContext.Provider>

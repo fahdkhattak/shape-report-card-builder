@@ -657,6 +657,10 @@ very bottom) and Explorers by Status was "a big chunk of RAG" (three tinted bloc
   with the ticks once on top and soft gridlines, a hollow dot for before and a solid status-coloured dot for now; no tooltip, no
   chevron column (the numbers are on every row; the whole row tints on hover, `.sh-row`). Phone: track under the name line, a
   single hairline instead of gridlines, five rows then Show all. Desktop shows 12 before Show all (45 Drivers on Factors).
+  **A New | Previous switch** (pill tabs in the Story's controls, chart view only, remembered in `score-history-style`, default
+  New) brings back the layout from before this pass: `ScoreHistoryClassic.jsx` (`ClassicHistoryCards` + `ClassicChanges`), i.e.
+  the separate round cards and the 0–100 dumbbell with right-aligned names, change pills, hover tooltip, and its phone layout.
+  Selection and the expanded row are shared; switching closes an open row.
 - **"Add a story" is always visible** in the Widget Builder's side panel (Workbench left panel, Original's wide rail): the outline's
   list scrolls on its own and the button is pinned under it (`ScopeOutline.jsx`). Inline (narrow) it still follows the list.
 
@@ -2994,6 +2998,26 @@ Product direction, standing rules from here on:
   `text-strong`), header box always two lines tall so every ring lines up. Character (ours): on arrival each arc sweeps to its
   score on a spring while the number counts up, staggered 50ms per card; hover lifts the card and swells the ring 5%; press
   squashes like the widgets. Reduced motion skips the sweep and count.
+
+### Scope open / close motion (the "janky" fix)
+
+Why it was janky: the report measured its own width with a ResizeObserver on every frame while the Scope's width sprang
+open, so the grid re-flowed 6 → 5 → 4 → 3 → 2 mid-motion (and re-sorted into each column count's designed order), and the
+Scope was uncovered left to right like a wipe while fading in. Now (`CanvasScreen.jsx`):
+- **Widths come from the destination, not from measuring the animation.** Only the area right of the nav rail is measured;
+  `mainW` = area − the open side panel (chat `chatW` or Library 516), the report = `mainW` − the Scope. `cols` is
+  `colsForWidth()` of that, so it changes **once**, at the start of the motion. (`mainW` is no longer state.)
+- **One spring for everything** (`SCOPE_SPRING`, bounce 0, 0.5s): the Scope's space opening, the report card's width
+  (`motion.div`, the grid centred and clipped inside it while it moves) and every widget gliding to its new cell
+  (`WidgetCard` / `ExplorerRingCard` get `layout="position"` with `layoutDependency` = column count + position, so they only
+  animate on a reflow, never on hover or scroll; the press spring stays separate).
+- **The Scope slides**: its sheet is pinned to the right edge at full width inside the animating space, so it moves in from
+  the edge and leaves the same way; no opacity fade.
+- **Switching widgets with the Scope open**: the new content settles in (short fade + 6px rise) and the pane starts at its
+  top (`ScopePanel.jsx`); the first open has no fade.
+- After opening, if the reflow moved the picked widget out of view, the report scrolls it to the centre (`data-widget-id`).
+- Verified by sampling every 40–50ms: columns switch once, card / Scope / widgets move continuously on the same curve, no
+  console errors. Reduced Motion is respected by the app-wide `MotionConfig`.
 
 ### Report: protected width, minimal scrollbars, 2–6 columns, device preview (phone 14679:86632 + iPhone Duo)
 

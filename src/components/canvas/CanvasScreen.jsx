@@ -41,6 +41,10 @@ const REPORT_MIN_W = 536; // 2 columns (344) + 32px card padding + 64px margin, 
 const SCOPE_MIN_W = 392; // a 344px story + 24px of padding each side
 const SCOPE_MAX_W = 1000; // an 808px story + 96px of padding each side
 const CHAT_W = 436; // fixed, per the Chat / Thread frames
+const LIBRARY_W = 516; // LibraryPanel's fixed width
+// One spring for everything that moves when a Scope opens or closes: the Scope sliding, the report card narrowing and
+// its widgets gliding to their new cells. Critically damped (no bounce: nothing here was thrown), long enough to read.
+const SCOPE_SPRING = { type: "spring", bounce: 0, duration: 0.5 };
 // Chat + report + Scope can share the screen only when each fits at its minimum
 // (436 + 536 + 392); below that, opening one closes the other.
 const COEXIST_MIN_W = CHAT_W + REPORT_MIN_W + SCOPE_MIN_W;
@@ -70,10 +74,8 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   const [dragOverCanvas, setDragOverCanvas] = useState(false);
   const dragData = useRef(null);
   const scrollRef = useRef(null);
-  const [cols, setCols] = useState(6);
   const pushedChecklistRef = useRef(false);
   const mainRef = useRef(null);
-  const [mainW, setMainW] = useState(1200);
   const [scopeId, setScopeId] = useState(null);
   const [reportLayer, setReportLayer] = useState(null); // null = the report itself, "explorers" = one layer deep (see below)
   const [scopeExpanded, setScopeExpanded] = useState(false);
@@ -87,22 +89,12 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   const [device, setDevice] = useState("desktop");
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const update = () => setCols(colsForWidth(el.clientWidth - (report ? REPORT_GRID_CHROME : GRID_CHROME)));
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [libCollapsed, chatOpen, scopeId, scopeExpanded, scopeCustomW, report, device]); // device: the report remounts when a preview closes
-
-  useEffect(() => {
     const el = mainRef.current, area = areaRef.current;
     if (!el || !area) return;
-    const ro = new ResizeObserver(() => { setMainW(el.clientWidth); setAreaW(area.clientWidth); });
-    setMainW(el.clientWidth);
+    // Only the area right of the nav rail is measured. The report's own width is worked out from it (see `mainW`
+    // below), so a Scope or a side panel springing open never re-measures — and never re-lays out — every frame.
+    const ro = new ResizeObserver(() => setAreaW(area.clientWidth));
     setAreaW(area.clientWidth);
-    ro.observe(el);
     ro.observe(area);
     return () => ro.disconnect();
   }, [device]); // the main column remounts when a device preview closes
@@ -146,7 +138,17 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   // replaces both.
   const closeScope = () => { setScopeId(null); setScopeExpanded(false); };
   const canCoexist = areaW >= COEXIST_MIN_W;
-  const openScope = (w) => { if (w.id === scopeId) { closeScope(); return; } if (!canCoexist) setChatOpen(false); setChatExpanded(false); setLibCollapsed(true); setScopeId(w.id); };
+  const openScope = (w) => {
+    if (w.id === scopeId) { closeScope(); return; }
+    if (!canCoexist) setChatOpen(false);
+    setChatExpanded(false); setLibCollapsed(true); setScopeId(w.id);
+    // Once the report has settled into its new columns, bring the picked widget into view if the reflow moved it out.
+    setTimeout(() => {
+      const el = scrollRef.current?.querySelector(`[data-widget-id="${CSS.escape(String(w.id))}"]`);
+      const box = scrollRef.current?.getBoundingClientRect(), r = el?.getBoundingClientRect();
+      if (el && box && (r.top < box.top + 40 || r.bottom > box.bottom)) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 520);
+  };
   // The Explorers widget doesn't open a Scope — it takes the whole report one
   // layer deeper, to the 12 Explorers (Figma 984qJvMt7fCHASYHRwgrab,
   // 14531:9772); each Explorer then opens its own Scope. Changing layer closes
@@ -190,6 +192,29 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
     dragData.current = null;
   };
 
+  const scopeWidget = scopeId ? widgets.find((w) => w.id === scopeId) || explorerCards.find((w) => w.id === scopeId) || null : null;
+  // The Scope's cards top out at 808px (+96px padding each side = 1000px), so
+  // once the Scope has that much, every extra pixel goes to the report (min 536).
+  // The report keeps at least REPORT_MIN_W (2 columns + margins); the Scope takes
+  // the rest, up to SCOPE_MAX_W. Past that, extra width goes back to the report,
+  // which then reflows to 4 or 6 columns. A resized Scope stays within the same
+  // bounds (and never squeezes the report under its minimum).
+  // Widths are worked out from where the layout is going, not measured while it animates: the main column is the area
+  // minus the open side panel (chat or Library), and the report is that minus the Scope. The report picks its column
+  // count from its final width once, at the start of the motion, and its widgets glide there (WidgetCard `layout`),
+  // instead of the grid jumping 6 → 5 → 4 → 3 → 2 as the Scope's width springs open.
+  const chatW = chatExpanded ? areaW : Math.max(320, Math.min(CHAT_W, areaW - REPORT_MIN_W));
+  const leftW = chatOpen ? chatW : !libCollapsed ? LIBRARY_W : 0;
+  const mainW = Math.max(0, areaW - leftW);
+  const scopeMaxW = Math.max(0, Math.min(SCOPE_MAX_W, mainW - REPORT_MIN_W));
+  const scopeMinW = Math.min(SCOPE_MIN_W, scopeMaxW);
+  const clampScope = (w) => Math.max(scopeMinW, Math.min(scopeMaxW, w));
+  const scopeW = scopeExpanded ? mainW : scopeCustomW != null ? clampScope(scopeCustomW) : scopeMaxW;
+  // (The chat is 436px, Figma node 14463:12084, but yields to the report's 536px minimum, down to 320px; expanded, it
+  // fills the whole area. Worked out above.)
+  const reportW = scopeWidget && !scopeExpanded ? mainW - scopeW : mainW;
+  const cols = colsForWidth(reportW - (report ? REPORT_GRID_CHROME : GRID_CHROME));
+
   const gridWidth = CELL * cols + GAP * (cols - 1);
 
   // A report's widgets are re-ordered per column count (the design lays the
@@ -204,20 +229,6 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   // The phone shows 2 columns, in the report's own 2-column order.
   const mobileOrder = report?.layouts?.[2];
   const mobileWidgets = mobileOrder ? [...widgets].sort((a, b) => { const ia = mobileOrder.indexOf(a.familyId), ib = mobileOrder.indexOf(b.familyId); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); }) : widgets;
-  const scopeWidget = scopeId ? widgets.find((w) => w.id === scopeId) || explorerCards.find((w) => w.id === scopeId) || null : null;
-  // The Scope's cards top out at 808px (+96px padding each side = 1000px), so
-  // once the Scope has that much, every extra pixel goes to the report (min 536).
-  // The report keeps at least REPORT_MIN_W (2 columns + margins); the Scope takes
-  // the rest, up to SCOPE_MAX_W. Past that, extra width goes back to the report,
-  // which then reflows to 4 or 6 columns. A resized Scope stays within the same
-  // bounds (and never squeezes the report under its minimum).
-  const scopeMaxW = Math.max(0, Math.min(SCOPE_MAX_W, mainW - REPORT_MIN_W));
-  const scopeMinW = Math.min(SCOPE_MIN_W, scopeMaxW);
-  const clampScope = (w) => Math.max(scopeMinW, Math.min(scopeMaxW, w));
-  const scopeW = scopeExpanded ? mainW : scopeCustomW != null ? clampScope(scopeCustomW) : scopeMaxW;
-  // The chat is 436px (Figma node 14463:12084) but yields to the report's 536px
-  // minimum, down to 320px; expanded, it fills the whole area.
-  const chatW = chatExpanded ? areaW : Math.max(320, Math.min(CHAT_W, areaW - REPORT_MIN_W));
   const onScopeResizeStart = (e) => {
     e.preventDefault();
     const startX = e.clientX, startW = scopeW;
@@ -305,7 +316,9 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
             className="scroll-minimal"
             style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: report ? "40px 64px" : 28, background: T.gray50 }}
           >
-            <div style={{ background: T.white, borderRadius: radius.reportCard, padding: 32, border: `1px solid ${T.gray100}`, boxShadow: "0 22px 6px rgba(0,0,0,0.01), 0 14px 6px rgba(0,0,0,0.02), 0 8px 5px rgba(0,0,0,0.07), 0 3px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14)", width: gridWidth + 64, margin: report ? "0 auto" : undefined, boxSizing: "border-box" }}>
+            {/* The card's width springs to its new column count with the Scope; the grid inside is centred and
+                clipped while it does, and each widget glides to its new cell (WidgetCard's `layout`). */}
+            <motion.div initial={false} animate={{ width: gridWidth + 64 }} transition={SCOPE_SPRING} style={{ background: T.white, borderRadius: radius.reportCard, padding: 32, border: `1px solid ${T.gray100}`, boxShadow: "0 22px 6px rgba(0,0,0,0.01), 0 14px 6px rgba(0,0,0,0.02), 0 8px 5px rgba(0,0,0,0.07), 0 3px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14)", margin: report ? "0 auto" : undefined, boxSizing: "border-box", display: "flex", justifyContent: "center", overflow: "clip", overflowClipMargin: 24 }}>
               <AnimatePresence mode="wait" initial={false}>
                 {generating ? (
                   <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
@@ -313,7 +326,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
                   </motion.div>
                 ) : reportLayer === "explorers" ? (
                   <motion.div key="explorers-layer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
-                    {explorerCards.map((w, i) => <ExplorerRingCard key={w.id} index={i} name={w.dimension} value={w.value} selected={w.id === scopeId} onClick={() => openScope(w)} />)}
+                    {explorerCards.map((w, i) => <ExplorerRingCard key={w.id} layoutKey={cols} index={i} name={w.dimension} value={w.value} selected={w.id === scopeId} onClick={() => openScope(w)} />)}
                   </motion.div>
                 ) : widgets.length === 0 ? (
                   <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ width: gridWidth, height: 344, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.gray300, background: dragOverCanvas ? T.gray50 : "transparent", border: dragOverCanvas ? "none" : `2px dashed ${T.gray100}`, borderRadius: radius.widget, gap: 8, transition: "background 120ms ease" }}>
@@ -322,9 +335,9 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
                   </motion.div>
                 ) : (
                   <motion.div key="widgets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
-                    {displayWidgets.map((w) => (
+                    {displayWidgets.map((w, i) => (
                       <div key={w.id} onDragOver={(e) => e.preventDefault()} onDrop={() => onWidgetDrop(w.id)} style={{ display: "contents" }}>
-                        <WidgetCard widget={w} onChangeForm={changeForm} onEdit={startEdit} onRemove={removeWidget} onRename={renameWidget} onOpenModal={report ? openWidget : setModalWidget} selected={w.id === scopeId} startHere={!!report && w.familyId === "org-score"} dragProps={{ draggable: true, onDragStart: () => onWidgetDragStart(w.id) }} />
+                        <WidgetCard layoutKey={`${cols}:${i}`} widget={w} onChangeForm={changeForm} onEdit={startEdit} onRemove={removeWidget} onRename={renameWidget} onOpenModal={report ? openWidget : setModalWidget} selected={w.id === scopeId} startHere={!!report && w.familyId === "org-score"} dragProps={{ draggable: true, onDragStart: () => onWidgetDragStart(w.id) }} />
                       </div>
                     ))}
                     {dragOverCanvas ? (
@@ -337,19 +350,22 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </motion.div>
           </div>
           <ScrollThumb target={scrollRef} />
           </div>
           </div>
           <AnimatePresence>
             {scopeWidget && (
+              // The space opens at the same pace the sheet slides in: the sheet is pinned to the right edge at its full
+              // width, so it moves in from the edge (and leaves the same way) instead of being uncovered left to right.
+              // No fade: a solid sheet arriving reads cleaner than a translucent one. Same spring as the report.
               <motion.div
                 key="scope"
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: scopeW, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={resizingScope ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.35 }}
+                initial={{ width: 0 }}
+                animate={{ width: scopeW }}
+                exit={{ width: 0 }}
+                transition={resizingScope ? { duration: 0 } : SCOPE_SPRING}
                 style={{ flexShrink: 0, marginTop: 8, overflow: "hidden", position: "relative" }}
               >
                 {!scopeExpanded && (
@@ -362,7 +378,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
                     <div className="scope-resize-grip" />
                   </div>
                 )}
-                <div style={{ width: scopeW, height: "100%" }}>
+                <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: scopeW }}>
                   <ScopePanel widget={scopeWidget} width={scopeW} expanded={scopeExpanded} onToggleExpand={() => setScopeExpanded((v) => !v)} onClose={closeScope} />
                 </div>
               </motion.div>
