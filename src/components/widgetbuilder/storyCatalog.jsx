@@ -10,7 +10,7 @@ import CompositionStory from "../scope/stories/CompositionStory.jsx";
 import TrendStory from "../scope/stories/TrendStory.jsx";
 import ScoreHistoryStory from "../scope/stories/ScoreHistoryStory.jsx";
 import { ActionsStoryBar } from "../scope/stories/ActionStories.jsx";
-import { ResourceStory, UpgradePathStory } from "../scope/stories/AddOnStories.jsx";
+import { ResourceStory, UpgradePathStory, QuestionnaireStory } from "../scope/stories/AddOnStories.jsx";
 import SeverityBreakdownStory from "../scope/stories/SeverityBreakdown.jsx";
 import { orgSeverity } from "../../lib/wellbeing.js";
 import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
@@ -156,7 +156,12 @@ export const STORIES = [
   {
     id: "composition", name: "Composition", family: "Composition", purpose: "Who is represented, and how each group scores.", suggest: true,
     blocked: (s) => (s.scoreOf ? null : "Needs per-person scores for this topic"),
-    render: (s) => <CompositionStory scoreOf={s.scoreOf} line={`See who is in each group and how each scores on ${s.label}. Groups under 5 people are never shown.`} />,
+    render: (s) => <CompositionStory scoreOf={s.scoreOf} line={`See who is in each group and how each scores on ${s.label}. Groups under 5 people never show a score.`} />,
+  },
+  {
+    id: "composition-donut", name: "Composition (Donut)", family: "Composition", purpose: "Who is represented, as a donut beside a legend of every group with its size and score.",
+    blocked: (s) => (s.scoreOf ? null : "Needs per-person scores for this topic"),
+    render: (s) => <CompositionStory form="donut" scoreOf={s.scoreOf} line={`See who is in each group and how each scores on ${s.label}. Groups under 5 people never show a score.`} />,
   },
   {
     id: "trend", name: "Trend", family: "Trend", purpose: "How the measure has changed across rounds.", suggest: true,
@@ -207,8 +212,8 @@ export const STORIES = [
     render: () => <UpgradePathStory />,
   },
   { id: "citation", name: "Citation", family: "Citation", purpose: "Sources behind the insight.", blocked: () => "Needs traceable sources", render: () => null },
-  { id: "questionnaire", name: "Questionnaire", family: "Questionnaire", purpose: "A short set of related questions.", blocked: () => "Not designed yet", render: () => null },
-  { id: "video", name: "Video", family: "Video", purpose: "An explanatory video.", blocked: () => "Not designed yet", render: () => null },
+  { id: "questionnaire", name: "Questionnaire", family: "Questionnaire", purpose: "A short set of related questions.", blocked: () => null, render: (s) => <QuestionnaireStory line={`Three short questions about ${s.label}. They take under a minute.`} questions={[`I understand what is behind my ${s.label} score.`, `I know one thing I could change to improve ${s.label}.`, `My team talks openly about ${s.label}.`]} /> },
+  { id: "video", name: "Video", family: "Video", purpose: "An explanatory video.", blocked: () => "Needs a video to show (none in this prototype)", render: () => null },
 ];
 
 export const storyById = (id) => STORIES.find((s) => s.id === id);

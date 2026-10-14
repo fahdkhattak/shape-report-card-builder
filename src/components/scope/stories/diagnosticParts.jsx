@@ -1,10 +1,12 @@
-import { Building2, Layers, Briefcase, Laptop, MapPin, Users, ChevronRight } from "lucide-react";
+import { Briefcase, Laptop, MapPin, Users, ChevronRight } from "lucide-react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsBorder } from "../../../lib/ds.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import genderIcon from "../../../assets/axis-icons/gender.svg";
 import ageIcon from "../../../assets/axis-icons/age.svg";
 import ethnicityIcon from "../../../assets/axis-icons/ethnicity.svg";
+import departmentIcon from "../../../assets/axis-icons/department.svg";
+import jobLevelIcon from "../../../assets/axis-icons/job-level.svg";
 import { useStoryWidth } from "./storyWidth.js";
 
 /* ================================================================== */
@@ -46,8 +48,8 @@ export function SystemTag({ children }) {
 /* An icon for each way of grouping people. Gender and Tenure use the design's own icons (tenure takes the "Age" one, a
    person with a clock); the rest are the closest line icons at the same 20px and 1.667 stroke. Ethnicity has an icon in the
    design (assets/axis-icons/ethnicity.svg) but no such field exists in the data. */
-const FILES = { gender: genderIcon, tenure: ageIcon, ethnicity: ethnicityIcon };
-const LINE = { department: Building2, jobLevel: Layers, employmentStatus: Briefcase, workModel: Laptop, location: MapPin };
+const FILES = { gender: genderIcon, tenure: ageIcon, ethnicity: ethnicityIcon, department: departmentIcon, jobLevel: jobLevelIcon };
+const LINE = { employmentStatus: Briefcase, workModel: Laptop, location: MapPin };
 export function AxisIcon({ axis, size = 20 }) {
   const file = FILES[axis];
   if (file) return <span aria-hidden="true" style={{ width: size, height: size, flexShrink: 0, display: "inline-block", background: ds.icon.primary, WebkitMask: `url(${file}) center / contain no-repeat`, mask: `url(${file}) center / contain no-repeat` }} />;
@@ -83,13 +85,18 @@ export function GroupCard({ g, count, word, onOpen }) {
   const Tag = onOpen ? "button" : "div";
   return (
     <InnerCard as={Tag} data-part="group-card" style={onOpen ? { textAlign: "left", cursor: "pointer", width: "100%" } : undefined} onClick={onOpen}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: dsSpace[12], flexWrap: "wrap", rowGap: dsSpace[8] }}>
-        <div style={{ display: "flex", alignItems: "center", gap: dsSpace[12], minWidth: 0 }}>
+      {/* The change, score and chevron always hold the right of the first line, as in the design. When the group's name and
+          tag don't fit beside them, the tag drops under the name rather than pushing the score onto its own row, so every
+          card in the grid keeps the same shape. */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: dsSpace[12] }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: dsSpace[12], minWidth: 0, flex: "1 1 auto" }}>
           <AxisIcon axis={g.axisKey} />
-          <span data-part="group-name" title={g.group} style={{ ...dsText("Text sm", 700), color: ds.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{g.group}</span>
-          <SystemTag>{g.axis}</SystemTag>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: dsSpace[12], rowGap: dsSpace[4], minWidth: 0 }}>
+            <span data-part="group-name" title={g.group} style={{ ...dsText("Text sm", 700), color: ds.text.secondary, minWidth: 0, overflowWrap: "anywhere" }}>{g.group}</span>
+            <SystemTag>{g.axis}</SystemTag>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, minHeight: 20 }}>
           {g.change != null && <TrendPill delta={g.change} numberOnly />}
           <ScoreNumber data-part="group-score" value={g.score} />
           <ChevronRight data-part="chevron" size={20} strokeWidth={2} style={{ color: ds.icon.tertiary, flexShrink: 0 }} aria-hidden="true" />

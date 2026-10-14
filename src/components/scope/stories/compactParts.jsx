@@ -20,7 +20,8 @@ export function NumberBadge({ n, active, size = 20, style }) {
   );
 }
 
-/* The key under a chart: one tappable row per item. rows: [{ label, value, delta }].
+/* The key under a chart: one tappable row per item. rows: [{ label, value, delta }]. With `hoverable`, pointing at a
+   name with a mouse calls `onHover(i)` so the chart lights that point up as if the chart itself were hovered.
    To keep the Story short it is a grid (as many columns of at least 220px as fit) and, on a narrow card, shows the first
    six until someone asks for all. A selected row beyond the first six opens the list. */
 const KEY_FIRST = 6;
@@ -38,11 +39,20 @@ export function NumberedList({ rows, active, onPick, hoverable = false, onHover 
           const on = active === i;
           return (
             <li key={`${i}-${r.label}`}>
-              <button type="button" aria-pressed={on} onClick={() => onPick(on ? null : i)} onPointerEnter={hoverable ? () => onHover?.(i) : undefined} onPointerLeave={hoverable ? () => onHover?.(null) : undefined} style={{ width: "100%", minHeight: compact ? 40 : 32, display: "flex", alignItems: "center", gap: dsSpace[8], textAlign: "left", border: "none", cursor: "pointer", fontFamily: font, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, borderRadius: dsRadius.md, background: on ? ds.interactive.ghostHover : "transparent", color: ds.text.secondary }}>
+              <button type="button" aria-pressed={on} onClick={() => onPick(on ? null : i)} onPointerEnter={hoverable ? (e) => e.pointerType === "mouse" && onHover?.(i) : undefined} onPointerLeave={hoverable ? (e) => e.pointerType === "mouse" && onHover?.(null) : undefined} style={{ width: "100%", minHeight: compact ? 40 : 32, display: "flex", alignItems: "center", gap: dsSpace[8], textAlign: "left", border: "none", cursor: "pointer", fontFamily: font, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, borderRadius: dsRadius.md, background: on ? ds.interactive.ghostHover : "transparent", color: ds.text.secondary }}>
                 <NumberBadge n={i + 1} active={on} size={compact ? 20 : 18} />
                 <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs"), fontWeight: on ? 600 : 400, color: ds.text.secondary }}>{r.label}</span>
-                {r.delta != null && r.delta !== 0 && <TrendPill delta={r.delta} numberOnly />}
-                <span style={{ ...dsText("Text sm", 700), color: b.cs, minWidth: 22, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.value}</span>
+                {r.series ? (
+                  // Comparison: one score per series, each after a dot in its series colour.
+                  <span style={{ display: "inline-flex", gap: dsSpace[8], flexShrink: 0 }}>
+                    {r.series.map((s, si) => <span key={si} style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[4], ...dsText("Text xs", 700), color: dsBand(s.value).cs, fontVariantNumeric: "tabular-nums" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: s.color }} />{s.value}</span>)}
+                  </span>
+                ) : (
+                  <>
+                    {r.delta != null && r.delta !== 0 && <TrendPill delta={r.delta} numberOnly />}
+                    <span style={{ ...dsText("Text sm", 700), color: b.cs, minWidth: 22, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.value}</span>
+                  </>
+                )}
               </button>
             </li>
           );

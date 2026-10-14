@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { font } from "../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsShadow } from "../../lib/ds.js";
 import { TrendPill } from "../widgets/primitives.jsx";
-import { useStoryWidth, useElementWidth } from "./stories/storyWidth.js";
+import { useElementWidth } from "./stories/storyWidth.js";
 import { NumberedList, DetailCard } from "./stories/compactParts.jsx";
 import { clampScore } from "./stories/breakdownRules.js";
 
@@ -21,19 +21,19 @@ import { clampScore } from "./stories/breakdownRules.js";
 /* hitting a tiny dot makes the whole chart the hover target. Drawn as     */
 /* computed SVG so it works for any axis count; the design shows 5 Areas,  */
 /* ours are the 12 real Explorers.                                         */
-/* On a compact card (under 560px, see stories/storyWidth.js) the labels   */
-/* cannot sit around the plot, so the plot is cropped square, each spoke   */
-/* gets a numbered mark, and a key below lists names, scores and changes.   */
-/* Tapping a mark, a sector or a key row selects it; the detail card that   */
-/* hovering opens on a wide card appears under the chart.                   */
+/* Names stay around the plot for as long as they fit (fitRadarLabels):    */
+/* on a narrower card the rings shrink so 11px+ names still fit beside     */
+/* them. Only when they can't (too many, or too long for the width) is the */
+/* plot cropped square, each spoke given a numbered mark, and a key below  */
+/* lists names, scores and changes. Tapping a mark, a sector or a key row  */
+/* selects it, pointing at a key row with a mouse highlights its spoke,    */
+/* and the detail card that hovering opens appears under the chart.        */
 /* ================================================================== */
 const W = 774;
 const H = 524;
 const CX = W / 2;
 const CY = 288;
-const R = 216;        // outer ring
-const R_SPOKE = 250;  // spokes run past the ring
-const R_LABEL = 262;
+const R_DESIGN = 216; // outer ring in the design; spokes run 34 past it, labels sit 46 past it (see radarGeometry)
 /* The design draws the series in #EB5421 (marker #FD531B). Neither is a design-system colour, so they are named here. */
 export const RADAR_SERIES = "#EB5421";
 const RADAR_MARKER = "#FD531B";
@@ -52,46 +52,67 @@ function wrap(label, max = 16) {
 }
 
 
-/* Do the names fit around the plot? Estimate each label's box (12px text is about 6.3 units a character, 16 a line),
-   try wrapping at 18, 14, then 11 characters, and use the first wrapping where no two boxes touch and none leaves the
-   drawing. Returns the wrap width that works, or null (names don't fit, so the chart uses numbered marks and a key). */
+/* Do the names fit around the plot? Names are the point of the chart, so it gives up a lot before it falls back to
+   numbered marks and a key. Text is kept at 11px or more on screen whatever the chart's width (`scale` = screen px per
+   drawing unit), so on a narrower card the text is larger in drawing units, and the rings shrink to make room for it
+   (216, the design, down to whatever leaves at least 90px of radius on screen). At each ring size it tries wrapping the
+   names at 18, 14, then 11 characters (12px text is about 6.3 units a character, 16 a line), and keeps the first layout
+   where no two boxes touch and none leaves the drawing. Returns { R, wrapAt, text, line } or null (numbers and a key). */
 const CHAR = 6.3, LINE = 16;
-export function fitRadarLabels(labels, angleOf) {
+const RINGS = [216, 200, 184, 168, 152, 136, 120, 104];
+export const radarGeometry = (R) => ({ R, spoke: R + 34, label: R + 46 });
+export function fitRadarLabels(labels, angleOf, scale = 1) {
   const n = labels.length;
-  for (const max of [18, 14, 11]) {
-    const boxes = [];
-    let ok = true;
-    for (let i = 0; i < n && ok; i++) {
-      const lines = wrap(labels[i], max);
-      const longest = labels[i].split(" ").reduce((m, w) => Math.max(m, w.length), 0);
-      if (longest > max + 3) { ok = false; break; }
-      const w = Math.max(...lines.map((l) => l.length)) * CHAR, h = lines.length * LINE;
-      const a = angleOf(i), side = Math.sin(a), cos = Math.cos(a);
-      const x = CX + R_LABEL * side, y = CY - R_LABEL * cos;
-      const left = Math.abs(side) < 0.2 ? x - w / 2 : side > 0 ? x : x - w;
-      const top = Math.abs(side) < 0.2 ? (cos > 0 ? y - h + LINE / 2 - 4 : y + 4 - LINE / 2) : y - h / 2;
-      boxes.push({ l: left, r: left + w, t: top, b: top + h });
-      if (left < -8 || left + w > W + 8) ok = false;
+  const text = Math.max(12, 11 / scale);   // drawing units for the label text
+  const f = text / 12;
+  for (const R of RINGS) {
+    if (R * scale < 90) break;
+    const { label: RL } = radarGeometry(R);
+    for (const max of [18, 14, 11]) {
+      const boxes = [];
+      let ok = true;
+      for (let i = 0; i < n && ok; i++) {
+        const lines = wrap(labels[i], max);
+        const longest = labels[i].split(" ").reduce((m, w) => Math.max(m, w.length), 0);
+        if (longest > max + 3) { ok = false; break; }
+        const w = Math.max(...lines.map((l) => l.length)) * CHAR * f, h = lines.length * LINE * f;
+        const a = angleOf(i), side = Math.sin(a), cos = Math.cos(a);
+        const x = CX + RL * side, y = CY - RL * cos;
+        const left = Math.abs(side) < 0.2 ? x - w / 2 : side > 0 ? x : x - w;
+        const top = Math.abs(side) < 0.2 ? (cos > 0 ? y - h + (LINE * f) / 2 - 4 : y + 4 - (LINE * f) / 2) : y - h / 2;
+        boxes.push({ l: left, r: left + w, t: top, b: top + h });
+        if (left < -8 || left + w > W + 8) ok = false;
+      }
+      if (!ok) continue;
+      const hit = boxes.some((a, i) => boxes.some((b, j) => j > i && a.l < b.r + 4 && b.l < a.r + 4 && a.t < b.b + 2 && b.t < a.b + 2));
+      if (!hit) return { R, wrapAt: max, text, line: LINE * f };
     }
-    if (!ok) continue;
-    const hit = boxes.some((a, i) => boxes.some((b, j) => j > i && a.l < b.r + 4 && b.l < a.r + 4 && a.t < b.b + 2 && b.t < a.b + 2));
-    if (!hit) return max;
   }
   return null;
 }
 
-export default function ScopeRadar({ items }) {
-  const { compact: narrowCard } = useStoryWidth();
+/* From this many spokes the radar always uses numbered marks and a key, even where names would squeeze in: past about
+   20 a ring of names reads as noise (product direction). */
+export const RADAR_NAMES_BELOW = 20;
+
+/* items: [{ label, value, prev?, delta?, prevLabel?, blurb? }].
+   series (optional, Comparison): [{ id, label, color, values }] drawn instead of the one orange series, each in its own
+   colour; the tooltip, detail card and key then list every series at the selected spoke. */
+export default function ScopeRadar({ items, series }) {
   const svgRef = useRef(null);
   const outerRef = useRef(null);
   const boxRef = useRef(null);
   const wrapW = useElementWidth(outerRef, W); // the width on offer, not the capped width the chart uses
   const cw = useElementWidth(boxRef, W);
-  // Names stay on the chart for as long as they physically fit: the plot is wide enough that 12px text stays at least 10px
-  // on screen, and the names don't collide when wrapped (see fitRadarLabels). Otherwise numbered marks and a key.
-  const wrapMax = fitRadarLabels(items.map((it) => it.label), (i) => (i / items.length) * Math.PI * 2);
-  const compact = narrowCard || wrapW < 645 || wrapMax == null;
-  const [hover, setHover] = useState(null);
+  // Names stay on the chart for as long as they physically fit (see fitRadarLabels): the rings shrink and the text stays
+  // 11px or more on screen. Only when even the smallest rings leave no room, or on a phone-width card, do numbered marks
+  // and a key take over. A phone-width card tries too: a handful of short names can fit at 400px.
+  const fit = items.length >= RADAR_NAMES_BELOW ? null : fitRadarLabels(items.map((it) => it.label), (i) => (i / items.length) * Math.PI * 2, Math.min(wrapW, W) / W);
+  const compact = fit == null;
+  const { R, spoke: R_SPOKE, label: R_LABEL } = radarGeometry(fit ? fit.R : R_DESIGN);
+  const [chartHoverIdx, setHover] = useState(null);
+  const [keyHover, setKeyHover] = useState(null); // a name in the key under the mouse
+  const hover = keyHover ?? chartHoverIdx;
   const [chartHover, setChartHover] = useState(false);
   const n = items.length;
   const angle = (i) => (i / n) * Math.PI * 2;
@@ -117,7 +138,8 @@ export default function ScopeRadar({ items }) {
     if (a < 0) a += Math.PI * 2;
     setHover(Math.round(a / ((Math.PI * 2) / n)) % n);
   };
-  const onLeave = () => { if (!compact) { setChartHover(false); setHover(null); } };
+  // A mouse leaving always clears; a finger lifting on a compact chart keeps its selection (there's no hover to lose).
+  const onLeave = (e) => { if (!compact || e.pointerType === "mouse") { setChartHover(false); setHover(null); } };
 
   const hovered = hover != null ? items[hover] : null;
   const [hx, hy] = hover != null ? points[hover] : [0, 0];
@@ -139,14 +161,16 @@ export default function ScopeRadar({ items }) {
             return <line key={i} data-part="spoke" x1={CX} y1={CY} x2={x} y2={y} stroke={grey} strokeWidth={line(0.75)} />;
           })}
           {prevPoints && <polygon points={prevPoints.map((p) => p.join(",")).join(" ")} fill="none" stroke={ds.text.quaternary} strokeWidth={line(2)} strokeDasharray={compact ? `${line(5)} ${line(4)}` : "5 4"} strokeLinejoin="round" />}
-          <polygon data-part="series" points={points.map((p) => p.join(",")).join(" ")} fill={RADAR_SERIES} fillOpacity="0.06" stroke={RADAR_SERIES} strokeWidth={line(2.5)} strokeLinejoin="round" />
+          {series ? series.map((s) => (
+            <polygon key={s.id} data-part="series" points={s.values.map((v, i) => polar(angle(i), (clampScore(v) / 100) * R).join(",")).join(" ")} fill={s.color} fillOpacity="0.08" stroke={s.color} strokeWidth={line(2.5)} strokeLinejoin="round" style={{ pointerEvents: "none" }} />
+          )) : <polygon data-part="series" points={points.map((p) => p.join(",")).join(" ")} fill={RADAR_SERIES} fillOpacity="0.06" stroke={RADAR_SERIES} strokeWidth={line(2.5)} strokeLinejoin="round" />}
 
           {items.map((_, i) => {
             const [x, y] = polar(angle(i), R);
             return <circle key={i} data-part="node" cx={x} cy={y} r={compact ? 3.5 * Math.max(1, k * 0.7) : 3.5} fill={grey} />;
           })}
 
-          {points.map(([x, y], i) => {
+          {series ? series.map((s) => hover != null && (() => { const [x, y] = polar(angle(hover), (clampScore(s.values[hover]) / 100) * R); const dot = compact ? 3.5 * Math.max(1, k * 0.7) : 3.5; return <circle key={s.id} cx={x} cy={y} r={dot * 1.4} fill={s.color} stroke={ds.surface.general.card} strokeWidth={line(1.5)} style={{ pointerEvents: "none" }} />; })()) : points.map(([x, y], i) => {
             const active = hover === i;
             const dot = compact ? 3.5 * Math.max(1, k * 0.7) : 3.5;
             return (
@@ -176,12 +200,13 @@ export default function ScopeRadar({ items }) {
             const [x, y] = polar(angle(i), R_LABEL);
             const side = Math.sin(angle(i));
             const anchor = Math.abs(side) < 0.2 ? "middle" : side > 0 ? "start" : "end";
-            const lines = wrap(it.label, wrapMax || 16);
+            const lines = wrap(it.label, fit.wrapAt);
+            const lh = fit.line;
             const top = Math.abs(side) < 0.2 && Math.cos(angle(i)) > 0; // the top label sits above its spoke
-            const y0 = (top ? y - (lines.length - 1) * 16 : Math.abs(side) < 0.2 ? y + 4 : y - ((lines.length - 1) * 16) / 2);
+            const y0 = (top ? y - (lines.length - 1) * lh : Math.abs(side) < 0.2 ? y + 4 : y - ((lines.length - 1) * lh) / 2);
             return (
-              <text key={i} data-part="label" textAnchor={anchor} dominantBaseline="middle" fontSize="12" fontFamily={font} fill={ds.text.secondary} fontWeight={hover === i ? 700 : 400} style={{ pointerEvents: "none" }}>
-                {lines.map((ln, k2) => <tspan key={k2} x={x} y={y0 + k2 * 16}>{ln}</tspan>)}
+              <text key={i} data-part="label" textAnchor={anchor} dominantBaseline="middle" fontSize={fit.text} fontFamily={font} fill={ds.text.secondary} fontWeight={hover === i ? 700 : 400} style={{ pointerEvents: "none" }}>
+                {lines.map((ln, k2) => <tspan key={k2} x={x} y={y0 + k2 * lh}>{ln}</tspan>)}
               </text>
             );
           })}
@@ -196,6 +221,7 @@ export default function ScopeRadar({ items }) {
               boxShadow: dsShadow("sm"),
             }}
           >
+            {series ? <SeriesRows label={hovered.label} series={series} i={hover} /> : <>
             <div style={{ display: "flex", alignItems: "center", gap: dsSpace[12], borderLeft: `2px solid ${b.c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
               <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{hovered.label}</span>
               {hovered.delta != null && hovered.delta !== 0 && <TrendPill delta={hovered.delta} numberOnly />}
@@ -207,17 +233,33 @@ export default function ScopeRadar({ items }) {
               </p>
             )}
             {hovered.blurb && <p style={{ margin: 0, ...dsText("Text xs"), color: ds.text.primary }}>{hovered.blurb}</p>}
+            </>}
           </div>
         )}
       </div>
 
       {compact && (
         <>
-          {hovered && <DetailCard row={{ ...hovered }} refName={hovered.prevLabel} />}
-          <NumberedList rows={items} active={hover} onPick={setHover} />
+          {hovered && keyHover == null && (series ? <div data-part="detail" role="status" style={{ background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}><SeriesRows label={hovered.label} series={series} i={hover} /></div> : <DetailCard row={{ ...hovered }} refName={hovered.prevLabel} />)}
+          <NumberedList rows={series ? items.map((it, i) => ({ ...it, series: series.map((s) => ({ color: s.color, value: s.values[i] })) })) : items} active={hover} onPick={setHover} hoverable onHover={setKeyHover} />
         </>
       )}
     </div>
     </div>
+  );
+}
+
+/* Every series at one spoke: the spoke name, then a row per series with its colour, name and score. */
+function SeriesRows({ label, series, i }) {
+  return (
+    <>
+      <span style={{ ...dsText("Text xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{label}</span>
+      {series.map((s) => (
+        <div key={s.id} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${s.color}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
+          <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{s.label}</span>
+          <span style={{ ...dsText("Text md", 700), color: dsBand(s.values[i]).cs }}>{s.values[i]}</span>
+        </div>
+      ))}
+    </>
   );
 }

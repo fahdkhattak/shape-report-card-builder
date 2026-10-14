@@ -42,3 +42,19 @@ export function orgSeverity() {
     };
   });
 }
+
+/* Every round, oldest first: per measure, the share of people in each band ([Normal … Extremely Severe], percent), and
+   the band the organisation's mean score falls in (for the one-bar-per-round form). Same prototype cut-offs as above. */
+export function severityByRound() {
+  return MEASURES.map(([label, driver]) => {
+    const perRound = ROUNDS.map(({ round }) => {
+      const rs = dataset.users.map((u) => u.rounds.find((r) => r.round === round)).filter(Boolean);
+      const counts = SEVERITY.map(() => 0);
+      let sum = 0;
+      rs.forEach((r) => { const v = r.driverScores[driver]; counts[severityIndex(v)]++; sum += v; });
+      const pct = counts.map((c) => Math.round((c / (rs.length || 1)) * 100));
+      return { pct, level: severityIndex(sum / (rs.length || 1)) };
+    });
+    return { label, rounds: perRound.map((p) => p.pct), levels: perRound.map((p) => p.level) };
+  });
+}

@@ -33,34 +33,38 @@ function smoothPath(pts, ph = PLOT_H) {
 }
 
 
-/* Do the Driver names fit under the plot? Each name gets plot width divided by the count, less 8px of air. 13px text is
-   about 6.7px a character; a name may wrap to three lines but no single word may be wider than its slot. */
+/* Do the Driver names fit under the plot? Each name gets the plot width divided by the count, less 8px of air, and may
+   wrap to three lines (as the design does); no single word may be wider than its slot (13px text is about 6.7px a character). If any name doesn't
+   fit, every point gets a numbered mark and a key lists the names: one clean switch, never names squeezed or staggered. */
 const NAME_CHAR = 6.7;
+function linesIn(label, slot) {
+  const words = label.split(" ");
+  if (words.some((w) => w.length * NAME_CHAR > slot)) return Infinity;
+  let lines = 1, cur = 0;
+  words.forEach((w) => { const len = w.length * NAME_CHAR; if (cur && cur + NAME_CHAR + len > slot) { lines++; cur = len; } else cur += (cur ? NAME_CHAR : 0) + len; });
+  return lines;
+}
 export function namesFit(labels, plotWidth) {
   const slot = plotWidth / labels.length - 8;
-  if (slot < 36) return false;
-  return labels.every((label) => {
-    const words = label.split(" ");
-    if (words.some((w) => w.length * NAME_CHAR > slot)) return false;
-    let lines = 1, cur = 0;
-    words.forEach((w) => { const len = w.length * NAME_CHAR; if (cur && cur + NAME_CHAR + len > slot) { lines++; cur = len; } else cur += (cur ? NAME_CHAR : 0) + len; });
-    return lines <= 3;
-  });
+  return slot >= 36 && labels.every((l) => linesIn(l, slot) <= 3);
 }
 
 /* rows: [{ label, value, prev? }] */
-/* On a compact card (under 560px, see storyWidth.js) the Driver names cannot sit under the plot, so each point gets a
-   numbered mark and a key below lists the names, scores and changes. Tapping the plot or a key row selects a point and
-   its detail shows under the chart in place of the hover tooltip. */
+/* When the Driver names can't sit under the plot (see namesFit), each point gets a numbered mark and a key
+   below lists the names, scores and changes; pointing at a name in the key highlights its point. On a compact card
+   (under 560px, see storyWidth.js) tapping the plot, a name or a key row selects a point and its detail shows under the
+   chart in place of the hover tooltip. */
 export default function AreaChart({ rows, refName }) {
   const { compact: narrow } = useStoryWidth();
   const plotRef = useRef(null);
   const plotW = useElementWidth(plotRef, 700);
-  // Names stay under the plot for as long as they fit its width; otherwise numbered marks and a key (also on a narrow card).
-  const compact = narrow || !namesFit(rows.map((r) => r.label), plotW);
+  // Names stay under the plot while they fit its width; otherwise numbered marks and a key.
+  const compact = !namesFit(rows.map((r) => r.label), plotW);
   const PH = narrow ? PLOT_H_COMPACT : PLOT_H;
   const y = (v) => (1 - clampScore(v) / 100) * PH;
-  const [hover, setHover] = useState(null);
+  const [chartHover, setHover] = useState(null);
+  const [keyHover, setKeyHover] = useState(null); // a name in the key under the mouse
+  const hover = keyHover ?? chartHover;
   const n = rows.length;
   const x = (i) => ((i + 0.5) / n) * VW;
   // The curve runs edge to edge: the first and last values are held out to the plot's sides.
@@ -88,7 +92,7 @@ export default function AreaChart({ rows, refName }) {
         {[100, 80, 60, 40, 20, 0].map((t) => <span key={t}>{t}</span>)}
       </div>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dsSpace[12] }}>
-        <div ref={plotRef} data-part="plot" role="img" aria-label={`Area chart of ${n} items: ${rows.map((r) => `${r.label} ${r.value}`).join(", ")}`} onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={(e) => { if (!compact) setHover(null); }} style={{ position: "relative", height: PH, touchAction: compact ? "pan-y" : undefined, boxSizing: "border-box", border: `1px solid ${ds.border.tertiary}`, borderRadius: dsRadius.xs, overflow: "hidden", cursor: hover != null ? "pointer" : "default" }}>
+        <div ref={plotRef} data-part="plot" role="img" aria-label={`Area chart of ${n} items: ${rows.map((r) => `${r.label} ${r.value}`).join(", ")}`} onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={(e) => { if (!narrow || e.pointerType === "mouse") setHover(null); }} style={{ position: "relative", height: PH, touchAction: compact ? "pan-y" : undefined, boxSizing: "border-box", border: `1px solid ${ds.border.tertiary}`, borderRadius: dsRadius.xs, overflow: "hidden", cursor: hover != null ? "pointer" : "default" }}>
           <svg viewBox={`0 0 ${VW} ${PH}`} preserveAspectRatio="none" width="100%" height="100%" style={{ position: "absolute", inset: 0, display: "block" }}>
             <path d={area} fill={purple} fillOpacity="0.12" />
             {prevPts && <path d={smoothPath(prevPts, PH)} fill="none" stroke={ds.text.quaternary} strokeWidth="2" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />}
@@ -104,19 +108,15 @@ export default function AreaChart({ rows, refName }) {
         ) : (
           <div style={{ display: "flex", ...dsText("Text xs"), textAlign: "center" }}>
             {rows.map((r, i) => (
-              <p key={`${i}-${r.label}`} data-part="xlabel" onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)} onPointerDown={() => setHover(i)} style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0, margin: 0, padding: `0 ${dsSpace[12]}px`, boxSizing: "border-box", fontWeight: hover === i ? 700 : 500, color: hover === i ? ds.text.tertiary : ds.text.quaternary }}>{r.label}</p>
+              <p key={`${i}-${r.label}`} data-part="xlabel" onPointerEnter={() => setHover(i)} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} onPointerDown={() => setHover(i)} style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0, margin: 0, padding: `0 ${dsSpace[4]}px`, boxSizing: "border-box", fontWeight: hover === i ? 700 : 500, color: hover === i ? ds.text.tertiary : ds.text.quaternary }}>{r.label}</p>
             ))}
           </div>
         )}
       </div>
       {!narrow && h && <Tip plotRef={plotRef} hover={hover} n={n} h={h} b={b} refName={refName} y={y(h.value)} />}
     </div>
-    {compact && (
-      <>
-        {narrow && h && <DetailCard row={{ label: h.label, value: h.value, prev: h.prev, delta: h.prev != null ? h.value - h.prev : undefined }} refName={refName} scoreLabel="Your Score" />}
-        <NumberedList rows={rows.map((r) => ({ label: r.label, value: r.value, delta: r.prev != null ? r.value - r.prev : undefined }))} active={hover} onPick={setHover} />
-      </>
-    )}
+    {narrow && h && keyHover == null && <DetailCard row={{ label: h.label, value: h.value, prev: h.prev, delta: h.prev != null ? h.value - h.prev : undefined }} refName={refName} scoreLabel="Your Score" />}
+    {compact && <NumberedList rows={rows.map((r) => ({ label: r.label, value: r.value, delta: r.prev != null ? r.value - r.prev : undefined }))} active={hover} onPick={setHover} hoverable onHover={setKeyHover} />}
     </div>
   );
 }

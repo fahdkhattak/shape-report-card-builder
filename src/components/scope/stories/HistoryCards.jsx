@@ -3,6 +3,7 @@ import { ROUNDS } from "../../../lib/dataset.js";
 import { LAST, fmtDate } from "../../../lib/scopeData.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import { useStoryStyle } from "./storyStyle.js";
+import { useStoryWidth } from "./storyWidth.js";
 
 /* ================================================================== */
 /* HISTORY CARDS — one card per round, newest first, scrolling sideways  */
@@ -14,6 +15,8 @@ import { useStoryStyle } from "./storyStyle.js";
 /* ================================================================== */
 export function HistoryCards({ values, banded = true, unit = "", sel, onSelect }) {
   const idxs = ROUNDS.map((_, i) => i).reverse();
+  // On a compact card the rounds wrap into a grid (every round visible, no sideways scrolling); wide, the designed row.
+  const { compact } = useStoryWidth();
   if (useStoryStyle() === "refined") {
     // Rounds as a row of columns, not a row of cards: date, the score, the change in plain
     // text. The selected round is marked by a bar underneath and a tint, not an outline.
@@ -42,7 +45,7 @@ export function HistoryCards({ values, banded = true, unit = "", sel, onSelect }
     );
   }
   return (
-    <div style={{ display: "flex", gap: 16, overflowX: "auto", padding: "1px 1px 4px", fontFamily: font }}>
+    <div style={compact ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(136px, 1fr))", gap: 12, fontFamily: font } : { display: "flex", gap: 16, overflowX: "auto", padding: "1px 1px 4px", fontFamily: font }}>
       {idxs.map((i) => {
         const v = values[i];
         const d = i > 0 ? v - values[i - 1] : null;
@@ -52,17 +55,17 @@ export function HistoryCards({ values, banded = true, unit = "", sel, onSelect }
           <div
             key={i} role={clickable ? "button" : undefined} tabIndex={clickable ? 0 : undefined} aria-pressed={clickable ? selected : undefined}
             onClick={clickable ? () => onSelect(i) : undefined} onKeyDown={clickable ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect(i)) : undefined}
-            style={{ flex: "0 0 200px", boxSizing: "border-box", border: `1px solid ${selected ? T.gray700 : T.gray100}`, borderRadius: radius.lg, padding: 16, display: "flex", flexDirection: "column", gap: 10, background: T.white, cursor: clickable ? "pointer" : "default" }}
+            style={{ flex: compact ? undefined : "0 0 200px", minWidth: 0, boxSizing: "border-box", border: `1px solid ${selected ? T.gray700 : T.gray100}`, borderRadius: radius.lg, padding: 16, display: "flex", flexDirection: "column", gap: 10, background: T.white, cursor: clickable ? "pointer" : "default" }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 20 }}>
-              <span style={{ fontSize: 13, fontWeight: selected ? 700 : 400, color: selected ? T.gray900 : T.gray700, whiteSpace: "nowrap" }}>{fmtDate(ROUNDS[i].date)}</span>
+              <span style={{ fontSize: 13, fontWeight: selected ? 700 : 400, color: selected ? T.gray900 : T.gray700, whiteSpace: compact ? "normal" : "nowrap" }}>{fmtDate(ROUNDS[i].date)}</span>
               {i === LAST && <span style={{ fontSize: 11, color: T.gray700, background: T.gray50, borderRadius: radius.full, padding: "2px 8px" }}>Latest</span>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 36 }}>
               <span style={{ fontSize: 32, fontWeight: 700, lineHeight: "36px", letterSpacing: -0.5, color: banded ? band(v).cs : T.gray900 }}>{v}{unit}</span>
               {d != null && d !== 0 && <TrendPill delta={d} numberOnly />}
             </div>
-            <span style={{ fontSize: 13, color: T.gray500, whiteSpace: "nowrap", marginTop: -6 }}>{d != null ? `since ${fmtDate(ROUNDS[i - 1].date)}` : "First round"}</span>
+            <span style={{ fontSize: 13, color: T.gray500, whiteSpace: compact ? "normal" : "nowrap", marginTop: -6 }}>{d != null ? `since ${fmtDate(ROUNDS[i - 1].date)}` : "First round"}</span>
           </div>
         );
       })}

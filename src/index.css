@@ -92,3 +92,6 @@ body {
 
 /* Developer docs: paragraphs inside a Prose block take their spacing from its flex gap, not default margins. */
 .dev-prose p { margin: 0; }
+
+/* Actions layer: Driver nav rows tint on hover (the open row keeps its own fill). */
+.driver-nav-item:not([aria-current]):hover { background: var(--ds-color-button-brand-ghost-bg-hover) !important; }

@@ -121,6 +121,7 @@ const STORY_WORDS = {
   breakdown: ["breakdown", "what contributes", "what's behind", "parts"],
   diagnostic: ["diagnostic", "stand out", "stands out", "strongest", "weakest", "pressure point"],
   composition: ["composition", "demographic", "by group", "groups", "who is", "by gender", "by department"],
+  "composition-donut": ["donut", "pie chart", "composition donut"],
   actions: ["action", "what can i do", "advice", "guidance", "playbook"],
   comparison: ["comparison", "benchmark", "team vs", "me vs"],
   trend: ["trend", "history", "over time", "across rounds"],
@@ -161,7 +162,8 @@ const prevOf = (spec) => (spec.vizType === "form" ? spec : { ...spec, autoTitle:
 
 // Match at a word start so "source" never fires inside "resource".
 const has = (t, words) => words.some((w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(t));
-const findStories = (t) => Object.entries(STORY_WORDS).filter(([, w]) => has(t, w)).map(([id]) => id);
+// "composition donut" names the Donut form, not both forms of Composition.
+const findStories = (t) => { const ids = Object.entries(STORY_WORDS).filter(([, w]) => has(t, w)).map(([id]) => id); return ids.includes("composition-donut") ? ids.filter((id) => id !== "composition") : ids; };
 
 /* Returns { reply: {text, chips?}, built? , reset? } given the user's message. */
 export function refine(text, built) {

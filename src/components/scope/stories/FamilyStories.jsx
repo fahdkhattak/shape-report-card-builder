@@ -207,20 +207,32 @@ function PriorityChart({ rows, medianLink, noun }) {
   const y = (v) => PT + (1 - (v - yLo) / (yHi - yLo)) * (H - PT - PB);
   const h = hover != null ? rows[hover] : null;
   const label = { fontFamily: font, fontSize: 12 };
-  // Name a part on the plot only if its name fits beside the dot without touching another name: to its right, then to its
-  // left, else it is left unnamed (hover or tap shows it). Fix first parts get their names first; up to 8 parts all do.
-  const taken = [];
-  const named = rows.map((p) => {
-    if (!(rows.length <= 8 || p.quad === "fix")) return null;
+  // Name every part whose name fits near its dot without touching another name, another dot, or a quadrant title: to its
+  // right, left, above, then below; otherwise it is left unnamed (hover or tap shows it). Fix first parts are placed first,
+  // so when space runs out it's the parts that matter most that keep their names.
+  const dotBox = (p) => ({ l: x(p.score) - 8, r: x(p.score) + 8, t: y(p.link) - 8, b: y(p.link) + 8 });
+  const titleBox = (qx, qy, anchor, name) => { const w = name.length * 7; const l = anchor === "start" ? qx : qx - w; return { l, r: l + w, t: qy - 13, b: qy + 4 }; };
+  const titles = [titleBox(PL + 10, PT + 18, "start", "Fix first"), titleBox(W - PR - 10, PT + 18, "end", "Protect"), titleBox(PL + 10, H - PB - 10, "start", "Watch"), titleBox(W - PR - 10, H - PB - 10, "end", "Maintain")];
+  const overlaps = (a, o) => a.l < o.r + 3 && o.l < a.r + 3 && a.t < o.b + 1 && o.t < a.b + 1;
+  const taken = [...titles];
+  const named = rows.map(() => null);
+  const order = rows.map((p, i) => i).sort((a, b) => (rows[a].quad === "fix" ? 0 : 1) - (rows[b].quad === "fix" ? 0 : 1));
+  for (const i of order) {
+    const p = rows[i];
     const w = p.label.length * 6.4, cx = x(p.score), cy = y(p.link);
-    for (const side of ["start", "end"]) {
-      const l = side === "start" ? cx + 11 : cx - 11 - w;
-      const box = { l, r: l + w, t: cy - 9, b: cy + 9 };
-      const clash = taken.some((o) => box.l < o.r + 3 && o.l < box.r + 3 && box.t < o.b && o.t < box.b);
-      if (l >= PL && l + w <= W - PR + 8 && !clash) { taken.push(box); return side; }
+    const spots = [
+      { side: "start", l: cx + 11, t: cy - 9 },
+      { side: "end", l: cx - 11 - w, t: cy - 9 },
+      { side: "above", l: cx - w / 2, t: cy - 28 },
+      { side: "below", l: cx - w / 2, t: cy + 10 },
+    ];
+    for (const s of spots) {
+      const box = { l: s.l, r: s.l + w, t: s.t, b: s.t + 18 };
+      if (box.l < PL || box.r > W - PR + 8 || box.t < PT || box.b > H - PB) continue;
+      const clash = taken.some((o) => overlaps(box, o)) || rows.some((q, j) => j !== i && overlaps(box, dotBox(q)));
+      if (!clash) { taken.push(box); named[i] = s; break; }
     }
-    return null;
-  });
+  }
   return (
     <div data-part="priority-plot" style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" style={{ display: "block" }} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
@@ -237,7 +249,7 @@ function PriorityChart({ rows, medianLink, noun }) {
         {rows.map((p, i) => (
           <g key={`${i}-${p.label}`} onPointerEnter={() => setHover(i)} onPointerDown={() => setHover(i)} style={{ cursor: "pointer" }}>
             <circle cx={x(p.score)} cy={y(p.link)} r={hover === i ? 9 : 6.5} fill={dsBand(p.score).c} stroke={ds.surface.general.card} strokeWidth="2" />
-            {named[i] && <text x={x(p.score) + (named[i] === "start" ? 11 : -11)} y={y(p.link) + 4} textAnchor={named[i]} {...label} fill={ds.text.secondary} style={{ pointerEvents: "none" }}>{p.label}</text>}
+            {named[i] && <text x={named[i].side === "start" || named[i].side === "end" ? x(p.score) + (named[i].side === "start" ? 11 : -11) : x(p.score)} y={named[i].t + 13} textAnchor={named[i].side === "start" ? "start" : named[i].side === "end" ? "end" : "middle"} {...label} fontWeight={hover === i ? 700 : 400} fill={ds.text.secondary} style={{ pointerEvents: "none" }}>{p.label}</text>}
           </g>
         ))}
       </svg>

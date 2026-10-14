@@ -14,7 +14,7 @@
 /* numbers count parts that have a score.                                  */
 /* ================================================================== */
 export const RULES = {
-  radar: { min: 3, ideal: [5, 8], max: 24, fallback: "bars", why: "A radar is a polygon, so it needs three spokes, and past about 24 the spokes crowd each other." },
+  radar: { min: 3, ideal: [5, 8], max: 24, fallback: "bars", why: "A radar is a polygon, so it needs three spokes, and past about 24 the spokes crowd each other. From 20 spokes it always uses numbered marks and a key." },
   area: { min: 3, ideal: [4, 8], max: 20, fallback: "bars", why: "A curve needs at least three points to read as a curve. Past 20 the points crowd." },
   bars: { min: 1, ideal: [3, 10], firstRows: 10, why: "Bars work for any count. Past 12 rows only the first 10 show until someone asks for all." },
   list: { min: 1, ideal: [2, 6], max: 8, fallback: "bars", why: "Every row carries a sentence, so a long list becomes a wall of text." },

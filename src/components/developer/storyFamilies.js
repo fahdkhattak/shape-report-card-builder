@@ -12,9 +12,9 @@ export const FAMILY_INFO = {
   Resource: { question: "Where can I learn more?", about: "A guide, service, or link relevant to the insight." },
   "Insight & Methodology": { question: "How was it worked out?", about: "What the measure is, how it's calculated, and who answered." },
   "Upgrade Path": { question: "What's next?", about: "An add-on that's relevant to the insight." },
-  Citation: { question: "Where's it from?", about: "Sources behind the insight. Needs traceable sources." },
-  Questionnaire: { question: "What else could I answer?", about: "A short set of related questions. Not designed yet." },
-  Video: { question: "Can someone explain it?", about: "An explanatory video. Not designed yet." },
+  Citation: { question: "Where's it from?", about: "Sources behind the insight, collapsed until opened. Needs traceable sources to ship." },
+  Questionnaire: { question: "What else could I answer?", about: "A short set of related questions, one at a time." },
+  Video: { question: "Can someone explain it?", about: "An explanatory video with its transcript." },
 };
 /* Story name -> Developer page id, for the Stories that have a page. DeveloperScreen fills this in. */
 export const DOCS_BY_STORY = {};
@@ -43,8 +43,8 @@ export const FAMILY_FORMS = {
     doc: "diagnostic",
     covers: ["Diagnostic", "What Changed", "Areas to Focus", "Bright Spots", "Within Reach", "How It Ranks", "Where Gaps Are Widest", "What Moves With This", "Priority Map"],
     forms: [
-      { id: "form-stand-out", label: "What Stands Out", note: "Figma" },
-      { id: "form-areas", label: "Areas to Focus On", note: "Figma" },
+      { id: "form-stand-out", label: "What Stands Out" },
+      { id: "form-areas", label: "Areas to Focus On" },
       { id: "form-changes", label: "What Changed" },
       { id: "form-bright", label: "Bright Spots" },
       { id: "form-gaps", label: "Where Gaps Are Widest" },
@@ -54,4 +54,59 @@ export const FAMILY_FORMS = {
       { id: "form-rank", label: "How It Ranks" },
     ],
   },
+};
+FAMILY_FORMS.Composition = {
+  doc: "composition",
+  covers: ["Composition", "Composition (Donut)"],
+  forms: [
+    { id: "form-rings", label: "Rings" },
+    { id: "form-donut", label: "Donut" },
+    { id: "form-table", label: "Table View" },
+  ],
+};
+FAMILY_FORMS.Comparison = {
+  doc: "comparison",
+  covers: ["Comparison"],
+  forms: [
+    { id: "form-radar", label: "Radar, legend beside" },
+    { id: "form-radar-below", label: "Radar, legend below" },
+    { id: "form-area", label: "Area" },
+    { id: "form-age", label: "Health Age" },
+    { id: "form-legend", label: "Legend" },
+  ],
+};
+FAMILY_FORMS.Trend = {
+  doc: "trend",
+  covers: ["Trend", "Goal & Pace"],
+  forms: [
+    { id: "form-history", label: "Score History" },
+    { id: "form-line", label: "Score Over Time" },
+    { id: "form-rows", label: "By part" },
+    { id: "form-age", label: "Health Age Over Time" },
+    { id: "form-state", label: "State Over Time" },
+    { id: "form-level", label: "Level Over Time" },
+    { id: "form-enps", label: "eNPS Over Time" },
+    { id: "form-goal", label: "Goal & Pace" },
+  ],
+};
+FAMILY_FORMS.Resource = {
+  doc: "resource",
+  covers: ["Resource"],
+  forms: [
+    { id: "form-general", label: "General resource" },
+    { id: "form-support", label: "Support resource" },
+  ],
+};
+FAMILY_FORMS["Insight & Methodology"] = {
+  doc: "methodology",
+  covers: ["Insight & Methodology", "Who Answered"],
+  forms: [
+    { id: "form-status", label: "Status ranges" },
+    { id: "form-health-short", label: "Health Age, short" },
+    { id: "form-health-long", label: "Health Age, long" },
+    { id: "form-dass", label: "DASS" },
+    { id: "form-score", label: "Score" },
+    { id: "form-enps", label: "eNPS" },
+    { id: "form-coverage", label: "Who Answered" },
+  ],
 };

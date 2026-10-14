@@ -1,4 +1,4 @@
-import { createContext, useContext, useLayoutEffect, useState } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState } from "react";
 
 /* ================================================================== */
 /* STORY WIDTH: Stories live in panes of very different widths (a       */
@@ -40,4 +40,13 @@ export function useElementWidth(ref, initial = DESIGN_WIDTH) {
     return () => ro.disconnect();
   }, [ref]);
   return w;
+}
+
+/* For a Story that renders its own card: measure a wrapper around that card (the card's own width) instead of reading the
+   context, which outside the card would be the Scope's or the default 808. Returns [ref, { width, compact, tight }];
+   put the ref on a plain <div> around the StoryCard. */
+export function useOwnWidth() {
+  const ref = useRef(null);
+  const w = useElementWidth(ref, DESIGN_WIDTH);
+  return [ref, sizeFor(w)];
 }

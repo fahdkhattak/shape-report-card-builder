@@ -53,7 +53,7 @@ export function CompareControl({ cmp }) {
   const options = ROUNDS.map((_, i) => i).filter((i) => i < LAST);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8], fontFamily: font }}>
-      <label style={{ display: "flex", alignItems: "center", gap: dsSpace[8], padding: `${dsSpace[2]}px ${dsSpace[12]}px`, ...dsText("Text 2xs"), color: ds.button.brand.ghost.items.defaultText, cursor: "pointer", whiteSpace: "nowrap" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: dsSpace[8], padding: `${dsSpace[2]}px ${dsSpace[6]}px`, ...dsText("Text 2xs"), color: ds.button.brand.ghost.items.defaultText, cursor: "pointer", whiteSpace: "nowrap" }}>
         Compare previous rounds
         <Switch on={cmp.on} onChange={cmp.setOn} label="Compare previous rounds" />
       </label>
@@ -123,6 +123,27 @@ export function StoryTabs({ tabs, value, onChange }) {
           {t}
         </button>
       ))}
+    </div>
+  );
+}
+
+/* Tabs as one pill (Figma 13622:39611, Composition): a bg/primary track, the chosen tab a filled brand-primary pill
+   (bg/active, light text), the rest ghost text. 12/16 text, 4/6 padding plus 2px of text padding, 24px tall. */
+// `tone`: "active" (Composition 13622:39612, #504c4d) or "default" (Trend 13622:38726, #231f20); the frames use both.
+export function PillTabs({ tabs, value, onChange, label, tone = "active" }) {
+  return (
+    <div role="tablist" aria-label={label} data-part="pill-tabs" style={{ display: "inline-flex", alignItems: "center", background: ds.bg.primary, borderRadius: dsRadius.full, fontFamily: font, maxWidth: "100%", overflowX: "auto" }}>
+      {tabs.map((t) => {
+        const on = t === value;
+        return (
+          <button
+            key={t} role="tab" aria-selected={on} onClick={() => onChange(t)}
+            style={{ border: "none", cursor: "pointer", borderRadius: dsRadius.full, padding: `${dsSpace[4]}px ${dsSpace[6] + dsSpace[2]}px`, ...dsText("Text 2xs"), fontFamily: font, whiteSpace: "nowrap", flexShrink: 0, background: on ? ds.button.brand.primary.bg[tone] : "transparent", color: on ? ds.button.brand.primary.items.defaultText : ds.button.brand.ghost.items.defaultText, transition: "background 120ms ease, color 120ms ease" }}
+          >
+            {t}
+          </button>
+        );
+      })}
     </div>
   );
 }

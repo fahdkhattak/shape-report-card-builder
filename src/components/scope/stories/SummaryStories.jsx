@@ -2,6 +2,7 @@ import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsBorder, dsShadow } from "../../../lib/ds.js";
 import { LAST, roundName, sinceText } from "../../../lib/scopeData.js";
 import { StoryCard, EvidenceSection, bodyText } from "./StoryCard.jsx";
+import { StoryButton } from "./AddOnStories.jsx";
 import { StatusFaceIcon } from "../../widgets/primitives.jsx";
 import { useCompare, CompareControl } from "./controls.jsx";
 import { useStoryStyle } from "./storyStyle.js";
@@ -205,13 +206,37 @@ export function StatusMeaningStory({ title, status, text, label, color }) {
 }
 
 /* ---- Methodology ---------------------------------------------------- */
+/* Methodology body text: Text sm in text/tertiary (the frames). */
+const methodText = { ...dsText("Text sm"), color: ds.text.tertiary };
+/* Status pills, [fill, text]: Likert V Good Subtle with the success text-indicator (the frame's #009638 green is not a
+   token), warning bg with its text-indicator, Likert Very Bad Subtle with the error text. */
+const STATUS_PILL = [[ds.likert.vGoodSubtle, ds.status.success.textIndicator], [ds.status.warning.bg, ds.status.warning.textIndicator], [ds.likert.veryBadSubtle, ds.status.error.text]];
 const STATUS_ROWS = [
-  ["Flourishing", `${FLOURISHING_AT} – 100`, ds.status.success.graph, ds.status.success.textIndicator, "High scores signify a state of flourishing. Most of the hard work has been done — adjustments bring marginal gains and help maintain excellence."],
-  ["Striving", `${STRIVING_AT} – ${FLOURISHING_AT - 1}`, ds.status.warning.graph, ds.status.warning.textIndicator, "Mid-range scores signify room to improve. They point to areas where striving results in real gains."],
-  ["Struggling", `0 – ${STRIVING_AT - 1}`, ds.status.error.graph, ds.status.error.textIndicator, "Lower scores signify struggling. They point to areas that will benefit most from targeted attention."],
+  ["Flourishing", `${FLOURISHING_AT} – 100`, ds.status.success.graph, ds.status.success.textIndicator, "High scores signify a state of flourishing. Most of the hard work has been done, although adjustments result in marginal gains and maintaining excellence."],
+  ["Striving", `${STRIVING_AT} – ${FLOURISHING_AT - 1}`, ds.status.warning.graph, ds.status.warning.textIndicator, "Mid-range scores signify “room to improve”. These scores highlight areas where striving to improve results in excellence."],
+  ["Struggling", `0 – ${STRIVING_AT - 1}`, ds.status.error.graph, ds.status.error.textIndicator, "Lower scores signify struggling. These scores point to areas that will benefit enormously from targeted intervention."],
 ];
 
 const METHOD = {
+  // Figma 13622:37449 / 37458 / 37420. Copy as designed, em dashes removed (voice guide).
+  dass: {
+    title: "How the Result Is Calculated",
+    paras: ["Mental health uses the Depression, Anxiety and Stress Scales (DASS for short), a psychometric tool used to evaluate these three common psychological conditions. The DASS is based on the symptoms commonly experienced by those who suffer from these conditions. The score for the Psychological Explorer is determined from the worst result of the three areas."],
+  },
+  healthAge: {
+    title: "What Is Health Age",
+    paras: ["Health Age shows how lifestyle impacts life expectancy. Nutrition, exercise, and sleep are crucial. Managed well, your Health Age can be lower than your actual age. Here are your results."],
+  },
+  healthAgeLong: {
+    title: "How Health Age Works",
+    readMore: true,
+    paras: [
+      "Chronological age is forever determined by the day you were born. Health Age, on the other hand, reflects your biological age, which is a function of your lifestyle, wear and tear, inflammation and other processes. Many of the things that accelerate ageing are a direct consequence of behaviours such as smoking, nutrition, exercise, sun exposure, alcohol consumption and life stressors.",
+      ["Smoke a pack of cigarettes a day, and that's ten years off your life expectancy", 1, ". You may be 40, but your insides are already 50!"],
+      ["Being inactive means a few more years; drink four or more alcoholic drinks a day, and there's another 5 years", 2, ". In fact, if you do everything wrong, the SHAPE Health Age calculator will add up to a whopping 27 years to your chronological age. You might look younger on the outside, but be a lot older on the inside."],
+      "Health Age is the single best predictor of both the quality and the quantity of your life.",
+    ],
+  },
   score: {
     title: "How Your Score Is Worked Out",
     paras: [
@@ -256,13 +281,15 @@ export function MethodologyStory({ kind }) {
     );
   }
   if (kind === "status") {
+    // Figma 13691:52353: a bold lead, then per status a pill (its range) over its meaning, 8px apart; text/tertiary body.
     return (
-      <StoryCard title="How Your Status Is Determined" line="Scores run from 0 to 100. Each score falls into one of three status ranges:">
-        <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[12], fontFamily: font }}>
-          {STATUS_ROWS.map(([name, range, c, cs, text]) => (
-            <div key={name} style={{ borderLeft: `${dsBorder.lg}px solid ${c}`, paddingLeft: dsSpace[12], display: "flex", flexDirection: "column", gap: dsSpace[4] }}>
-              <span style={{ ...dsText("Text sm", 700), color: cs }}>{name} <span style={{ fontWeight: 400, color: ds.text.secondary }}>{range}</span></span>
-              <span style={bodyText}>{text}</span>
+      <StoryCard title="How Your Status Is Determined" data-story="methodology-status">
+        <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}>
+          <p data-part="method-text" style={{ ...methodText, margin: 0 }}><b>SHAPE ProScores run from 0 to 100.</b> Each score is classified using one of three status ranges:</p>
+          {STATUS_ROWS.map(([name, range, , , text], i) => (
+            <div key={name} style={{ display: "flex", flexDirection: "column", gap: dsSpace[8], alignItems: "flex-start" }}>
+              <span data-part="status-pill" style={{ background: STATUS_PILL[i][0], color: STATUS_PILL[i][1], borderRadius: 46, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, ...dsText("Text sm", 500), lineHeight: "normal" }}>{name} {range.replace("–", "-")}</span>
+              <p style={{ ...methodText, margin: 0 }}>{text}</p>
             </div>
           ))}
         </div>
@@ -270,9 +297,14 @@ export function MethodologyStory({ kind }) {
     );
   }
   const m = METHOD[kind];
+  // A paragraph is a string, or [text, footnote number, text, ...] for the superscript references (Figma 13622:37426).
+  const para = (p) => (Array.isArray(p) ? p.map((x, k) => (typeof x === "number" ? <sup key={k} style={{ fontSize: 9, lineHeight: 0 }}>{x}</sup> : x)) : p);
   return (
-    <StoryCard title={m.title}>
-      {m.paras.map((p, i) => <p key={i} style={refined ? { ...bodyText, fontSize: 15, lineHeight: "24px", maxWidth: "62ch", textWrap: "pretty" } : bodyText}>{p}</p>)}
+    <StoryCard title={m.title} data-story={`methodology-${kind}`}>
+      <div style={{ display: "flex", flexDirection: "column", gap: refined ? dsSpace[12] : 14 }}>
+        {m.paras.map((p, i) => <p key={i} style={refined ? { ...bodyText, fontSize: 15, lineHeight: "24px", maxWidth: "62ch", textWrap: "pretty" } : { ...methodText, margin: 0 }}>{para(p)}</p>)}
+      </div>
+      {m.readMore && <div><StoryButton size="md" variant="secondary" title="Nothing to open in this prototype">Read more</StoryButton></div>}
     </StoryCard>
   );
 }

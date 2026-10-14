@@ -627,8 +627,8 @@ status ranges. This is on the Breakdown Developer page (overview and forms table
 
 **Few, many, odd (`stories/breakdownRules.js`, one table read by the components and by the Developer page):**
 - `RULES` per form: `min`, `ideal`, `labelled` (most parts that keep names on the chart), `max`, `fallback`, `firstRows`.
-  `fitForm(variant, n)` returns what to draw. **Radar** needs 3 to 24 parts (names to 12, then numbered marks + a key, even on a
-  wide card); **Area** 3 to 20 (names to 8, then numbers + key); **List** 1 to 8; outside those, the Story draws **bars** and
+  `fitForm(variant, n)` returns what to draw. **Radar** needs 3 to 24 parts (names while they physically fit, see "Radar and area labels" below; numbers + a key only after that, even on a
+  wide card); **Area** 3 to 20 (names in one row, then staggered over two, then numbers + key); **List** 1 to 8; outside those, the Story draws **bars** and
   marks the card `data-fallback="radar"`. **Bars** take any count: past 12 rows only the first 10 show until "Show all" (a "+2"
   rule, so 12 rows show all 12). **Mental Well-Being** shows the first 6 measures past 8; **Health Age drivers** the first 10
   past 12 (`ShowAll` is exported from `BreakdownStory.jsx`). **Zones** dots shrink 22 to 16 to 12px at 16 and 32 parts
@@ -642,6 +642,146 @@ status ranges. This is on the Breakdown Developer page (overview and forms table
   (forms × cases × 3 and 13 parts × 320 and 808px) found no horizontal spill and no errors.
 - Known cosmetic: motion's layout animation in the Bars | Zones switch can emit an invalid `box-shadow: …NaN` for a frame when a
   card is resized; the chart is unaffected.
+
+## Diagnostic Story — rebuilt against Figma `13622:37239` (2 frames + 7 of ours)
+
+Built in an earlier session (on another account) whose notes never reached this file; recorded here from the code.
+- **From Figma:** *What Stands Out* (`13622:37240`, `StrongestWeakestStory`) and *Areas to Focus On* (`13622:37281`,
+  `AreasToFocusStory`), both in `DiagnosticStory.jsx`. Shared parts in `stories/diagnosticParts.jsx`: `InnerCard`
+  (surface/card, 1px border/secondary, radius/lg, 16/16), `SegmentBar` (ten 8px segments, filled = score/10 rounded),
+  `GroupCard` (axis icon + group + System Tag | change pill + score + inert chevron, then "n out of N employees are …"),
+  `RailRow` (the Breakdown bar row reused), `CardGrid` (2 columns, 1 when compact), `AxisIcon` (Figma's gender / age /
+  ethnicity icons; tenure uses the age icon; the rest are lucide line icons).
+- **Ours, restyled to those rules** (`FamilyStories.jsx`): What Changed, Bright Spots, Where Gaps Are Widest, What Moves
+  With This, Priority Map, Within Reach, How It Ranks. Refined style keeps the `*Legacy` versions in `ExtraStories.jsx`.
+- **Developer page** `developer/docs/DiagnosticDoc.jsx` (Developer + Researcher views): 34 parity checks (16 + 18), all
+  matching. Two rows had the same label ("Card fill…" for the Story card and the inner card), giving React duplicate
+  keys; the inner-card rows are now "Inner card fill…".
+- **Fixes this pass:** `GroupCard`'s header no longer wraps the change/score/chevron cluster onto its own row when the
+  name + tag are long (Bright Spots had mixed card shapes); the tag drops under the name instead and every card keeps
+  the design's shape. The Priority Map's on-plot names now avoid other dots and the quadrant titles, try right / left /
+  above / below, and are offered to every part (Fix first placed first), not only to Fix first when there are 9+ parts:
+  12 Explorers went from 3 named to 9, with no collisions.
+
+## Composition Story — rebuilt against Figma `13622:39606`
+
+The section is too big for one `get_design_context`/`get_metadata` call (the connector truncates at ~69KB), so children
+were read one by one: `13622:39607` (Organisation rings), `13622:39699` (People rings), `13622:39765` (Table View).
+Employment/Locations card labels were read from a full-resolution `get_screenshot` cropped locally with PowerShell's
+System.Drawing (the browser pane refuses figma.com URLs; there is no Python on this machine).
+- **`CompositionStory.jsx`** (rewritten): title "Breakdowns", tabs as one pill (`PillTabs`, new in `controls.jsx`), Table
+  View / Copy Table. Chart View = one ring per axis, 16px apart, centred in an Evidence Section, footer "Select a segment to
+  view details." that becomes the selected group's details (the design draws no details panel, so nothing moves).
+  Table View = six equal columns, a `card-within-card` band per axis with an up/down chevron (first open), rows 52px apart
+  with hairlines, bold group + status-coloured bold score, grey 40px "-" pill for no change. `initialView` prop added.
+  The old Donut/Bars switch, side legend and generic table are gone.
+- **`DonutChart.jsx`** (rewritten as the Figma ring): 176 box, ring r80/r56, segments touching from 12 o'clock clockwise,
+  DS graph palette in the frames' order (`segmentColor`; Work Composition uses Personal Blue / Org Blue / Mint), axis icon
+  + name in the centre. Compact cards shrink rings to 150 / 128px.
+- **Labels follow the design where the data matches:** tenure → "Employment Duration", workModel → "Work Composition",
+  location → "Site" (local map in `CompositionStory.jsx`; `COMPOSITION_TABS` unchanged so other Stories keep their labels).
+  Age, Ethnicity, Education, Salary, Country don't exist in the data and aren't shown.
+- **Icons:** Figma's Department (its path is drawn sideways and rotated on canvas; the swap of x/y is baked into
+  `assets/axis-icons/department.svg`) and Job Level are now in `AxisIcon` (so Diagnostic cards changed too). Employment
+  Status / Work Composition / Site still use lucide stand-ins; the real ones live in the "SHAPE – &Form" library file.
+- **Developer page** `docs/CompositionDoc.jsx`: 27 parity checks (13 chart + 14 table), all matching, measured on live data.
+- **Second form, "Donut", kept by request** (the user preferred the earlier donut): `CompositionStory form="donut"` puts
+  each axis in an `InnerCard` (icon + name header) with `DonutLegend.jsx` (the earlier donut + linked legend, restored from
+  git and moved onto DS tokens/text styles, tap support added, colours from `segmentColor` so a group keeps its colour
+  across forms). Tabs, Table View and data are shared. Offered as a separate catalogue Story, **"Composition (Donut)"**
+  (`composition-donut`, family Composition, not suggested by default; chat "donut" / "pie chart" / "composition donut",
+  which suppresses the plain "composition" match). Developer sidebar lists Rings / Donut / Table View
+  (`FAMILY_FORMS.Composition`, anchors `form-rings` / `form-donut` / `form-table`). It isn't in Figma and needs a design
+  review; that's said on the page's owner section, never as a label in the nav (the user dislikes those).
+
+## Actions — rebuilt against Figma `13622:36874`
+
+- **Current style rebuilt** (`ActionStories.jsx`; Refined branch untouched): `ActionsStoryBar` = bg/secondary bar, 1px
+  border, 18 radius, "Read More ›" dark pill (sm 28px / xs 24px, `DarkPill`); `ActionsCta` = the 28px dark pill with no
+  icon. The layer: a Driver nav (card-within-card panel, rows 8/18, Text xs/Medium, bold status-coloured score, open row
+  ghost-hover grey + bold) a third of the width, cards two thirds. Cards exported one by one: `ActionsYouCanTakeCard`
+  (headline, subhead, two paragraphs, Share this guidance), `ThinkAboutCard`, `PlaybookCard`, `LoveScienceCard`,
+  `CitationsCard` (collapsible). Illustrations from Figma in `assets/actions/`.
+- **Love Science and Citations only render when real content is passed** (`ActionsLayer content={{ [driver]: { science,
+  cites } }}`): they make research claims and nothing in the prototype has real studies. The Developer page shows them with
+  the design's own sample. Templated copy lost its em dashes and gained the subhead / second paragraph.
+- **Bug fixed while checking:** `padding` shorthand + an undefined `paddingRight` gave the CTA 6px on the right instead of
+  14; all four paddings are explicit now. CTA width parity compares height/padding/type, not width (the label renders
+  129.x px vs Figma's 130px box).
+- **Developer page** `docs/ActionsDoc.jsx`: 17 parity checks (bar 5, CTA 1, cards 8, nav 3), all matching.
+
+## Comparison and Trend Stories — Developer pages only (Figma `13622:39086`, `13622:37493`)
+
+Per explicit direction, built as components + Developer / Researcher pages only; **not wired into Scopes or the Widget
+Builder yet** (the catalogue's "Comparison" entry is still blocked).
+- **Comparison** (`stories/ComparisonStories.jsx`, `docs/ComparisonDoc.jsx`): the legend is the control: an entity card per
+  You / team / Org (card-within-card, 1px border, radius/lg, 16px from the edge including the border; team cards 88px with
+  a full-width System Tag) with a 36×20 toggle in its series colour (`seriesColor`: You Purple, Org `#FD531B` Orange Coral
+  600, a primitive; teams Team Blue / Mint Green / Lavender Violet, none shown on in any frame). You + Org start on; with
+  no You, the first team does. Forms: `ComparisonRadar` (legend `side` 511+247 or `below`), `ComparisonArea` (Sort on /
+  Sort by / Clear as small menus, tooltip per part), `HealthAgeComparison` (bars from an actual-age centre line, 10 years
+  = half the track; the frames' own bar lengths contradict their numbers), `ComparisonLegend` (vertical / horizontal).
+  Live examples use the two largest departments as "teams" (`groupPartMeans`); there is no per-person You, and no ages, so
+  You and Health Age appear only with the design's sample values (tagged). 14 parity checks, all matching.
+- **Trend** (`stories/TrendCharts.jsx`, `docs/TrendDoc.jsx`, existing `ScoreHistoryStory` documented as the first form): one
+  shared `Frame`: rotated axis title, 22px tick column, a 184px plot (180 for the bar forms), gridlines in border/tertiary,
+  round labels 24px under with the latest in bold capitals. Forms: `ScoreOverTime` (line in border/primary, dots
+  border/strong, values in status colours; also Health Age with a dashed reference), `ScoreOverTimeRows` (small multiples),
+  `StateOverTime` (stacked Likert severity, pill tabs with `tone="default"`, hover tooltip), `LevelOverTime` (bar heights
+  180/141/106/71/34, hover compares with the round before), `ENPSOverTime` (Likert Subtle stacks; **eNPS on its own −100…100
+  right axis** because our eNPS is negative every round and the frame's 0–100 axis can't show it). New
+  `wellbeing.js` `severityByRound()`. The frame only scrolls sideways when the card is narrower than its minimum (an
+  overflow container clips the value labels and tooltips otherwise). 16 parity checks, all matching.
+- Gotchas hit: `docParts`' `T()` prefixes `color/`; utility tokens (Likert, graph) need `tok("utility/…")`. Figma's
+  padding includes the border; match it with `padding: 16 - border`. SVG `stroke`/`fill` set as attributes can't be read
+  by the token-aware parity helpers; set them in `style`.
+
+### Responsive pass on Comparison / Trend + label rules (user: "a lot of points where it seems unusable")
+
+- **Real bug, the root of most of it:** a Story that renders its own card and called `useStoryWidth()` at its top level
+  read the context *outside* its card (the Scope's width, or the default 808), so ComparisonRadar/Area, HealthAge,
+  ScoreOverTimeRows and LevelOverTime never went compact. New **`useOwnWidth()`** (`storyWidth.js`) measures a wrapper div
+  around the card; use it whenever the component renders the `StoryCard` itself. Components inside a card keep using
+  `useStoryWidth()`.
+- **No sideways scrolling anywhere.** Trend `Frame` now measures its plot and passes `{ plotW, slot, barW, compact }`
+  (children/`right` may be functions): compact drops axis titles, bars are 60% of the slot (16–54px), round labels shorten
+  to "Sep 25" under a 60px slot and show every other one (always the latest) under 34px, Level names wrap in 64px, the
+  Level comparison opens under the chart on a tap, tooltips are clamped inside the plot. By-part rows stack the name
+  above the line. Score History's round cards become a grid on compact (Figma's own row overflows the card).
+- **Comparison radar now uses `ScopeRadar`** (new `series` prop: polygons per series, tooltip/detail/key list every series;
+  `NumberedList` rows accept `series: [{color, value}]`). Legend beside only when the card fits 460 + 247px.
+  Comparison area: numbered marks + key under 26px a part or on compact, 200px plot, tap detail under the chart, sort
+  menus left-anchored on compact.
+- **Label rules (product direction):** radar always numbers from **20 spokes** (`RADAR_NAMES_BELOW`); the Breakdown area
+  chart's **staggered names were removed** (user disliked them) — one row of names (up to three lines, as designed) or
+  numbers, nothing in between.
+- **Developer pages:** `docs/WidthShowcase.jsx` renders every form at 320/390/480/560/808 (used by Comparison and Trend).
+  Audited by script at every width: no element outside its card, no scroll containers, no overlapping round labels.
+
+## Developer screen chrome
+
+- The breadcrumb moved out of the sticky header (its width made the header grow and shrink) to just above each page's
+  `<h1>` (`<nav aria-label="Breadcrumb">`); the header holds only View / Style / Mode / Inspect, right-aligned.
+- The "Figma" notes under What Stands Out / Areas to Focus On in the sidebar were removed (user didn't want them).
+
+## Radar and area labels — numbers are the last resort
+
+Feedback: once labels got crowded, the charts switched to numbered marks plus a key, which made Stories much longer. The
+radar did it on any card under 645px, even with five short names.
+- **Radar** (`ScopeRadar.jsx`, `fitRadarLabels(labels, angleOf, scale)`): text is kept at 11px or more on screen, and on
+  a narrower card the rings shrink (216 down to a 90px on-screen radius, `RINGS`) so names still fit beside them. Each ring
+  size tries wrapping at 18 / 14 / 11 characters. It returns `{ R, wrapAt, text, line }` or null; null is the only route
+  to numbers. The width gate is gone, and phone-width cards try too. 12 Explorers keep names down to about a 450px card.
+- **Area** (`AreaChart.jsx`, `fitNames`): one row of names first (up to three lines each); if too tight, **staggered over
+  two rows** (each name gets twice the room, up to three lines, with a hairline tying a second-row name to its point; end
+  names are clipped to the plot via `staggerBox` so nothing spills sideways); numbers only when neither fits. A 6-Driver
+  chart on a 446px card now staggers instead of showing a key.
+- **Hover on names everywhere:** the key (`NumberedList`, `hoverable` + `onHover`) now drives both charts (the props
+  existed, but neither chart had passed them). A key hover only highlights; the detail card stays for taps and chart
+  hovers, because inserting it above the key moved the hovered row out from under the mouse. Hover from a name under the
+  area chart (row or staggered) already worked. Separately fixed: a wide card in numbered mode never cleared its hover
+  when the mouse left (leave was gated on `compact`, which is now also the numbered state); it now checks for a mouse.
+- `BreakdownDoc.jsx`'s rule text and responsive table were updated to match.
 
 ## Status color rule
 

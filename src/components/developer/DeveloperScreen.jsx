@@ -10,6 +10,17 @@ import InsightSummaryDoc, { meta as insightMeta, toc as insightToc } from "./doc
 import ScoreMeaningDoc, { meta as meaningMeta, toc as meaningToc } from "./docs/ScoreMeaningDoc.jsx";
 import BreakdownDoc, { meta as breakdownMeta, toc as breakdownToc } from "./docs/BreakdownDoc.jsx";
 import DiagnosticDoc, { meta as diagnosticMeta, toc as diagnosticToc } from "./docs/DiagnosticDoc.jsx";
+import CompositionDoc, { meta as compositionMeta, toc as compositionToc } from "./docs/CompositionDoc.jsx";
+import ActionsDoc, { meta as actionsMeta, toc as actionsToc } from "./docs/ActionsDoc.jsx";
+import ComparisonDoc, { meta as comparisonMeta, toc as comparisonToc } from "./docs/ComparisonDoc.jsx";
+import TrendDoc, { meta as trendMeta, toc as trendToc } from "./docs/TrendDoc.jsx";
+import ResourceDoc, { meta as resourceMeta, toc as resourceToc } from "./docs/ResourceDoc.jsx";
+import MethodologyDoc, { meta as methodologyMeta, toc as methodologyToc } from "./docs/MethodologyDoc.jsx";
+import UpgradeDoc, { meta as upgradeMeta, toc as upgradeToc } from "./docs/UpgradeDoc.jsx";
+import CitationDoc, { meta as citationMeta, toc as citationToc } from "./docs/CitationDoc.jsx";
+import VideoDoc, { meta as videoMeta, toc as videoToc } from "./docs/VideoDoc.jsx";
+import QuestionnaireDoc, { meta as questionnaireMeta, toc as questionnaireToc } from "./docs/QuestionnaireDoc.jsx";
+import ControlsDoc, { meta as controlsMeta, toc as controlsToc } from "./docs/ControlsDoc.jsx";
 import TokenAuditDoc, { meta as auditMeta, toc as auditToc } from "./docs/TokenAuditDoc.jsx";
 import StoryFamiliesDoc, { meta as famMeta, toc as famToc } from "./docs/StoryFamiliesDoc.jsx";
 import { FAMILY_INFO, FAMILY_FORMS, DOCS_BY_STORY } from "./storyFamilies.js";
@@ -31,12 +42,26 @@ const DOCS = [
   { meta: meaningMeta, toc: meaningToc, Page: ScoreMeaningDoc },
   { meta: breakdownMeta, toc: breakdownToc, Page: BreakdownDoc },
   { meta: diagnosticMeta, toc: diagnosticToc, Page: DiagnosticDoc },
+  { meta: compositionMeta, toc: compositionToc, Page: CompositionDoc },
+  { meta: actionsMeta, toc: actionsToc, Page: ActionsDoc },
+  { meta: comparisonMeta, toc: comparisonToc, Page: ComparisonDoc },
+  { meta: trendMeta, toc: trendToc, Page: TrendDoc },
+  { meta: resourceMeta, toc: resourceToc, Page: ResourceDoc },
+  { meta: methodologyMeta, toc: methodologyToc, Page: MethodologyDoc },
+  { meta: upgradeMeta, toc: upgradeToc, Page: UpgradeDoc },
+  { meta: citationMeta, toc: citationToc, Page: CitationDoc },
+  { meta: videoMeta, toc: videoToc, Page: VideoDoc },
+  { meta: questionnaireMeta, toc: questionnaireToc, Page: QuestionnaireDoc },
 ];
 const FOUNDATIONS = [{ meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
-const ALL_DOCS = [...DOCS, ...FOUNDATIONS];
+const COMPONENTS = [{ meta: controlsMeta, toc: controlsToc, Page: ControlsDoc }];
+const ALL_DOCS = [...DOCS, ...COMPONENTS, ...FOUNDATIONS];
 DOCS.forEach((d) => { DOCS_BY_STORY[d.meta.name] = d.meta.id; });
 /* The Breakdown page also covers these two forms (they are separate Stories in the catalogue). */
 ["Mental Well-Being", "Health Age Drivers", "Who Is Where", "How Scores Are Spread"].forEach((n) => { DOCS_BY_STORY[n] = breakdownMeta.id; });
+DOCS_BY_STORY["Composition (Donut)"] = compositionMeta.id;
+DOCS_BY_STORY["Who Answered"] = methodologyMeta.id;
+DOCS_BY_STORY["Goal & Pace"] = trendMeta.id;
 /* Stories grouped by family, in catalogue order. */
 const FAMILIES = [...new Set(STORIES.map((s) => s.family))].map((name) => ({ name, stories: STORIES.filter((s) => s.family === name) }));
 const familyOf = (docName) => STORIES.find((s) => s.name === docName)?.family;
@@ -120,15 +145,16 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
             </div>
           );
         })}
+        <div style={groupLabel}>Components</div>
+        {COMPONENTS.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
         <div style={groupLabel}>Foundations</div>
         {FOUNDATIONS.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
         <div style={groupLabel}>Coming later</div>
-        {["Widgets", "Controls"].map((n) => <div key={n} style={sideItem(false, true)}>{n}</div>)}
+        {["Widgets"].map((n) => <div key={n} style={sideItem(false, true)}>{n}</div>)}
       </aside>
 
       <main ref={scroller} style={{ flex: 1, minWidth: 0, overflowY: "auto", background: ds.bg.white }}>
-        <header style={{ position: "sticky", top: 0, zIndex: 20, background: "color-mix(in srgb, var(--ds-color-bg-white) 94%, transparent)", backdropFilter: "blur(8px)", borderBottom: `${dsBorder.sm}px solid ${ds.border.tertiary}`, padding: `${dsSpace[12]}px ${dsSpace[40]}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ ...dsText("Text xs"), color: ds.text.tertiary }}>Developer <span style={{ color: ds.text.quaternary }}>›</span> {doc.meta.group}{familyOf(doc.meta.name) && familyOf(doc.meta.name) !== doc.meta.name && <> <span style={{ color: ds.text.quaternary }}>›</span> {familyOf(doc.meta.name)}</>} <span style={{ color: ds.text.quaternary }}>›</span> <b style={{ color: ds.text.primary, fontWeight: 600 }}>{doc.meta.name}</b></div>
+        <header style={{ position: "sticky", top: 0, zIndex: 20, background: "color-mix(in srgb, var(--ds-color-bg-white) 94%, transparent)", backdropFilter: "blur(8px)", borderBottom: `${dsBorder.sm}px solid ${ds.border.tertiary}`, padding: `${dsSpace[12]}px ${dsSpace[40]}px`, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: dsSpace[16] }}>
             {hasViews && (
               <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
@@ -152,6 +178,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
 
         <div style={{ display: "flex", gap: dsSpace[48], padding: `${dsSpace[40]}px ${dsSpace[40]}px ${dsSpace[128]}px`, alignItems: "flex-start" }}>
           <article style={{ flex: 1, minWidth: 0, maxWidth: 1040 }}>
+            <nav aria-label="Breadcrumb" style={{ ...dsText("Text xs"), color: ds.text.tertiary, marginBottom: dsSpace[12] }}>Developer <span style={{ color: ds.text.quaternary }}>›</span> {doc.meta.group}{familyOf(doc.meta.name) && familyOf(doc.meta.name) !== doc.meta.name && <> <span style={{ color: ds.text.quaternary }}>›</span> {familyOf(doc.meta.name)}</>} <span style={{ color: ds.text.quaternary }}>›</span> <b style={{ color: ds.text.primary, fontWeight: 600 }}>{doc.meta.name}</b></nav>
             <h1 style={{ margin: 0, ...dsText("Display md", 600), color: ds.text.primary }}>{doc.meta.name}</h1>
             <p style={{ margin: `${dsSpace[12]}px 0 ${dsSpace[16]}px`, ...dsText("Text lg"), color: ds.text.secondary, maxWidth: "62ch", textWrap: "pretty" }}>{doc.meta.blurb}</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
