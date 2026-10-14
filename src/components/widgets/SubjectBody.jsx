@@ -7,6 +7,7 @@ import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, GroupBars, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
 import { FLOURISHING_AT, STRIVING_AT, statusName, nextLine } from "../../lib/bands.js";
 import { ds } from "../../lib/ds.js";
+import GraphInsight from "./GraphInsight.jsx";
 import DonutChart, { segmentColor } from "../scope/stories/DonutChart.jsx";
 
 /* ================================================================== */
@@ -137,21 +138,7 @@ function historyCaption(points) {
   return <>The score held at <B>{last}</B> since <B>R{n - 1}</B>.</>;
 }
 function HistoryForm({ p, size }) {
-  if (size === "1x1") {
-    return (
-      <div style={col({ gap: 6 })}>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}><TrendPill delta={p.delta} compact /></div>
-        <Sparkline points={p.points} xLabels={p.labels} w={132} h={60} gridY={[0, 50, 100]} />
-      </div>
-    );
-  }
-  return (
-    <div style={col({ gap: 12, justifyContent: "space-between" })}>
-      <div><TrendPill delta={p.delta} /></div>
-      <HistoryChart points={p.points} labels={p.labels} h={178} />
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>{historyCaption(p.points)}</span>
-    </div>
-  );
+  return <GraphInsight series={[{ points: p.points }]} labels={p.labels} size={size} delta={p.delta} evidence={historyCaption(p.points)} />;
 }
 
 /* ---- Parts ------------------------------------------------------------------- */
@@ -492,7 +479,7 @@ function StoryForm({ p }) {
 
 /* ---- Index ---------------------------------------------------------------- */
 function IndexForm({ p, size }) {
-  return <div style={col({ justifyContent: "center", overflow: "hidden" })}>{p.dimension ? <DimensionIndex dimension={p.dimension} variant={size} /> : <IndexRing variant={size} overall={p.value} />}</div>;
+  return <div style={col({ justifyContent: "center", overflow: "hidden" })}>{p.dimension ? <DimensionIndex dimension={p.dimension} /> : <IndexRing variant={size} overall={p.value} />}</div>;
 }
 
 /* ---- Team ---------------------------------------------------------------- */
@@ -752,7 +739,7 @@ function MomentumForm({ p, size }) {
   );
 }
 
-const RENDER = { composition: CompositionForm, story: StoryForm, index: IndexForm, team: TeamForm, versus: VersusForm, duel: DuelForm, check: CheckForm, whatif: WhatIfForm, heat: HeatForm, momentum: MomentumForm, score: Score, gauge: GaugeForm, status: StatusForm, history: HistoryForm, parts: PartsForm, people: PeopleForm, groups: GroupsForm, focus: FocusForm, movers: MoversForm, spread: SpreadForm, goal: GoalForm };
+const RENDER = { dindex: IndexForm, composition: CompositionForm, story: StoryForm, index: IndexForm, team: TeamForm, versus: VersusForm, duel: DuelForm, check: CheckForm, whatif: WhatIfForm, heat: HeatForm, momentum: MomentumForm, score: Score, gauge: GaugeForm, status: StatusForm, history: HistoryForm, parts: PartsForm, people: PeopleForm, groups: GroupsForm, focus: FocusForm, movers: MoversForm, spread: SpreadForm, goal: GoalForm };
 
 export default function SubjectBody({ spec }) {
   const { form, payload, size } = spec;

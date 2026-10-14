@@ -22,6 +22,7 @@ import {
   FocusRow, GroupBars,
 } from "./widgetParts.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
+import GraphInsight from "./GraphInsight.jsx";
 import {
   ROUNDS, LATEST, PREVIOUS, ROUND_LABELS, DIMENSIONS, delta,
   dimensionRankedRows, driverRankedRows, dimensionValue, driverValue, driverTrend, DIMENSION_DRIVERS,
@@ -212,7 +213,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       return <IndexRing variant={formIndex === 1 ? "3x3" : "2x2"} overall={LATEST.avgOverall} />;
 
     case "dimension-index":
-      return <DimensionIndex dimension="Corporate Culture" variant={formIndex === 1 ? "3x3" : "2x2"} />;
+      return <DimensionIndex dimension="Corporate Culture" />;
 
     /* ---- Status ---- */
     case "org-status": {
@@ -372,20 +373,8 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
     /* ---- Score over time ---- */
     case "score-history": {
       const points = ROUNDS.map((r) => Math.round(r.avgOverall));
-      if (formIndex === 1)
-        return (
-          <div style={col({ gap: 6 })}>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}><TrendPill delta={avgDelta} compact /></div>
-            <Sparkline points={points} xLabels={ROUND_LABELS} w={132} h={60} gridY={[0, 50, 100]} />
-          </div>
-        );
-      return (
-        <div style={col({ gap: 12, justifyContent: "space-between" })}>
-          <div><TrendPill delta={avgDelta} /></div>
-          <HistoryChart points={points} labels={ROUND_LABELS} h={178} />
-          <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>{historyCaption(points)}</span>
-        </div>
-      );
+      // Graph insight rules (docs/widget-insight-rules.md): 1x1 up to 3 rounds, 2x2 up to 7; past that the widget grows or gives way to the detailed view.
+      return <GraphInsight series={[{ points }]} labels={ROUND_LABELS} size={formIndex === 1 ? "1x1" : "2x2"} delta={avgDelta} evidence={historyCaption(points)} />;
     }
 
     /* ---- Score comparisons ---- */

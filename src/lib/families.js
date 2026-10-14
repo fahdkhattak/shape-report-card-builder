@@ -76,11 +76,10 @@ export const FAMILIES = [
   ] },
   { id: "index", name: "Wellbeing Index", category: "Score", blurb: "Your overall score, broken down by Explorer and driver.", owned: false, persona: "org", forms: [
     { size: "2x2", label: "Explorer ring", name: "Wellbeing Index", blurb: "The overall score at the centre with all twelve Explorers around it." },
-    { size: "3x3", label: "Explorer + driver ring", name: "Wellbeing Index · Drivers", blurb: "The same ring, with each Explorer split into its drivers and the weakest and strongest named outside." },
+    { size: "3x3", label: "Explorer + driver ring", name: "Wellbeing Index · Drivers", blurb: "The same ring, with each Explorer split into its Drivers in an outer ring." },
   ] },
   { id: "dimension-index", name: "Explorer Index", category: "Score", blurb: "One Explorer's score at the centre, with every driver inside it around the ring.", owned: false, persona: "org", forms: [
     { size: "2x2", label: "Driver ring", name: "Explorer Index", blurb: "One Explorer's score with each of its drivers around the ring.", title: "Corporate Culture Index" },
-    { size: "3x3", label: "Driver + round ring", name: "Explorer Index · Rounds", blurb: "The same ring, with each driver's score in every round around the outside.", title: "Corporate Culture Index" },
   ] },
 
   /* ---- Status ---- */

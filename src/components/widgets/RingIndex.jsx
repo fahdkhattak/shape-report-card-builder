@@ -1,80 +1,123 @@
 import { useState } from "react";
-import { T, font, band } from "../../lib/tokens.js";
-import { polar, describeArc } from "./primitives.jsx";
-import { ROUNDS, DIMENSIONS, DIMENSION_DRIVERS, dimensionValue, driverValue } from "../../lib/dataset.js";
+import { font } from "../../lib/tokens.js";
+import { ds, dsBand, dsText, dsRadius, dsSpace, dsShadow } from "../../lib/ds.js";
+import { polar, describeArc, TrendPill } from "./primitives.jsx";
+import { DIMENSIONS, DIMENSION_DRIVERS, PREVIOUS, dimensionValue, driverValue } from "../../lib/dataset.js";
 
 /* ================================================================== */
-/* INDEX WIDGETS — "Corporate Culture INDEX" (Figma 984qJvMt7fCHASYHRwgrab, */
-/* node 15061:40683; 2x2 = 15061:40434, 3x3 = 15061:40477).                 */
-/*                                                                          */
-/* One score in a white disc, parts around it as tinted wedges (status       */
-/* tint, white hairlines), each wedge naming itself and its score; a bold    */
-/* rim in the status colour of the outermost ring; a 3×3 adds a second ring   */
-/* of finer cells and labels outside the rim on a short tick.                 */
-/*                                                                          */
-/* Geometry read off the nodes (px): disc Ø111 with the score at 64/700;      */
-/* wedges r 58–137; second ring r 139–171; rim 3px (r 173–176 at 3×3, 139.5–   */
-/* 142.5 at 2×2); names 11/400 near the outer edge of a wedge, scores 11/700   */
-/* near the disc; outside labels 11/400.                                       */
-/*                                                                          */
-/* The Figma 3×3's second ring is 20 survey *items*, which this dataset does    */
-/* not have. So the second ring is whatever real, finer data the subject has:   */
-/*   whole organisation → the Drivers inside each Explorer                       */
-/*   one Explorer       → each Driver's score in every round (oldest first)      */
-/* At 3×3 every inner wedge is named outside the rim (two lines at most) and      */
-/* shows only its score inside, so every part is labelled the same way; the       */
-/* outer ring's cells show scores and name themselves on hover, which also swaps   */
-/* the disc to that part's name and score. There is no caption under the chart.    */
+/* INDEX WIDGETS — the radial composite (specification board           */
+/* 984qJvMt7fCHASYHRwgrab 9158:28363; rules written up in               */
+/* docs/widget-insight-rules.md; frames 15061:40434 / 15061:40477).     */
+/*                                                                      */
+/* One score in a white disc, parts around it as equal radial slices    */
+/* tinted by status, each slice a label (outer half) and its score      */
+/* (inner half), a 3px rim in the status colour of the last visible     */
+/* level, 1px white dividers, no gaps between rings.                    */
+/*                                                                      */
+/* 2×2, one level: 2 to 20 segments. Up to 12: label and score. 13 to   */
+/* 20: labels hidden, the score moves to the middle of the segment.     */
+/* A label that does not fit is truncated with an ellipsis, and hidden  */
+/* when even that does not fit; the full label is on hover or tap.      */
+/*                                                                      */
+/* 3×3, two levels: 2 to 12 parents (their label inside the inner ring) */
+/* and children in an outer ring whose labels sit outside the rim on a  */
+/* connector (up to 25, and only if every one of them fits; otherwise   */
+/* none, hover names them). A child narrower than 12° hides its score   */
+/* but stays as a colour segment; hovering it opens its whole group.    */
+/* Past 12 parents the widget gives way to the detailed view.            */
+/*                                                                      */
+/* Hover or tap a segment, or hover a label, for the tooltip: the full  */
+/* label, the change since the last round and the score.                */
 /* ================================================================== */
-const G = { hole: 55.6, in: 58, wOut: 137, r2In: 139, r2Out: 171 };
-
+const G = { hole: 55.6, in: 58, out: 137, r2Out: 171 };
+const MIN_CHILD_DEG = 12;
+const MAX_CHILD_LABELS = 25;
+const LEVEL2 = { success: "#D3F2E3", warning: "#FFF1CF", error: "#FCD7DD" }; // secondary tints from the board (not in the DS file)
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-function Txt({ x, y, w, h = 14, children, size = 11, weight = 400, color = T.gray900, align = "center", ellipsis = true, lines = 1 }) {
+/* Fit a label to a width: whole, truncated with an ellipsis, or null when not even four characters fit. */
+export function fitLabel(label, widthPx, size = 11) {
+  const chars = Math.floor(widthPx / (size * 0.54));
+  if (label.length <= chars) return label;
+  if (chars >= 4) return `${label.slice(0, chars - 1).trimEnd()}…`;
+  return null;
+}
+
+function Txt({ x, y, w, h = 14, children, size = 11, weight = 400, color, align = "center" }) {
   const left = align === "end" ? x - w : align === "start" ? x : x - w / 2;
   return (
     <foreignObject x={left} y={y - h / 2} width={w} height={h} style={{ overflow: "visible", pointerEvents: "none" }}>
-      <div xmlns="http://www.w3.org/1999/xhtml" style={{ fontFamily: font, fontSize: size, fontWeight: weight, color, textAlign: align === "end" ? "right" : align === "start" ? "left" : "center", ...(lines > 1 ? { display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: `${Math.round(h / lines)}px` } : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: ellipsis ? "ellipsis" : "clip", lineHeight: `${h}px` }) }}>{children}</div>
+      <div xmlns="http://www.w3.org/1999/xhtml" style={{ fontFamily: font, fontSize: size, fontWeight: weight, color: color || ds.text.primary, textAlign: align === "end" ? "right" : align === "start" ? "left" : "center", whiteSpace: "nowrap", overflow: "hidden", lineHeight: `${h}px` }}>{children}</div>
     </foreignObject>
   );
 }
 
-/* wedges: [{ label, value, sub?: [{ label, value }] }]. outside: [{ angle, text }] drawn beyond the rim. */
-function Ring({ wedges, center, outside = [], size }) {
-  const [hover, setHover] = useState(null);
+/* wedges: [{ label, value, prev?, sub?: [{ label, value, prev? }] }]. `center`: the overall score. */
+function Ring({ wedges: all, center, size, title }) {
+  const [hover, setHover] = useState(null); // { id, parent?, group? }; id = "p3" or "c3.1"
   const is3 = size === "3x3";
   const W = is3 ? 492 : 288, H = is3 ? 468 : 288;
   const cx = W / 2, cy = H / 2;
+  const wedges = all.slice(0, is3 ? 12 : 20);
+  const n = wedges.length;
   const hasSub = is3 && wedges.some((w) => w.sub?.length);
-  const rimIn = hasSub ? 173 : 139.5, rimOut = hasSub ? 176 : 142.5;
-  const step = 360 / wedges.length;
-  const cb = band(center);
-  const shown = hover || { label: null, value: center };
-  const sb = band(shown.value);
-  const big = shown.label ? 40 : center >= 100 ? 52 : 64;
+  const step = 360 / n;
+  const rOut = hasSub ? G.r2Out : G.out;
+  const rimIn = rOut + 2, rimOut = rOut + 5;
+  const labelsOnWedge = n <= 12;
+  const childTotal = wedges.reduce((a, w) => a + (w.sub?.length || 0), 0);
 
-  const rimCells = [];
+  // Child labels outside the rim: all or none (a ring half labelled reads as a mistake).
+  const outside = [];
+  let outsideOk = hasSub && childTotal > 0 && childTotal <= MAX_CHILD_LABELS;
+  if (outsideOk) {
+    const taken = { l: [], r: [] };
+    wedges.forEach((w, i) => (w.sub || []).forEach((c, j) => {
+      const mid = i * step + ((j + 0.5) * step) / w.sub.length;
+      const side = Math.sin((mid * Math.PI) / 180) >= 0 ? "r" : "l";
+      const p0 = polar(cx, cy, rimOut + 1, mid), p1 = polar(cx, cy, rimOut + 9, mid), p2 = polar(cx, cy, rimOut + 12, mid);
+      if (taken[side].some((t) => Math.abs(t - p2.y) < 13)) outsideOk = false;
+      taken[side].push(p2.y);
+      const avail = (side === "r" ? W - p2.x : p2.x) - 4;
+      const text = fitLabel(c.label, Math.min(avail, 104));
+      if (!text) outsideOk = false;
+      outside.push({ id: `c${i}.${j}`, parent: i, mid, side, p0, p1, p2, text, avail });
+    }));
+  }
+
+  const tint = (v, level) => (level === 2 ? LEVEL2[dsBand(v).key] : dsBand(v).bg);
+  const active = (id, pid) => !hover || hover.id === id || hover.group === pid || hover.id === pid || hover.parent === Number(pid?.slice(1));
+  const on = (id, extra = {}) => ({
+    onPointerEnter: (e) => e.pointerType === "mouse" && setHover({ id, ...extra }),
+    onPointerLeave: (e) => e.pointerType === "mouse" && setHover(null),
+    onPointerDown: () => setHover((h) => (h?.id === id ? null : { id, ...extra })),
+  });
+
+  const rim = [];
   const body = wedges.map((w, i) => {
-    const a0 = i * step, a1 = (i + 1) * step, mid = (a0 + a1) / 2, b = band(w.value);
-    const chord = 2 * 107 * Math.sin((step / 2) * (Math.PI / 180));
-    const nameAt = polar(cx, cy, 107, mid), valAt = polar(cx, cy, is3 ? 98 : 66, mid);
-    const over = (label, value) => ({ onMouseEnter: () => setHover({ label, value }), onMouseLeave: () => setHover(null) });
-    if (!(hasSub && w.sub?.length)) rimCells.push({ a0, a1, v: w.value });
+    const a0 = i * step, a1 = a0 + step, mid = a0 + step / 2, kids = hasSub ? w.sub || [] : [];
+    const pid = `p${i}`;
+    const chord = 2 * 120 * Math.sin((step / 2) * (Math.PI / 180));
+    const labelText = labelsOnWedge ? fitLabel(w.label, chord - 6) : null;
+    const valAt = polar(cx, cy, labelText ? 82 : (G.in + G.out) / 2, mid);
+    const nameAt = polar(cx, cy, 118, mid);
+    if (!kids.length) rim.push({ a0, a1, v: w.value });
+    const childDeg = kids.length ? step / kids.length : 360;
+    const smallKids = kids.length > 0 && childDeg < MIN_CHILD_DEG;
     return (
-      <g key={w.label}>
-        <path d={describeArc(cx, cy, G.in, G.wOut, a0, a1)} fill={b.bg} stroke={T.white} strokeWidth="1.5" {...over(w.label, w.value)}><title>{`${w.label}: ${w.value}`}</title></path>
-        {!is3 && <Txt x={nameAt.x} y={nameAt.y} w={clamp(chord - 6, 36, 74)} size={step <= 30 ? 10 : 11}>{w.label}</Txt>}
-        <Txt x={valAt.x} y={valAt.y} w={34} h={16} size={is3 ? 14 : 11} weight={700} color={b.cs}>{w.value}</Txt>
-        {hasSub && w.sub?.map((c, j) => {
-          const n = w.sub.length, s0 = a0 + (j * step) / n, s1 = a0 + ((j + 1) * step) / n, cb2 = band(c.value);
-          const at = polar(cx, cy, (G.r2In + G.r2Out) / 2, (s0 + s1) / 2);
-          // A cell narrower than its own number (a 7-Driver Explorer's cells are ~12px wide) shows no number: hover names it.
-          const fits = ((s1 - s0) * Math.PI / 180) * ((G.r2In + G.r2Out) / 2) >= 20;
-          rimCells.push({ a0: s0, a1: s1, v: c.value });
+      <g key={pid} opacity={active(pid, pid) ? 1 : 0.55} style={{ transition: "opacity 120ms ease" }}>
+        <path d={describeArc(cx, cy, G.in, G.out, a0, a1)} fill={tint(w.value, 1)} stroke="#fff" strokeWidth="1" style={{ cursor: "pointer" }} {...on(pid)} />
+        {labelText && <Txt x={nameAt.x} y={nameAt.y} w={clamp(chord - 4, 24, 80)}>{labelText}</Txt>}
+        <Txt x={valAt.x} y={valAt.y} w={30} h={16} weight={700} color={dsBand(w.value).cs}>{Math.round(w.value)}</Txt>
+        {kids.map((c, j) => {
+          const s0 = a0 + j * childDeg, s1 = s0 + childDeg;
+          const at = polar(cx, cy, (G.out + G.r2Out) / 2, (s0 + s1) / 2);
+          const cid = `c${i}.${j}`;
+          rim.push({ a0: s0, a1: s1, v: c.value });
           return (
-            <g key={c.label}>
-              <path d={describeArc(cx, cy, G.r2In, G.r2Out, s0, s1)} fill={cb2.bg} stroke={T.white} strokeWidth="1.2" {...over(c.label, c.value)}><title>{`${c.label}: ${c.value}`}</title></path>
-              {fits && <Txt x={at.x} y={at.y} w={24} h={12} size={11} weight={700} color={cb2.cs}>{c.value}</Txt>}
+            <g key={cid} opacity={!hover || hover.id === cid || hover.group === pid ? 1 : 0.55} style={{ transition: "opacity 120ms ease" }}>
+              <path d={describeArc(cx, cy, G.out, G.r2Out, s0, s1)} fill={tint(c.value, 2)} stroke="#fff" strokeWidth="1" style={{ cursor: "pointer" }} {...on(smallKids ? `g${i}` : cid, smallKids ? { group: pid } : { parent: i })} />
+              {!smallKids && <Txt x={at.x} y={at.y} w={24} h={12} weight={700} color={dsBand(c.value).cs}>{Math.round(c.value)}</Txt>}
             </g>
           );
         })}
@@ -82,38 +125,63 @@ function Ring({ wedges, center, outside = [], size }) {
     );
   });
 
-  // Labels outside the rim, each on a short tick; on a side, skip one that would sit on top of another.
-  const taken = { l: [], r: [] };
-  const labels = outside.map((o) => {
-    const side = Math.sin((o.angle * Math.PI) / 180) >= 0 ? "r" : "l";
-    const p0 = polar(cx, cy, rimOut + 3, o.angle), p1 = polar(cx, cy, rimOut + 11, o.angle), p2 = polar(cx, cy, rimOut + 14, o.angle);
-    const y = p2.y;
-    if (taken[side].some((t) => Math.abs(t - y) < 26)) return null;
-    taken[side].push(y);
-    const avail = side === "r" ? W - p2.x - 2 : p2.x - 2;
-    return (
-      <g key={o.angle + o.text}>
-        <line x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={T.gray300} strokeWidth="1" />
-        <Txt x={side === "r" ? p2.x + 2 : p2.x - 2} y={y} w={clamp(avail, 30, 110)} h={26} lines={2} align={side === "r" ? "start" : "end"} color={T.gray900}>{o.text}</Txt>
-      </g>
-    );
-  });
+  // The tooltip: the hovered segment, or (a child too narrow to read) its whole group.
+  let tip = null;
+  if (hover) {
+    const m = hover.id.match(/^([pcg])(\d+)(?:\.(\d+))?$/);
+    const i = Number(m[2]);
+    const w = wedges[i];
+    if (w) {
+      const row = (label, value, prev) => ({ label, value: Math.round(value), delta: prev == null ? 0 : Math.round(value) - Math.round(prev) });
+      if (m[1] === "g") tip = { head: w.label, rows: (w.sub || []).map((c) => row(c.label, c.value, c.prev)), anchor: polar(cx, cy, G.r2Out, i * step + step / 2) };
+      else if (m[1] === "c") { const j = Number(m[3]), c = w.sub[j]; tip = { rows: [row(c.label, c.value, c.prev)], anchor: polar(cx, cy, (G.out + G.r2Out) / 2, i * step + ((j + 0.5) * step) / w.sub.length) }; }
+      else tip = { rows: [row(w.label, w.value, w.prev)], anchor: polar(cx, cy, (G.in + G.out) / 2 + 20, i * step + step / 2) };
+    }
+  }
 
+  const rimEls = rim.map((c, k) => <path key={k} d={describeArc(cx, cy, rimIn, rimOut, c.a0 + 0.4, c.a1 - 0.4)} fill={dsBand(c.v).c} style={{ pointerEvents: "none" }} />);
+
+  const labelEls = outsideOk ? outside.map((o) => (
+    <g key={o.id} style={{ cursor: "pointer" }} opacity={!hover || hover.id === o.id ? 1 : 0.6} onPointerEnter={(e) => e.pointerType === "mouse" && setHover({ id: o.id, parent: o.parent })} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
+      <line x1={o.p0.x} y1={o.p0.y} x2={o.p1.x} y2={o.p1.y} stroke={ds.border.primary} strokeWidth="1" />
+      <Txt x={o.side === "r" ? o.p2.x + 2 : o.p2.x - 2} y={o.p2.y} w={Math.min(o.avail, 104)} align={o.side === "r" ? "start" : "end"}>{o.text}</Txt>
+    </g>
+  )) : null;
+
+  // With no labels outside the rim the ring has the whole box: crop the view to the ring so it is as big as it can be.
+  const crop = hasSub && !outsideOk;
+  const vb = crop ? { x: cx - (rimOut + 8), y: cy - (rimOut + 8), w: 2 * (rimOut + 8), h: 2 * (rimOut + 8) } : { x: 0, y: 0, w: W, h: H };
+  const below = tip ? (tip.anchor.y - vb.y) / vb.h < 0.5 : false; // a tooltip for the top half opens downward, so the card never clips it
+  const big = center >= 100 ? 52 : 64;
   return (
-    <div style={{ flex: 1, alignSelf: "stretch", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", minWidth: 0, minHeight: 0 }}>
-      <div style={{ width: "100%", maxWidth: W, aspectRatio: `${W} / ${H}` }}>
-        <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }} role="img" aria-label={`Index: ${center} out of 100`}>
+    <div style={{ flex: 1, alignSelf: "stretch", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible", minWidth: 0, minHeight: 0 }}>
+      <div style={{ position: "relative", width: "100%", maxWidth: crop ? 468 : W, aspectRatio: `${vb.w} / ${vb.h}` }}>
+        <svg width="100%" height="100%" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} style={{ display: "block", overflow: "visible", touchAction: "pan-y" }} role="img" aria-label={`${title || "Index"}: ${center} out of 100. ${wedges.map((w) => `${w.label} ${Math.round(w.value)}`).join(", ")}`}>
           {body}
-          {rimCells.map((c, i) => <path key={i} d={describeArc(cx, cy, rimIn, rimOut, c.a0 + 0.5, c.a1 - 0.5)} fill={band(c.v).c} style={{ pointerEvents: "none" }} />)}
-          <circle cx={cx} cy={cy} r={G.hole} fill={T.white} />
+          {rimEls}
+          <circle cx={cx} cy={cy} r={G.hole} fill="#fff" />
           <foreignObject x={cx - G.hole} y={cy - G.hole} width={G.hole * 2} height={G.hole * 2} style={{ pointerEvents: "none" }}>
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, fontFamily: font }}>
-              <span style={{ fontSize: big, fontWeight: 700, letterSpacing: -big * 0.02, lineHeight: 1, color: sb.cs }}>{shown.value}</span>
-              {shown.label && <span style={{ fontSize: 10, color: T.gray700, maxWidth: 92, textAlign: "center", lineHeight: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shown.label}</span>}
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font }}>
+              <span style={{ fontSize: big, fontWeight: 700, letterSpacing: -big * 0.02, lineHeight: 1, color: dsBand(center).cs }}>{center}</span>
             </div>
           </foreignObject>
-          {labels}
+          {labelEls}
         </svg>
+        {tip && (
+          <div
+            role="status"
+            style={{ position: "absolute", left: `${clamp(((tip.anchor.x - vb.x) / vb.w) * 100, 26, 74)}%`, top: `${((tip.anchor.y - vb.y) / vb.h) * 100}%`, transform: below ? "translate(-50%, 10px)" : "translate(-50%, calc(-100% - 10px))", pointerEvents: "none", zIndex: 5, minWidth: 150, maxWidth: 230, boxSizing: "border-box", background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, boxShadow: dsShadow("sm"), display: "flex", flexDirection: "column", gap: dsSpace[6], fontFamily: font }}
+          >
+            {tip.head && <span style={{ ...dsText("Text 2xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{tip.head}</span>}
+            {tip.rows.map((r) => (
+              <div key={r.label} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${dsBand(r.value).c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
+                <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{r.label}</span>
+                {r.delta !== 0 && <TrendPill delta={r.delta} numberOnly />}
+                <span style={{ ...dsText("Text md", 700), color: dsBand(r.value).cs }}>{r.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -123,24 +191,14 @@ function Ring({ wedges, center, outside = [], size }) {
 export function IndexRing({ variant = "2x2", overall }) {
   const is3 = variant === "3x3";
   const wedges = DIMENSIONS.map((d) => ({
-    label: d, value: Math.round(dimensionValue(d)),
-    sub: is3 ? (DIMENSION_DRIVERS[d] || []).map((drv) => ({ label: drv, value: Math.round(driverValue(drv)) })) : undefined,
+    label: d, value: dimensionValue(d), prev: dimensionValue(d, PREVIOUS),
+    sub: is3 ? (DIMENSION_DRIVERS[d] || []).map((drv) => ({ label: drv, value: driverValue(drv), prev: driverValue(drv, PREVIOUS) })) : undefined,
   }));
-  // Every Explorer is named outside the rim, at the middle of its wedge.
-  const step = 360 / wedges.length;
-  const outside = is3 ? wedges.map((w, i) => ({ text: w.label, angle: i * step + step / 2 })) : [];
-  return <Ring wedges={wedges} center={Math.round(overall)} outside={outside} size={variant} />;
+  return <Ring wedges={wedges} center={Math.round(overall)} size={variant} title="Wellbeing index" />;
 }
 
-/* ---- one Explorer: its Drivers, and (3×3) each Driver's score in every round ----------------- */
-export function DimensionIndex({ dimension, variant = "2x2" }) {
-  const is3 = variant === "3x3";
-  const drivers = DIMENSION_DRIVERS[dimension] || [];
-  const wedges = drivers.map((d) => ({
-    label: d, value: Math.round(driverValue(d)),
-    sub: is3 ? ROUNDS.map((r) => ({ label: `${d} · Round ${r.round}`, value: Math.round(r.driverAvg[d]) })) : undefined,
-  }));
-  const step = 360 / (wedges.length || 1);
-  const outside = is3 ? wedges.map((w, i) => ({ text: w.label, angle: i * step + step / 2 })) : [];
-  return <Ring wedges={wedges} center={Math.round(dimensionValue(dimension))} outside={outside} size={variant} />;
+/* ---- one Explorer: its Drivers. There is no third level in the data (a round is not a sub-group), so this is a 2×2. */
+export function DimensionIndex({ dimension }) {
+  const wedges = (DIMENSION_DRIVERS[dimension] || []).map((d) => ({ label: d, value: driverValue(d), prev: driverValue(d, PREVIOUS) }));
+  return <Ring wedges={wedges} center={Math.round(dimensionValue(dimension))} size="2x2" title={`${dimension} index`} />;
 }
