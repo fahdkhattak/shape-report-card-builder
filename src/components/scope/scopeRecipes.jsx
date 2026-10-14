@@ -6,14 +6,15 @@ import {
 import { InsightSummaryStory, SummaryP, Strong, STATUS_TEXT, statusText, BandBar, MeaningStory, StatusMeaningStory, MethodologyStory } from "./stories/SummaryStories.jsx";
 import BreakdownStory from "./stories/BreakdownStory.jsx";
 import { SplitBreakdownStory, ChangesStory, WithinReachStory, PriorityMapStory, SpreadStory, BrightSpotsStory, GroupGapStory } from "./stories/FamilyStories.jsx";
-import { ScoreOverTime, ScoreOverTimeRows, ENPSOverTime } from "./stories/TrendCharts.jsx";
+import { ScoreOverTime, ScoreOverTimeRows, ENPSOverTime, StatusOverTime } from "./stories/TrendCharts.jsx";
 import { StrongestWeakestStory, AreasToFocusStory } from "./stories/DiagnosticStory.jsx";
 import CompositionStory from "./stories/CompositionStory.jsx";
-import TrendStory from "./stories/TrendStory.jsx";
 import ScoreHistoryStory from "./stories/ScoreHistoryStory.jsx";
 import { ActionsStoryBar } from "./stories/ActionStories.jsx";
 import { ResourceStory, UpgradePathStory } from "./stories/AddOnStories.jsx";
 import { dimensionSubject, overallSubject } from "../../lib/scopeSubject.js";
+import { PARTS, TIME_PARTS, MONEY_PARTS, impactSeries, samplePerson, fmtMoney } from "../../lib/impactModel.js";
+import { ImpactSplitStory, GainLadderStory, GainByGroupStory, ImpactMethodStory } from "./stories/ImpactStories.jsx";
 import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
 
 /* ================================================================== */
@@ -27,8 +28,8 @@ import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
 /* Trend uses the newer Trend forms (TrendCharts.jsx: Score Over Time,    */
 /* by part, eNPS Over Time) and the Diagnostic family's newer Stories     */
 /* (What Changed, Within Reach, Priority Map, Spread, Bright Spots, Gaps)  */
-/* — the same ones the Widget Builder offers. Status Over Time keeps the   */
-/* older TrendStory: no newer form shows status shares round by round.    */
+/* — the same ones the Widget Builder offers. Status Over Time is the      */
+/* Trend family's StatusOverTime (stacked shares per round).              */
 /* Draft recipes — expected to change as each Scope is refined.           */
 /* ================================================================== */
 const r0 = Math.round;
@@ -118,15 +119,7 @@ function OrgStatusRecipe() {
       />
       <BreakdownStory title="Explorers by Status" variant="zones" items={dimItems()} noun="Explorer" line="Where each Explorer sits against the three status ranges." />
       <SpreadStory scoreOf={overallSubject().scoreOf} label="the Org Score" />
-      <TrendStory
-        title="Status Over Time" line="The share of people in each status, round by round." mode="multi" banded={false} unit=""
-        series={[
-          { key: "f", label: "Flourishing", color: T.green, values: statusSeries("flourishing") },
-          { key: "s", label: "Striving", color: T.amber, values: statusSeries("striving") },
-          { key: "g", label: "Struggling", color: T.red, values: statusSeries("struggling") },
-        ]}
-        note="Every person falls in exactly one status, so these counts also read as percentages."
-      />
+      <StatusOverTime title="Status Over Time" line="The share of people in each status, round by round." rounds={ROUNDS_LIVE()} counts={ROUNDS.map((r) => ({ flourishing: r.flourishing, striving: r.striving, struggling: r.struggling }))} />
       <MethodologyStory kind="status" />
     </>
   );
@@ -238,15 +231,76 @@ function CompositionRecipe({ axisKey, tab, noun }) {
   );
 }
 
+/* ---- Time Impact, Money Impact, Time to Gain (lib/impactModel.js) -------------------------------------------------
+   The gain if scores rose to Flourishing: time (hours per person, productivity + absenteeism), money (the organisation's
+   dollars, + retention and claims). Reused: Meaning, Breakdown bars (the Explorers behind it), Score Over Time, Actions.
+   New: Where It Comes From (split), What Each Step Is Worth (ladder), Where the Gain Sits (by group), the model. */
+const ceilTo = (v, step) => Math.max(step, Math.ceil(v / step) * step);
+const axisTicks = (top) => [top, top * 0.75, top * 0.5, top * 0.25, 0].map(r0);
+const behind = (parts) => [...new Set(parts.flatMap((k) => PARTS[k].explorers))];
+const driversOf = (explorers) => [...driverRankedRows()].reverse().filter((r) => explorers.includes(DRIVER_DIMENSION[r[0]])).slice(0, 4).map((r) => r[0]);
+
 function TimeImpactRecipe() {
-  const wlb = driverSeries("Work-life balance");
-  const hours = wlb.map((v) => r0(v / 4));
+  const series = impactSeries();
+  const now = series[LAST];
+  const hrs = series.map((x) => r0(x.hours.total));
+  const top = ceilTo(Math.max(...hrs) * 1.2, 4);
+  const sources = behind(TIME_PARTS);
   return (
     <>
-      <MeaningStory title="What This Is Telling You" value={hours[LAST]} bandColor={false} unit="hrs / year" values={hours} headline={`About ${hours[LAST]} hours a year, estimated from work-life balance.`} text="Higher work-life balance means more time gained back across the year. Treat this as an indicative estimate." />
-      <ScoreOverTime title="Work-life Balance Over Time" line="The score this estimate is built from." rounds={ROUNDS_LIVE()} values={wlb} />
-      <ResourceStory title="Explore Work-life Balance Further" description="A guide to the habits and working patterns that most affect how much time people get back." />
-      <MethodologyStory kind="time" />
+      <MeaningStory
+        title="What This Is Telling You" value={hrs[LAST]} bandColor={false} unit="hrs a year"
+        headline={`If everyone reached Flourishing, each person would get back about ${hrs[LAST]} hours a year.`}
+        text={`That's about ${Math.round(now.hours.total * now.people).toLocaleString("en-GB")} hours across the ${now.people} people who answered. It comes from the ${now.below} people below Flourishing today.`}
+      />
+      <ImpactSplitStory unit="time" data={now} line="Time comes back two ways: more focused work, and fewer days lost to absence." />
+      <GainLadderStory unit="time" />
+      <BreakdownStory variant="bars" noun="Explorer" title="The Scores Behind It" line="The time comes from the gap between these Explorers and Flourishing. Every point closer gives some of it back." items={sources.map((d) => ({ label: d, values: dimensionSeries(d) }))} />
+      <GainByGroupStory unit="time" />
+      <ScoreOverTime title="Time to Gain Over Time" line="Fewer hours to gain means people moved closer to Flourishing." rounds={ROUNDS_LIVE()} values={hrs} banded={false} axis="Hours" domain={[0, top]} ticks={axisTicks(top)} />
+      <ActionsStoryBar drivers={driversOf(sources)} />
+      <ImpactMethodStory unit="time" />
+    </>
+  );
+}
+
+function MoneyImpactRecipe() {
+  const series = impactSeries();
+  const now = series[LAST];
+  const k = series.map((x) => r0(x.dollars.total / 1000));
+  const top = ceilTo(Math.max(...k) * 1.2, 20);
+  const sources = behind(MONEY_PARTS);
+  const biggest = MONEY_PARTS.reduce((a, p) => (now.dollars[p] > now.dollars[a] ? p : a), MONEY_PARTS[0]);
+  return (
+    <>
+      <MeaningStory
+        title="What This Is Telling You" value={k[LAST]} bandColor={false} unit="K USD a year"
+        headline={`If everyone reached Flourishing, the organisation would get back about ${fmtMoney(now.dollars.total)} a year.`}
+        text={`That's about ${fmtMoney(now.dollars.total / (now.people || 1))} for each of the ${now.people} people who answered. ${PARTS[biggest].label} is the largest part.`}
+      />
+      <ImpactSplitStory unit="money" data={now} line="Money comes back four ways: productivity, fewer absences, people staying, and fewer injuries and claims." />
+      <GainLadderStory unit="money" />
+      <BreakdownStory variant="bars" noun="Explorer" title="The Scores Behind It" line="Each part of the money is built from one or two of these Explorers. The lower the score, the more there is to get back." items={sources.map((d) => ({ label: d, values: dimensionSeries(d) }))} />
+      <GainByGroupStory unit="money" />
+      <ScoreOverTime title="Money to Gain Over Time" line="In thousands of dollars a year. A lower line means scores moved closer to Flourishing." rounds={ROUNDS_LIVE()} values={k} banded={false} axis="$K" domain={[0, top]} ticks={axisTicks(top)} />
+      <ActionsStoryBar drivers={driversOf(sources)} />
+      <ImpactMethodStory unit="money" />
+    </>
+  );
+}
+
+/* A personal report shows time only, with no breakdown. There is no signed-in person, so it is a sample person. */
+function TimeGainRecipe() {
+  const p = samplePerson();
+  return (
+    <>
+      <MeaningStory
+        title="What This Is Telling You" value={r0(p.hours)} bandColor={false} unit="hrs a year"
+        headline={`Reaching Flourishing would give you back about ${r0(p.hours)} hours a year.`}
+        text={`Your score is ${p.score}. The closer it gets to ${FLOURISHING_AT}, the more of that time comes back. This is a sample person: the prototype has no signed-in employee.`}
+      />
+      <GainLadderStory unit="time" personal ladder={p.steps.map((x) => ({ target: x.target, value: x.hours }))} title="What Each Step Is Worth to You" />
+      <ImpactMethodStory unit="time" scores={p.explorerScores} />
     </>
   );
 }
@@ -288,6 +342,8 @@ const RECIPES = {
   "avg-gender": () => <CompositionRecipe axisKey="gender" tab="People" noun="Gender" />,
   "avg-work-model": () => <CompositionRecipe axisKey="workModel" tab="Employment" noun="Work Model" />,
   "time-impact": TimeImpactRecipe,
+  "money-composition": MoneyImpactRecipe,
+  "time-gain": TimeGainRecipe,
 };
 
 /* Returns null for a widget with no recipe yet (Popular Responses and Money

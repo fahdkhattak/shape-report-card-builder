@@ -483,7 +483,7 @@ export default function WidgetBuilderV2({ state, setState, navExpanded, onNavExp
           <div ref={wrapRef} style={{ flex: 1, minHeight: 0, position: "relative", display: "flex" }}>
             {wide && (
               <aside aria-label="Scope and conversation" style={{ width: LEFT_W, flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0, borderRight: `1px solid ${T.gray75}`, background: T.gray25 }}>
-                <div style={{ flex: "0 1 auto", maxHeight: "52%", minHeight: 120, overflowY: "auto" }}>
+                <div style={{ flex: "0 1 auto", maxHeight: "52%", minHeight: 120, display: "flex", flexDirection: "column" }}>
                   <ScopeOutline formOf={(k) => placementForm(built, subject, k)} reasons={built.reasons} panel stories={built.stories} litId={litId} setLitId={setLitId} onMove={move} onRemove={remove} renderAdd={(trigger) => <AddStoryMenu subject={subject} present={built.stories} again={againIds(built, subject)} onAdd={add} trigger={trigger} />} />
                 </div>
                 <Conversation messages={messages} typing={typing} onSend={send} />

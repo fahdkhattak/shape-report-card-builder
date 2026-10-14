@@ -93,7 +93,7 @@ const common = (node, cardSize) => [
   { part: "Card fill · border · radius · padding", node, figma: "#ffffff · 1 #cecdcc · 18 · 16", read: (r) => { const c = cardOf(r), s = css(c); return `${lightHexOf(c, ["background", "backgroundColor"])} · ${px(s.borderTopWidth)} ${lightHexOf(c, ["border", "borderTop"])} · ${px(s.borderTopLeftRadius)} · ${px(s.paddingTop)}`; } },
   { part: "Title: size / line · weight · colour", node, figma: "18/28 · 700 · #1d1a1b", read: (r) => `${type(titleOf(r))} · ${lightHexOf(titleOf(r), ["color"], true)}`, mapped: "black" },
 ];
-const evidence = (node, h) => ({ part: "Evidence section: height · lines", node, figma: `${h} · 1/1 · #b4b2b1`, read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${Math.round(rect(e).height)} · ${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } });
+const evidence = (node, h) => ({ part: "Evidence section: height · lines (softened from Figma's #b4b2b1)", node, figma: `${h} · 1/1 · #e5e4e3`, read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${Math.round(rect(e).height)} · ${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } });
 const footnote = (node) => ({ part: "Footnote: size / line · colour", node, figma: "13/18 · 400 · #7c7879", read: (r) => { const f = q(r, '[data-part="footnote"]'); return `${type(f)} · ${lightHexOf(f, ["color"], true)}`; } });
 
 const BARS_CHECKS = [
@@ -374,7 +374,7 @@ function DeveloperView({ style }) {
           ["Controls", "Row", "Right of the title. Each is a compact ghost button: 16px icon, 12px text, 4px and 6px padding, fully rounded."],
           ["", "Compare previous rounds", <span style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>12px label, a 36 by 20 switch (16px knob). Off: {T("toggle/inactive/primary")}</span>],
           ["Intro line", "Type", <span style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>Text sm, 14/20 {T("text/secondary")}</span>],
-          ["Evidence section", "Lines and space", <span style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>1px above and below {T("border/primary")}; 16px above and below the content</span>],
+          ["Evidence section", "Lines and space", <span style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>1px above and below {T("border/tertiary")}; 16px above and below the content</span>],
           ["Footnote", "Type", <span style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>Text xs, 13/18 {T("text/tertiary")}</span>],
           ["Bars", "Row", "Label column up to 247px, right-aligned, Text sm. Track 8px, fully rounded. Rows 10px apart. Score and change at the right, 12px apart."],
           ["", "Track and fill", <span style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>Track {T("bg/secondary")}. Fill = the status graph colour, width = score%.</span>],
@@ -422,7 +422,7 @@ function DeveloperView({ style }) {
           ["Bars", "The label (it may wrap) shares a line with the score and change. The track runs the full width underneath.", "Same."],
           ["Radar", "Names stay around the plot while they fit, with smaller rings and 11px+ text (12 Explorers fit down to about 450px). Past that: a square plot with a numbered mark on each spoke and a short key below (six names, then \"Show all\"). Tap a mark, the plot, or a row; the detail card appears under the plot.", "Usually the numbered form, with larger marks so they stay about 22px on screen."],
           ["Area", "A 200px plot. Names under it while they fit in one row, otherwise a number under each point and the same key. Tap a point or a name to select.", "Same."],
-          ["Zones", "Three tinted groups (Struggling, Striving, Flourishing) with a row per part, highest first. No hover needed.", "Same."],
+          ["Zones", "A slim 0 to 100 strip of dots, a count per status, then a list lowest first under quiet status labels (six rows, then Show all). Tapping a row marks its dot.", "Same."],
           ["List", "The number block shrinks to 84px beside the name and sentence.", "Stacked: the number, then the name, then the sentence."],
           ["Mental Well-Being", "The measure's name sits above its row. The five bands share the full width; a cell shows the share, and the count as a plain number with its caret. A note explains the unit.", "Same. Band names wrap to two lines."],
           ["Health Age drivers", "The driver name and its pill share a line. The track runs the full width underneath.", "Same."],

@@ -16,7 +16,7 @@ import { AxisIcon } from "./diagnosticParts.jsx";
 /* footer line, so the ring itself never changes size or moves.            */
 /* ================================================================== */
 const ORDER = ["lavenderViolet", "amberOrange", "mintGreen", "goldenYellow", "coralRed", "teal", "purple", "turquoise", "hotPink", "orangeCoral"];
-const BY_AXIS = { workModel: ["personalBlue", "orgBlue", "mintGreen"] };
+const BY_AXIS = { workModel: ["personalBlue", "orgBlue", "mintGreen"], impactTime: ["personalBlue", "orgBlue"], impactMoney: ["personalBlue", "orgBlue", "teal", "lavenderViolet"] };
 export const segmentColor = (axisKey, i) => { const keys = BY_AXIS[axisKey] || ORDER; return ds.graph[keys[i % keys.length]]; };
 
 const BOX = 176, C = BOX / 2, RO = 80, RI = 56;

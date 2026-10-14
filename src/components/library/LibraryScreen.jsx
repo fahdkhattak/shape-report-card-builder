@@ -9,6 +9,8 @@ import MiniWidgetPreview, { SLOT_W, SLOT_H, nativeForSize } from "./MiniWidgetPr
 import { Header } from "../widgets/primitives.jsx";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import { cardSurface } from "../../lib/families.js";
+import SegmentedControl from "../ui/SegmentedControl.jsx";
+import LibraryRefined from "./LibraryRefined.jsx";
 
 /* ================================================================== */
 /* LIBRARY — every widget, in one place (Figma 984qJvMt7fCHASYHRwgrab,   */
@@ -160,6 +162,9 @@ export default function LibraryScreen({ inUse, onAdd, onRemove, onCreateWidget, 
   const [tab, setTab] = useState("others");
   const [serviceOpen, setServiceOpen] = useState(true);
   const [info, setInfo] = useState(null);
+  // Prototype switch: the Current Library (as designed) or the Refined redesign (LibraryRefined.jsx). Remembered.
+  const [design, setDesignState] = useState(() => { try { return localStorage.getItem("library-design") || "current"; } catch { return "current"; } });
+  const setDesign = (d) => { setDesignState(d); try { localStorage.setItem("library-design", d); } catch { /* private mode */ } };
 
   const inUseKeys = useMemo(() => new Set(inUse), [inUse]);
   const q = query.trim().toLowerCase();
@@ -174,10 +179,15 @@ export default function LibraryScreen({ inUse, onAdd, onRemove, onCreateWidget, 
     <div style={{ display: "flex", height: "100%", background: T.gray25, fontFamily: font }}>
       <NavRail active="library" expanded={navExpanded} onExpandedChange={onNavExpandedChange} onOpenSearch={onOpenSearch} onOpenReportBuilder={onOpenReportBuilder} onOpenSurveyBuilder={onOpenSurveyBuilder} />
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <div style={{ height: 44, background: T.white, display: "flex", alignItems: "center", padding: "0 32px", flexShrink: 0, borderBottom: `1px solid ${T.gray75}` }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: T.gray900 }}>Library</span>
+        <div style={{ height: 44, background: T.white, display: "flex", alignItems: "center", gap: 12, padding: "0 16px 0 32px", flexShrink: 0, borderBottom: `1px solid ${T.gray75}` }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: T.gray900, flex: 1 }}>Library</span>
+          <span style={{ fontSize: 12, color: T.gray500 }}>Design</span>
+          <SegmentedControl options={[{ id: "current", label: "Current" }, { id: "refined", label: "Refined" }]} value={design} onChange={setDesign} />
         </div>
 
+        {design === "refined" ? (
+          <LibraryRefined entries={entries} inUseKeys={inUseKeys} onAdd={(e) => onAdd(e.familyId, e.formIndex)} onRemove={(e) => onRemove(e.familyId, e.formIndex)} onInfo={setInfo} onCreateWidget={onCreateWidget} />
+        ) : (
         <div style={{ flex: 1, overflowY: "auto", background: T.white }}>
           <div style={{ maxWidth: 1128, margin: "0 auto", padding: "40px 32px 80px", boxSizing: "border-box" }}>
             {/* Tabs + search */}
@@ -276,6 +286,7 @@ export default function LibraryScreen({ inUse, onAdd, onRemove, onCreateWidget, 
             )}
           </div>
         </div>
+        )}
       </div>
 
       <AnimatePresence>{info && <WidgetInfo key="info" entry={info} onClose={() => setInfo(null)} />}</AnimatePresence>

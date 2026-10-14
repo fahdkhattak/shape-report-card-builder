@@ -618,6 +618,48 @@ is now a property of the **Story card**, not of media queries.
   when its Developer page is written. The app shell itself (nav rail, report grid, Scope pane chrome) isn't mobile-adapted either.
   The Scope pane's CSS `zoom` (50 to 125%) may change what `offsetWidth` reports; not tested at non-default zoom.
 
+### Phone pass on Score History and Explorers by Status
+
+Feedback: on a phone Score History was a very long card (round tiles stacked in a grid, 12 two-line rows, the scale at the
+very bottom) and Explorers by Status was "a big chunk of RAG" (three tinted blocks).
+- **Round tiles** (`HistoryCards.jsx`, compact, Current style): a sideways strip that snaps tile by tile, bleeding to the
+  card edges, 124px tiles, 26px score, month-only dates ("Nov 2025"). Desktop and Refined unchanged.
+- **Explorer Changes** (`ScoreHistoryStory.jsx` `Dumbbell`, compact): biggest moves first, five rows then `ShowAll`, rows
+  ~44px (name, change and score on one line over an 18px track). The legend ("before" dot, "now" ring) and the zoomed scale
+  ticks sit at the **top** of the chart; the bottom axis and "the scale runs from…" caption are gone.
+- **Explorers by Status** (`ZoneChart.jsx` `ZoneGroups`, compact): one slim 0–100 strip with thin zone tints and 10px dots
+  (lanes when close), a one-line count per status, then a plain hairline list **lowest first** under quiet uppercase status
+  labels, six rows then Show all. Tapping a row marks its dot on the strip (others dim). The wide (560px+) zone chart is
+  unchanged.
+- Verified at 360px: no overflow, row tap, Show all, row expand; Score History card ~1,410px tall (was much longer).
+
+### Softer dividers, phone tables, Status Over Time, Score History changes redesign, pinned "Add a story"
+
+- **Divider lines are `border/tertiary` now, not `border/primary`** (product direction: "not enjoying all these harsh lines"):
+  the Evidence Section hairlines (`StoryCard.jsx`, used by every Story), Comparison's dividers and the Breakdown List separators.
+  The Developer pages' spec rows say tertiary and their evidence parity rows expect `#e5e4e3`, labelled "softened from Figma's
+  #b4b2b1", so the difference from Figma stays visible. Tables were already tertiary.
+- **Table View on a phone** (`DataTable.jsx`): up to 3 columns stay a table with tight cells, number columns hugging their content
+  and long "Change from …/since …" headers shortened to "Change" (or a column's own `short` label); **4+ columns become stacked
+  row blocks** (the row's name, then each other column as a small label over its value, in a wrapping grid). Nothing scrolls
+  sideways any more (it did for Gaps 503px, Mental Well-Being 537px and every 4-column table). Composition's own table becomes two
+  lines per group on a phone (name and score; people · share · against average, change pill). Mental Well-Being cells read
+  "24% · 24" on one line (Copy Table keeps "24% (24 Employees)"). Scratch check: `widgets-gallery.html?stories&subject=0&w=360`
+  (new: renders catalogue Stories for a sample subject; `subject` indexes `SAMPLE_SUBJECTS`).
+- **Status Over Time** (Org Status Scope) is now a Trend-family form, `StatusOverTime` in `TrendCharts.jsx`: one stacked bar per
+  round in the shared frame (percentage axis), Flourishing on top in the status graph colours, shares printed inside segments that
+  fit, hover/tap names the segment (share, change in points, people), a legend with the latest shares. It replaces the old
+  three-line `TrendStory` there.
+- **Score History changes, redesigned** (redesign-existing-projects pass; `ScoreHistoryStory.jsx`, `HistoryCards.jsx`): round tiles
+  are **one segmented strip** (tiles share the width, the picked one raised white; scrolls only when rounds don't fit); "Explorer
+  changes" is one sentence-case heading with a summary line ("9 rose · 0 fell · 3 held, Nov 2025 against Jun 2025") and a ○/● key;
+  rows are **one grid (name | track | change | score), sorted biggest rise to biggest fall**, the track zoomed to the scores' range
+  with the ticks once on top and soft gridlines, a hollow dot for before and a solid status-coloured dot for now; no tooltip, no
+  chevron column (the numbers are on every row; the whole row tints on hover, `.sh-row`). Phone: track under the name line, a
+  single hairline instead of gridlines, five rows then Show all. Desktop shows 12 before Show all (45 Drivers on Factors).
+- **"Add a story" is always visible** in the Widget Builder's side panel (Workbench left panel, Original's wide rail): the outline's
+  list scrolls on its own and the button is pinned under it (`ScopeOutline.jsx`). Inline (narrow) it still follows the list.
+
 ## Breakdown — which form, and how many parts (rules)
 
 **Which form (product direction):** **List** is for introducing the **Areas**: it is large, a big number and a sentence each, so
@@ -3109,3 +3151,60 @@ It's the one video this prototype ships, so the Video Story is no longer blocked
   (keeps 8px inside the window, sized to its trigger, Dark mode follows), and the compare row wraps so it never pushes a phone-width
   card wider.
 - Verified: story sweep 351 renders, 0 errors / overflows / empty; lint clean (the five known warnings); build passes.
+
+### Index labels fit their slices (checked against `13324:470`)
+
+The Index ring's labels were sized from the slice's *chord*, which is only right at 12 and 6 o'clock: on a side slice the
+horizontal label crosses the ring's depth instead, so names ran over the rim and into the scores. `RingIndex.jsx` now
+measures: `boxInSlice()` tests a text box against the slice (2px safe zone: inside the arcs, clear of both straight edges
+and the hole); `roomInSlice()` finds the widest such box on the slice's mid-angle. The score is placed first (inner half,
+12px Bold, `status/*/text-indicator`), then the label takes the widest room left in the outer half that keeps 4px clear of
+it, on one line, measured with the real font (`textWidth`, canvas) and truncated with an ellipsis only when it doesn't fit
+("Manag…", as the frames do). A child score shows only if its cell holds it. Centre number in `status/*/text` (#0E8C4F in the
+frames, not the darker indicator). The tooltip is now the shared `ChartTip` card (`TipCard` exported), portalled at the
+pointer, so a card can't clip it. **Outer labels on the Wellbeing Index 3×3 stay off**: 45 Drivers is past the 25-label limit,
+and labelling only the few Drivers wide enough to score (Employee Engagement's and Business Essentials') read as random —
+hover names every cell. A two-line wrap was tried and dropped: mixing one- and two-line names looked messier than the
+frames' single truncated line.
+
+## Library — Refined design (redesign-existing-projects pass) + Current | Refined switch
+
+The Library's top bar has a **Design: Current | Refined** switch (remembered in `library-design`, default Current). Current is
+`LibraryScreen.jsx` exactly as it was; Refined is `library/LibraryRefined.jsx`, same data and actions (add / remove from the Org
+report, the Widget Information window, Create widget). What the audit found in Current and what Refined does instead:
+- 12 accordions with only Score open (most widgets behind clicks) → every section open, a **sticky index** on the left that jumps to
+  a section and follows the scroll (scroll-spy measured against the scroller, not `offsetTop`); hidden under 900px.
+- Cards in sideways rows paged by arrows → a **wrapping grid** (`minmax(232px, 1fr)`), all visible.
+- Add / Detail / Remove only in a hover toolbar (no keyboard or touch way in) → **actions on the card**, always visible: "Add to report"
+  (dark pill) or "Remove from report" (destructive ghost) and "Details"; "On report ✓" beside the name. The preview opens the details too.
+- Centred title / size / blurb stacks → left-aligned text, the blurb clamped to two lines, size / persona / Sample data as quiet square tags.
+- Two tab rows and a "Widgets 61" pill → a headline ("Widget library", the count, how many are on the report with a thin progress bar)
+  and **one sticky, translucent toolbar**: SHAPE | Yours, search, persona (Org / Personal / Team with counts), and a **size filter**
+  (All / 1×1 / 2×2 / 3×3, only sizes that exist for the persona).
+- Composed empty states (no search match → "Clear filters"; Yours → Create widget), focus rings, hover lift on cards, 0.97 press
+  (`.lib2` rules in `index.css`), staggered card entry.
+Kept: IBM Plex Sans, the warm greys and one accent (the design system), the Widget Information window. Verified at full width and
+760px (no sideways scroll), index jumps, add/remove, filters, empty states, switching back and forth; no console errors.
+
+## Time Impact, Money Impact, Time to Gain — the concept, a model, and their Scopes
+
+**The concept (product owner):** these widgets have been called value of benefit, your potential, time to gain. They mean one
+thing: **if scores rose to Flourishing, this is what people would get back each year.** Time comes back as productivity and fewer
+absences; money as productivity, absenteeism, retention and injury / claims. **Team reports show time only (no money); a personal
+report shows Time to Gain as one number, no breakdown.** "Money Composition" is renamed **Money Impact** (family id unchanged).
+- **`lib/impactModel.js`**: per person, the gap to Flourishing (80) on the Explorers behind each part (`PARTS`: productivity ←
+  Engagement + Job Satisfaction; absenteeism ← Physical + Psychological Health; retention ← Employee Commitment; claims ← Physical
+  Work Environment + Physical Health). **The gaps are real** (every person, every round; people at 80+ add nothing). **The rates
+  that turn a point into hours or dollars are a sample model** (`PARTS[].hours/leaveRisk/dollars`, `RATES`: $40 an hour, $9,000
+  replacement) — swap them for the real SHAPE model and nothing else changes. Time = hours per person a year; money = the
+  organisation's dollars a year. `impact(i, target, filter)`, `impactSeries()`, `impactLadder()` (to 60/70/80/90),
+  `impactByGroup(axis)` (per person, groups under 5 hidden), `samplePerson()` (the median person below 80, for the personal
+  report: no signed-in person exists). Widgets read it too, so widget and Scope agree; all three forms are tagged sample.
+- **Scopes** (`scopeRecipes.jsx`): Time Impact and Money Impact = Meaning (the per-year number) → **Where the Time / Money Comes
+  From** (Composition: ring + parts with what each is built from) → **What Each Step Is Worth** (new: the gain at 60 / 70 / 80 /
+  90, so a partial lift has a visible value) → The Scores Behind It (Breakdown bars of the source Explorers) → **Where the Gain Sits**
+  (new: per person by Department / Work Model / …) → Time / Money to Gain Over Time (Score Over Time, own axis) → Actions (weakest
+  Drivers in those Explorers) → **How This Estimate Works** (what is measured, what is assumed, "Sample model"). Time to Gain
+  (personal): Meaning → the ladder for that person → the model with their own Explorer scores; sample-tagged throughout.
+  New Stories live in `stories/ImpactStories.jsx`. The team form of Time Impact uses the same Scope (no team data exists).
+- Gallery: `?scopes=time-impact,money-composition,time-gain&w=340` renders Scopes at a card width (new `w` param).

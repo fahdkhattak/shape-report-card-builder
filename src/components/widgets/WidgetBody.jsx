@@ -20,6 +20,7 @@ import {
 } from "./widgetParts.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import GraphInsight from "./GraphInsight.jsx";
+import { impact, impactSeries, samplePerson, fmtMoney } from "../../lib/impactModel.js";
 import { HBars, TileGrid, Treemap } from "./ChartInsight.jsx";
 import {
   ROUNDS, LATEST, PREVIOUS, ROUND_LABELS, DIMENSIONS, delta,
@@ -474,35 +475,37 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
     }
 
     /* ---- Time & Money ---- */
+    // Time / Money Impact and Time to Gain: what people would get back if scores reached Flourishing (lib/impactModel.js —
+    // real gaps, sample rates). Fewer hours to gain than last round is the good direction.
     case "time-impact": {
-      const wlb = driverValue("Work-life balance");
-      const wlbTrend = driverTrend("Work-life balance");
-      const hours = Math.round(wlb / 4);
-      const trendDelta = delta(wlbTrend[wlbTrend.length - 1], wlbTrend[wlbTrend.length - 2]);
-      const tone = formIndex === 1 ? TEAM_BLUE : T.orgBlue;
+      const series = impactSeries();
+      const now = Math.round(series[series.length - 1].hours.total), before = Math.round(series[series.length - 2]?.hours.total ?? now);
+      const team = formIndex === 1;
+      const tone = team ? TEAM_BLUE : T.orgBlue;
       return (
         <div style={col({ justifyContent: "space-between" })}>
           <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-            <BigNumber value={formIndex === 1 ? 25 : hours} size={56} unit="hrs" color={tone} />
-            <TrendPill compact positive={formIndex === 1 ? false : trendDelta > 0} />
+            <BigNumber value={team ? 25 : now} size={56} unit="hrs" color={tone} />
+            {!team && now !== before && <TrendPill compact positive={now < before} />}
           </div>
-          <span style={date11}>per annum</span>
+          <span style={date11}>to gain per person, per year</span>
         </div>
       );
     }
-    case "time-gain":
+    case "time-gain": {
+      const p = samplePerson();
       return (
         <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ paddingTop: 8 }}><BigNumber value={2} size={56} unit="wks" color={T.orgBlue} /></div>
-          <span style={date11}>per annum</span>
+          <div style={{ paddingTop: 8 }}><BigNumber value={Math.round(p.hours)} size={56} unit="hrs" color={T.orgBlue} /></div>
+          <span style={date11}>to gain, per year</span>
         </div>
       );
-    case "money-composition":
-      // No monetary figures exist in the generated dataset (the survey doesn't
-      // model cost), so — like Popular Responses — this shows the Figma
-      // mockup's own sample values rather than invented ones.
-      // Chart rules, compact grid (Composition): `$26K` tiles over a proportion bar; 1x1 holds up to 4.
-      return <TileGrid size="1x1" format={(v) => `$${v}K`} rows={[["Productivity", 26], ["Absenteeism", 4], ["Retention", 13], ["Injury/Claims", 22]].map(([label, value]) => ({ label, value, color: MONEY_COLORS[label] }))} />;
+    }
+    case "money-composition": {
+      const m = impact().dollars;
+      // Chart rules, compact grid (Composition): dollar tiles over a proportion bar; 1x1 holds up to 4.
+      return <TileGrid size="1x1" format={fmtMoney} rows={[["Productivity", m.productivity], ["Absenteeism", m.absenteeism], ["Retention", m.retention], ["Injury/Claims", m.claims]].map(([label, value]) => ({ label, value, color: MONEY_COLORS[label] }))} />;
+    }
 
     /* ---- Support ---- */
     case "support-nudge":

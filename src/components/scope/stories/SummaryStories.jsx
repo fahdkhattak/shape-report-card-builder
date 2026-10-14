@@ -27,7 +27,7 @@ export const STATUS_TEXT = { success: ds.status.success.textIndicator, warning: 
 export const statusText = (v) => STATUS_TEXT[dsBand(v).key];
 
 /* Insight Summary — Figma 13622:39511. Title (Text lg/Bold), body paragraphs 14px apart, and an optional
-   Evidence Section: a hairline above and below (border/primary) around the 8px evidence bar, 16px padding. */
+   Evidence Section: a hairline above and below (border/tertiary) around the 8px evidence bar, 16px padding. */
 export function InsightSummaryStory({ headline, children, bar }) {
   const refined = useStoryStyle() === "refined";
   return (

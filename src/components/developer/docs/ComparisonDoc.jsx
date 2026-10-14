@@ -122,7 +122,7 @@ function DeveloperView({ style }) {
           ["Area", "Plot", "280px, 1px border/tertiary, radius/xs. Ticks 0 to 100 at the left (Text 2xs). Each series a smooth curve (2px) over a 14% fill. Part names rotated −60°, Text xs / Medium text/quaternary; the hovered one Semibold, underlined, text/primary."],
           ["", "Controls", "Clear, Sort on (which entity to sort by), Sort by (highest or lowest first): ghost buttons, Text sm text/secondary, 20px icons, 20px apart, right-aligned."],
           ["", "Tooltip", "240px, surface/tooltip, radius/lg, 12 / 16 padding, shadow-sm. The part in upper case, then a row per shown entity: a 2px left rule in its status colour, the name and tag, the change pill and the score."],
-          ["Health Age", "Rows", "A 247px entity card, then the bar (the rest of the width). Groups (You / teams / Org) separated by a 1px border/primary line."],
+          ["Health Age", "Rows", "A 247px entity card, then the bar (the rest of the width). Groups (You / teams / Org) separated by a 1px border/tertiary line."],
           ["", "Bar", <span key="b" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>“YOUNGER | OLDER” over an 8px {T("bg/quaternary")} track with a 20px centre line. The fill grows from the centre: left in {T("status/success/icon")}, right in {T("status/error/icon")}. Half the track is 10 years. The sentence under it in the status text colour, numbers and the word bold.</span>],
         ]} />
       </Section>

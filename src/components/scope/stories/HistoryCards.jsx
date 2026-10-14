@@ -1,17 +1,16 @@
 import { T, font, radius, band } from "../../../lib/tokens.js";
 import { ROUNDS } from "../../../lib/dataset.js";
-import { LAST, fmtDate } from "../../../lib/scopeData.js";
-import { TrendPill } from "../../widgets/primitives.jsx";
+import { LAST, fmtDate, fmtMonth } from "../../../lib/scopeData.js";
+import { ds, dsText, dsRadius, dsShadow } from "../../../lib/ds.js";
 import { useStoryStyle } from "./storyStyle.js";
 import { useStoryWidth } from "./storyWidth.js";
 
 /* ================================================================== */
-/* HISTORY CARDS — one card per round, newest first, scrolling sideways  */
-/* (Figma 984qJvMt7fCHASYHRwgrab, node 13622:37494). Each shows the date, */
-/* the score, a "Latest" pill on the newest, and the change since the     */
-/* round before. With `onSelect` the cards are a selector: the selected    */
-/* card is outlined darker and bold. The oldest round has nothing to       */
-/* compare with, so it shows just its own dots (no change, no bar).        */
+/* HISTORY CARDS — one tile per round, newest first (after Figma          */
+/* 13622:37494, tidied): a single segmented strip. Each tile shows the     */
+/* month, the score and the change since the round before; "· Latest" on */
+/* the newest. With `onSelect` the strip is a selector (tabs): the picked  */
+/* tile is raised white. The oldest round reads "First round".             */
 /* ================================================================== */
 export function HistoryCards({ values, banded = true, unit = "", sel, onSelect }) {
   const idxs = ROUNDS.map((_, i) => i).reverse();
@@ -44,29 +43,33 @@ export function HistoryCards({ values, banded = true, unit = "", sel, onSelect }
       </div>
     );
   }
+  // Current: one segmented strip, not separate cards. Tiles share the width (so three rounds fill a phone card with no
+  // scrolling); with more rounds than fit they keep 112px and the strip scrolls sideways, snapping tile by tile. The
+  // picked round is a raised white tile; the date, the score in its status colour, and the change since the round before.
   return (
-    <div style={compact ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(136px, 1fr))", gap: 12, fontFamily: font } : { display: "flex", gap: 16, overflowX: "auto", padding: "1px 1px 4px", fontFamily: font }}>
+    <div role={onSelect ? "tablist" : undefined} aria-label="Rounds" className="scroll-minimal" style={{ display: "flex", gap: 4, padding: 4, background: ds.bg.secondary, borderRadius: dsRadius.lg + 4, overflowX: "auto", scrollSnapType: "x mandatory", fontFamily: font, fontVariantNumeric: "tabular-nums" }}>
       {idxs.map((i) => {
         const v = values[i];
         const d = i > 0 ? v - values[i - 1] : null;
         const selected = (sel ?? LAST) === i;
         const clickable = !!onSelect;
+        const Tag = clickable ? "button" : "div";
         return (
-          <div
-            key={i} role={clickable ? "button" : undefined} tabIndex={clickable ? 0 : undefined} aria-pressed={clickable ? selected : undefined}
-            onClick={clickable ? () => onSelect(i) : undefined} onKeyDown={clickable ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect(i)) : undefined}
-            style={{ flex: compact ? undefined : "0 0 200px", minWidth: 0, boxSizing: "border-box", border: `1px solid ${selected ? T.gray700 : T.gray100}`, borderRadius: radius.lg, padding: 16, display: "flex", flexDirection: "column", gap: 10, background: T.white, cursor: clickable ? "pointer" : "default" }}
+          <Tag
+            key={i} type={clickable ? "button" : undefined} role={clickable ? "tab" : undefined} aria-selected={clickable ? selected : undefined} onClick={clickable ? () => onSelect(i) : undefined}
+            className={clickable ? "round-tile" : undefined}
+            style={{ flex: "1 0 112px", scrollSnapAlign: "start", minWidth: 0, boxSizing: "border-box", textAlign: "left", border: "none", fontFamily: font, cursor: clickable ? "pointer" : "default", padding: compact ? "10px 12px" : "12px 16px", borderRadius: dsRadius.lg, background: selected && clickable ? ds.surface.general.card : "transparent", boxShadow: selected && clickable ? dsShadow("sm") : "none", display: "flex", flexDirection: "column", gap: 2 }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 20 }}>
-              <span style={{ fontSize: 13, fontWeight: selected ? 700 : 400, color: selected ? T.gray900 : T.gray700, whiteSpace: compact ? "normal" : "nowrap" }}>{fmtDate(ROUNDS[i].date)}</span>
-              {i === LAST && <span style={{ fontSize: 11, color: T.gray700, background: T.gray50, borderRadius: radius.full, padding: "2px 8px" }}>Latest</span>}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 36 }}>
-              <span style={{ fontSize: 32, fontWeight: 700, lineHeight: "36px", letterSpacing: -0.5, color: banded ? band(v).cs : T.gray900 }}>{v}{unit}</span>
-              {d != null && d !== 0 && <TrendPill delta={d} numberOnly />}
-            </div>
-            <span style={{ fontSize: 13, color: T.gray500, whiteSpace: compact ? "normal" : "nowrap", marginTop: -6 }}>{d != null ? `since ${fmtDate(ROUNDS[i - 1].date)}` : "First round"}</span>
-          </div>
+            <span style={{ ...dsText("Text xs", selected ? 600 : 500), color: selected ? ds.text.secondary : ds.text.tertiary, whiteSpace: "nowrap" }}>
+              {fmtMonth(ROUNDS[i].date)}{i === LAST && !compact && <span style={{ color: ds.text.quaternary, fontWeight: 400 }}> · Latest</span>}
+            </span>
+            <span style={compact ? { display: "flex", flexDirection: "column" } : { display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: compact ? 24 : 28, fontWeight: 700, lineHeight: compact ? "30px" : "34px", letterSpacing: -0.5, color: banded ? band(v).cs : ds.text.primary }}>{v}{unit}</span>
+              <span style={{ ...dsText("Text xs", 600), whiteSpace: "nowrap", color: d == null || d === 0 ? ds.text.quaternary : d > 0 ? ds.status.success.textIndicator : ds.status.error.text }}>
+                {d == null ? "First round" : d === 0 ? "No change" : `${d > 0 ? "+" : "−"}${Math.abs(d)}`}
+              </span>
+            </span>
+          </Tag>
         );
       })}
     </div>

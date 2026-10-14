@@ -63,7 +63,7 @@ const shell = (el) => { const s = css(el); return `${lightHexOf(el, ["background
 const LINE_CHECKS = [
   { part: "Card size", node: "13622:38049", figma: "808 × 328", read: (r) => { const c = q(r, "[data-story]"); return `${Math.round(rect(c).width)} × ${Math.round(rect(c).height)}`; } },
   { part: "Card fill · border · radius · padding", node: "13622:38049", figma: "#ffffff · 1 #cecdcc · 18 · 16", read: (r) => shell(q(r, "[data-story]")) },
-  { part: "Evidence section: padding · lines", node: "13622:38056", figma: "16 · 1/1 #b4b2b1", read: (r) => { const e = q(r, '[data-part="evidence"]'); return `${px(css(e).paddingLeft)} · ${px(css(e).borderTopWidth)}/${px(css(e).borderBottomWidth)} ${lightHexOf(e, ["borderTop"])}`; } },
+  { part: "Evidence section: padding · lines (softened from Figma's #b4b2b1)", node: "13622:38056", figma: "16 · 1/1 #e5e4e3", read: (r) => { const e = q(r, '[data-part="evidence"]'); return `${px(css(e).paddingLeft)} · ${px(css(e).borderTopWidth)}/${px(css(e).borderBottomWidth)} ${lightHexOf(e, ["borderTop"])}`; } },
   { part: "Plot height", node: "13622:38077", figma: "184", read: (r) => Math.round(rect(q(r, '[data-part="plot"]')).height) },
   { part: "Line: colour", node: "13622:38079", figma: "#b4b2b1", read: (r) => lightHexOf(q(r, '[data-part="line"]'), ["stroke"]) || q(r, '[data-part="line"]').getAttribute("stroke") },
   { part: "Dot: size · colour", node: "13622:38083", figma: "6 · #908d8e", read: (r) => { const d = q(r, '[data-part="dot"]'); return `${Math.round(rect(d).width)} · ${lightHexOf(d, ["background"])}`; } },

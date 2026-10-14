@@ -32,12 +32,13 @@ export const storyDomId = (id) => `wb2-story-${id}`;
 export default function ScopeOutline({ stories, litId, setLitId, onMove, onRemove, renderAdd, inline, panel, formOf, reasons }) {
   const iconBtn = { border: "none", background: "transparent", color: T.gray500, width: 24, height: 24, borderRadius: radius.sm, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0 };
   return (
-    <nav aria-label="Stories in this scope" style={panel ? { padding: "20px 12px 8px 16px", boxSizing: "border-box" } : inline ? { marginTop: 32 } : { position: "sticky", top: 0, width: RAIL_W, flexShrink: 0, alignSelf: "flex-start", height: "100%", overflowY: "auto", padding: "40px 24px 220px 8px", boxSizing: "border-box" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+    // Panel and rail: the list scrolls on its own and "Add a story" stays pinned under it, so it's never below the fold.
+    <nav aria-label="Stories in this scope" style={panel ? { display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%", padding: "20px 12px 0 16px", boxSizing: "border-box" } : inline ? { marginTop: 32 } : { position: "sticky", top: 0, width: RAIL_W, flexShrink: 0, alignSelf: "flex-start", height: "100%", display: "flex", flexDirection: "column", minHeight: 0, padding: "40px 24px 16px 8px", boxSizing: "border-box" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10, flexShrink: 0 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: T.gray500 }}>In this scope</span>
         <span style={{ fontSize: 12, color: T.gray400, fontVariantNumeric: "tabular-nums" }}>{stories.length}</span>
       </div>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+      <ol className={inline ? undefined : "scroll-minimal"} style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2, ...(inline ? {} : { flex: "0 1 auto", minHeight: 0, overflowY: "auto" }) }}>
         {stories.map((id, i) => {
           const def = storyById(id);
           const lit = litId === id;
@@ -56,7 +57,7 @@ export default function ScopeOutline({ stories, litId, setLitId, onMove, onRemov
         })}
       </ol>
       {stories.length === 0 && <p style={{ margin: "8px 0", fontSize: 13, color: T.gray500 }}>Nothing here yet.</p>}
-      <div style={{ marginTop: 12 }}>
+      <div style={inline ? { marginTop: 12 } : { flexShrink: 0, marginTop: 8, padding: "8px 0 12px", borderTop: `1px solid ${T.gray75}` }}>
         {renderAdd(({ onClick }) => (
           <Press onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "transparent", color: T.gray700, fontSize: 13, fontWeight: 600, padding: "6px 8px", borderRadius: radius.md }} className="wb2-link">
             <Plus size={16} />Add a story

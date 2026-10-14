@@ -1,49 +1,44 @@
 import { useStoryStyle } from "./storyStyle.js";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight } from "lucide-react";
-import { T, font, radius, band } from "../../../lib/tokens.js";
+import { T, font } from "../../../lib/tokens.js";
+import { ds, dsBand, dsText, dsSpace, dsRadius } from "../../../lib/ds.js";
 import { ROUNDS } from "../../../lib/dataset.js";
-import { LAST, fmtMonth, fmtDate } from "../../../lib/scopeData.js";
-import { TrendPill } from "../../widgets/primitives.jsx";
+import { LAST, fmtMonth } from "../../../lib/scopeData.js";
 import { StoryCard } from "./StoryCard.jsx";
 import { ViewSwitch, CopyTable } from "./controls.jsx";
 import { DataTable, ScoreCell, tableText } from "./DataTable.jsx";
 import { HistoryCards } from "./HistoryCards.jsx";
 import HistoryLineChart from "./HistoryLineChart.jsx";
 import { useStoryWidth } from "./storyWidth.js";
+import { ShowAll } from "./BreakdownStory.jsx";
 
 /* ================================================================== */
 /* SCORE HISTORY STORY — the Trend Story for a score and its parts       */
 /* (Figma 984qJvMt7fCHASYHRwgrab, node 13622:37494).                      */
 /*   1. History cards: one per round, newest first. Picking a card picks   */
 /*      WHICH change to look at — that round against the one before it.    */
-/*   2. "Explorer Changes": one row per part (an Explorer, or a Driver).   */
-/*      A small dot is its score the round before, the ringed dot its score */
-/*      in the picked round, and a bar joins them — green if it rose, red   */
-/*      if it fell. Hover a row for its numbers.                           */
+/*   2. "Explorer changes": one row per part, biggest rise first. A hollow */
+/*      dot is its score the round before, a solid dot its score in the    */
+/*      picked round, a soft bar joins them; the change and the score sit  */
+/*      at the end of every row (no tooltip needed).                       */
 /*   3. Pick a row and it expands, in place, into that part's own line      */
 /*      graph across every round. Pick it again to fold it away.           */
 /* Table View is the series × rounds matrix. No Compare toggle — the       */
 /* Story is already about change over rounds.                              */
 /* ================================================================== */
-const LABEL_W = 168;
-const ROW_H = 32;
-const DELTA_W = 56; // the change as a number, right of the track (designed width only)
-const AXIS_TICKS = [0, 20, 40, 60, 80, 100];
 const spring = { type: "spring", bounce: 0, duration: 0.35 };
 const refinedEyebrow = { fontSize: 13, fontWeight: 600, color: T.gray600, fontFamily: font };
-const eyebrowStyle = { fontSize: 11, fontWeight: 700, letterSpacing: "0.5px", textTransform: "uppercase", color: T.gray700, fontFamily: font };
 
 export default function ScoreHistoryStory({ title = "Your Score History", line = "Explore your past performance and trends in this detailed score history.", overall, items, noun = "Explorer" }) {
   const refined = useStoryStyle() === "refined";
   const [view, setView] = useState("chart");
   const [sel, setSel] = useState(LAST);
   const [open, setOpen] = useState(null); // label of the expanded row
-  const [hoverRow, setHoverRow] = useState(null);
+  const [, setHoverRow] = useState(null);
 
   const rows = items.map((it) => ({ label: it.label, values: it.values, prev: sel > 0 ? it.values[sel - 1] : null, cur: it.values[sel] }));
-  const hovered = hoverRow != null ? rows.find((r) => r.label === hoverRow) : null;
+  const counts = rows.reduce((c, r) => { if (r.prev == null) return c; const d = r.cur - r.prev; c[d > 0 ? "up" : d < 0 ? "down" : "same"] += 1; return c; }, { up: 0, down: 0, same: 0 });
 
   // Table view: the series × rounds matrix (overall first), as on every Trend Story.
   const matrix = [{ label: "Overall Score", values: overall }, ...items];
@@ -60,111 +55,106 @@ export default function ScoreHistoryStory({ title = "Your Score History", line =
       ) : (
         <>
           <HistoryCards values={overall} sel={sel} onSelect={(i) => { setSel(i); }} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: font }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: T.gray900, paddingBottom: 6, borderBottom: `1px solid ${T.gray300}` }}>{noun} Changes</span>
-            <span style={{ fontSize: 13, color: T.gray500 }}>{sel > 0 ? `${fmtDate(ROUNDS[sel].date)} against ${fmtDate(ROUNDS[sel - 1].date)}.` : `${fmtDate(ROUNDS[sel].date)} — the first round, so there is nothing earlier to compare with.`} Pick {noun === "Explorer" ? "an" : "a"} {noun} to see its history.</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[4], fontFamily: font, paddingTop: dsSpace[4] }}>
+            <span style={{ ...dsText("Text md", 600), color: ds.text.primary }}>{noun} changes</span>
+            <span style={{ ...dsText("Text xs"), color: ds.text.tertiary, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: dsSpace[12], rowGap: dsSpace[4] }}>
+              {sel > 0 ? (<>
+                <span>{counts.up} rose · {counts.down} fell · {counts.same} held, {fmtMonth(ROUNDS[sel].date)} against {fmtMonth(ROUNDS[sel - 1].date)}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[6], color: ds.text.quaternary }}>
+                  <span aria-hidden="true" style={{ width: 8, height: 8, boxSizing: "border-box", borderRadius: "50%", border: `1.5px solid ${ds.border.strong}` }} />{fmtMonth(ROUNDS[sel - 1].date)}
+                  <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: ds.text.tertiary, marginLeft: dsSpace[6] }} />{fmtMonth(ROUNDS[sel].date)}
+                </span>
+              </>) : <span>{fmtMonth(ROUNDS[sel].date)} is the first round, so there's nothing earlier to compare with.</span>}
+            </span>
           </div>
-          <Dumbbell rows={rows} hovered={hovered} onHover={setHoverRow} open={open} onToggle={(l) => setOpen((o) => (o === l ? null : l))} />
+          <Dumbbell rows={rows} noun={noun} onHover={setHoverRow} open={open} onToggle={(l) => setOpen((o) => (o === l ? null : l))} />
         </>
       )}
     </StoryCard>
   );
 }
 
-/* The changes chart. At the designed width it is the design's: names on the left, a 0 to 100 track, and (new) the change
-   as a number on the right. On a compact card (a phone, a narrow Scope) a 168px name column would leave a track too
-   short to see a 3-point move, so each part becomes two lines: its name, change and score on top, a full-width track
-   under it, and the track is zoomed to the range the scores actually span (it says where it starts), so a move of a few
-   points is still a visible bar. */
-function Dumbbell({ rows, hovered, onHover, open, onToggle }) {
+/* The changes chart (redesigned for neatness). One grid for every row: name | track | change | score. Rows run from
+   the biggest rise to the biggest fall, so the story reads top to bottom. The track is zoomed to the range the scores
+   span (ticks and soft gridlines on top), a hollow dot is the earlier round and a solid dot in the status colour is the
+   picked round, joined by a soft green or red bar. Every row shows its numbers, so there is no tooltip; hovering tints
+   the row and picking it opens that part's line across every round. On a phone the track drops under the name line and
+   the five biggest moves show until "Show all". */
+const GRID_W = "minmax(132px, 196px) minmax(0, 1fr) 44px 32px";
+function Dumbbell({ rows, onHover, open, onToggle, noun }) {
   const refined = useStoryStyle() === "refined";
   const { compact } = useStoryWidth();
-  const [chartHover, setChartHover] = useState(false);
-  const alpha = chartHover ? "99" : "47"; // pastel at rest, stronger while the chart is hovered
+  const [showAll, setShowAll] = useState(false);
   const all = rows.flatMap((r) => [r.cur, r.prev]).filter((v) => v != null);
-  const lo = compact && all.length ? Math.max(0, Math.floor((Math.min(...all) - 6) / 10) * 10) : 0;
-  const hi = compact && all.length ? Math.min(100, Math.ceil((Math.max(...all) + 6) / 10) * 10) : 100;
+  const lo = all.length ? Math.max(0, Math.floor((Math.min(...all) - 4) / 10) * 10) : 0;
+  const hi = all.length ? Math.min(100, Math.ceil((Math.max(...all) + 4) / 10) * 10) : 100;
   const span = Math.max(10, hi - lo);
-  const pos = (v) => ((v - lo) / span) * 100;
   const step = span > 60 ? 20 : 10;
-  const ticks = compact ? Array.from({ length: Math.floor(span / step) + 1 }, (_, i) => lo + i * step) : AXIS_TICKS;
-  const LW = compact ? 0 : LABEL_W;
-  const inset = compact ? 8 : 16;
+  const ticks = Array.from({ length: Math.floor(span / step) + 1 }, (_, i) => lo + i * step);
+  const pos = (v) => ((v - lo) / span) * 100;
+  const delta = (r) => (r.prev == null ? null : r.cur - r.prev);
+  const ordered = [...rows].sort((a, b) => (delta(b) ?? -999) - (delta(a) ?? -999));
+  const limit = compact ? 5 : 12;
+  const cut = ordered.length > limit + 2;
+  const shown = cut && !showAll ? ordered.slice(0, limit) : ordered;
 
-  const track = (r, hasPrev, up) => (
-    <div style={{ position: "relative", flex: compact ? "0 0 24px" : 1, height: compact ? 24 : "100%", margin: compact ? `0 ${inset}px` : "0 0 0 0" }}>
-      <div style={{ position: "absolute", left: compact ? 0 : inset, right: compact ? 0 : inset, top: 0, bottom: 0 }}>
-        {compact && <span aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: T.gray75 }} />}
-        {hasPrev && r.cur !== r.prev && <span style={{ position: "absolute", top: "50%", height: compact ? 8 : 6, marginTop: compact ? -4 : -3, borderRadius: compact ? 4 : 0, left: `${pos(Math.min(r.prev, r.cur))}%`, width: `${Math.abs(pos(r.cur) - pos(r.prev))}%`, background: `${up ? T.green : T.red}${compact ? "b3" : alpha}`, transition: "background 150ms ease" }} />}
-        {hasPrev && <span style={{ position: "absolute", top: "50%", left: `${pos(r.prev)}%`, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: T.gray900 }} />}
-        <span style={{ position: "absolute", top: "50%", left: `${pos(r.cur)}%`, width: 16, height: 16, margin: "-8px 0 0 -8px", boxSizing: "border-box", borderRadius: "50%", background: T.white, border: `2px solid ${T.gray900}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.gray900 }} />
-        </span>
-        {!compact && hovered?.label === r.label && (
-          <div style={{ position: "absolute", bottom: "100%", left: `${pos(r.cur)}%`, transform: `translate(${r.cur > 70 ? "-85%" : r.cur < 25 ? "-10%" : "-50%"}, -6px)`, zIndex: 4, pointerEvents: "none", width: 200, background: T.gray25, borderRadius: radius.lg, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6, boxShadow: "0 17px 5px rgba(0,0,0,0.01), 0 11px 4px rgba(0,0,0,0.02), 0 6px 4px rgba(0,0,0,0.05), 0 3px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.09)" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: T.gray700 }}>{r.label}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, borderLeft: `2px solid ${band(r.cur).c}`, padding: "2px 0 2px 6px" }}>
-              <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: T.gray900 }}>Your Score</span>
-              {hasPrev && r.cur !== r.prev && <TrendPill delta={r.cur - r.prev} numberOnly />}
-              <span style={{ fontSize: 16, fontWeight: 700, color: band(r.cur).cs }}>{r.cur}</span>
-            </div>
-            {hasPrev && <span style={{ fontSize: 12, color: T.gray500 }}>Was {r.prev}</span>}
-          </div>
-        )}
-      </div>
-    </div>
+  const grid = (
+    <span aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+      {ticks.map((t) => <span key={t} style={{ position: "absolute", top: 0, bottom: 0, left: `${pos(t)}%`, borderLeft: `1px solid ${ds.border.tertiary}` }} />)}
+    </span>
   );
+  const track = (r) => {
+    const d = delta(r);
+    const up = d > 0;
+    const b = dsBand(r.cur);
+    return (
+      <span style={{ position: "relative", display: "block", height: compact ? 20 : "100%", minHeight: 20 }}>
+        {compact ? <span aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: "50%", borderTop: `1px solid ${ds.border.tertiary}` }} /> : grid}
+        {d != null && d !== 0 && <span style={{ position: "absolute", top: "50%", height: 4, marginTop: -2, borderRadius: 2, left: `${pos(Math.min(r.prev, r.cur))}%`, width: `${Math.abs(pos(r.cur) - pos(r.prev))}%`, background: up ? ds.status.success.graph : ds.status.error.graph, opacity: 0.4 }} />}
+        {r.prev != null && <span style={{ position: "absolute", top: "50%", left: `${pos(r.prev)}%`, width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", boxSizing: "border-box", borderRadius: "50%", background: ds.surface.general.card, border: `1.5px solid ${ds.border.strong}` }} />}
+        <span style={{ position: "absolute", top: "50%", left: `${pos(r.cur)}%`, width: 11, height: 11, margin: "-5.5px 0 0 -5.5px", borderRadius: "50%", background: b.c, boxShadow: `0 0 0 2px ${ds.surface.general.card}` }} />
+      </span>
+    );
+  };
+  const changeText = (d) => (d == null ? <span style={{ color: ds.text.quaternary }}>–</span> : d === 0 ? <span style={{ color: ds.text.quaternary }}>0</span> : <span style={{ color: d > 0 ? ds.status.success.textIndicator : ds.status.error.text }}>{d > 0 ? "+" : "−"}{Math.abs(d)}</span>);
+  const num = { fontVariantNumeric: "tabular-nums", textAlign: "right", whiteSpace: "nowrap" };
 
   return (
-    <div style={{ position: "relative", fontFamily: font }} onMouseEnter={() => setChartHover(true)} onMouseLeave={() => { setChartHover(false); onHover(null); }}>
-      {/* the dashed guide at the hovered row's current score */}
-      {!compact && hovered && (
-        <div style={{ position: "absolute", top: 0, bottom: 36, left: LW, right: DELTA_W, pointerEvents: "none", zIndex: 1 }}>
-          <div style={{ position: "absolute", left: `calc(${inset}px + (100% - ${inset * 2}px) * ${hovered.cur / 100})`, top: 0, bottom: 0, borderLeft: `1px dashed ${T.gray300}` }} />
-        </div>
-      )}
-      <div style={{ borderTop: `1px solid ${T.gray75}` }}>
-        {rows.map((r) => {
-          const hasPrev = r.prev != null;
-          const up = hasPrev && r.cur > r.prev, down = hasPrev && r.cur < r.prev;
+    <div style={{ fontFamily: font }} onMouseLeave={() => onHover(null)}>
+      {/* the scale, once, aligned with the tracks */}
+      <div aria-hidden="true" style={compact ? { position: "relative", height: 14, margin: "0 6px 6px" } : { display: "grid", gridTemplateColumns: GRID_W, columnGap: 12, padding: "0 8px 6px", height: 14 }}>
+        {!compact && <span />}
+        <span style={{ position: "relative", display: "block", height: 14 }}>
+          {ticks.map((t, i) => <span key={t} style={{ position: "absolute", left: `${pos(t)}%`, transform: i === 0 ? "none" : i === ticks.length - 1 ? "translateX(-100%)" : "translateX(-50%)", ...dsText("Text 3xs", 500), fontSize: 10, lineHeight: "14px", color: ds.text.quaternary, fontVariantNumeric: "tabular-nums" }}>{t}</span>)}
+        </span>
+      </div>
+      <div role="list" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {shown.map((r) => {
           const isOpen = open === r.label;
-          const chev = <ChevronRight size={12} color={T.gray300} style={{ transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 150ms ease", flexShrink: 0 }} />;
-          const change = hasPrev && (up || down) ? <TrendPill delta={r.cur - r.prev} numberOnly /> : hasPrev ? <span style={{ fontSize: 11, color: T.gray500 }}>No change</span> : null;
+          const d = delta(r);
+          const b = dsBand(r.cur);
           return (
-            <div key={r.label} style={{ borderBottom: `1px solid ${T.gray75}` }}>
+            <div key={r.label} role="listitem">
               <div
-                role="button" tabIndex={0} aria-expanded={isOpen} onClick={() => onToggle(r.label)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle(r.label))}
+                role="button" tabIndex={0} aria-expanded={isOpen} aria-label={`${r.label}: ${r.cur}${d != null ? `, ${d > 0 ? "up" : d < 0 ? "down" : "no change"} ${d ? Math.abs(d) : ""}` : ""}. Show its history.`}
+                onClick={() => onToggle(r.label)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle(r.label))}
                 onMouseEnter={() => onHover(r.label)}
+                className="sh-row"
                 style={compact
-                  ? { display: "flex", flexDirection: "column", gap: 2, padding: "10px 0 6px", cursor: "pointer", background: isOpen ? T.gray25 : "transparent" }
-                  : { display: "flex", alignItems: "center", height: ROW_H, cursor: "pointer", background: isOpen ? T.gray25 : "transparent" }}
+                  ? { display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto 28px", columnGap: 8, rowGap: 4, alignItems: "center", padding: "8px 6px", borderRadius: dsRadius.md, cursor: "pointer", background: isOpen ? ds.interactive.ghostHover : undefined }
+                  : { display: "grid", gridTemplateColumns: GRID_W, columnGap: 12, alignItems: "center", height: 34, padding: "0 8px", borderRadius: dsRadius.md, cursor: "pointer", background: isOpen ? ds.interactive.ghostHover : undefined }}
               >
-                {compact ? (
-                  <>
-                    <span style={{ display: "flex", alignItems: "center", gap: 8, padding: `0 ${inset}px 0 4px`, minHeight: 24 }}>
-                      {chev}
-                      <span style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: "16px", color: T.gray900, fontWeight: isOpen ? 700 : 500 }}>{r.label}</span>
-                      {change}
-                      <span style={{ fontSize: 16, fontWeight: 700, color: band(r.cur).cs, minWidth: 24, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.cur}</span>
-                    </span>
-                    {track(r, hasPrev, up)}
-                  </>
-                ) : (
-                  <>
-                    <span style={{ flex: `0 0 ${LABEL_W}px`, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 4, paddingRight: 16, fontSize: 12, color: T.gray700, fontWeight: isOpen ? 700 : 400, lineHeight: "14px" }}>
-                      {chev}
-                      <span style={{ flex: 1, textAlign: "right" }}>{r.label}</span>
-                    </span>
-                    <div style={{ position: "relative", flex: 1, height: "100%", margin: "0 0 0 0", display: "flex" }}>{track(r, hasPrev, up)}</div>
-                    <span style={{ flex: `0 0 ${DELTA_W}px`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, paddingRight: 4 }}>{change && hasPrev && (up || down) ? change : null}</span>
-                  </>
-                )}
+                <span style={{ ...dsText("Text sm", isOpen ? 600 : 400), color: ds.text.secondary, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                {!compact && track(r)}
+                <span style={{ ...dsText("Text xs", 600), ...num }}>{changeText(d)}</span>
+                <span style={{ ...dsText("Text sm", 700), ...num, color: b.cs }}>{r.cur}</span>
+                {compact && <span style={{ gridColumn: "1 / -1" }}>{track(r)}</span>}
               </div>
               <AnimatePresence initial={false}>
                 {isOpen && (
-                  <motion.div key="open" onMouseEnter={() => onHover(null)} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring} style={{ overflow: "hidden", background: T.gray25 }}>
-                    <div style={{ padding: compact ? "12px 12px 8px" : "16px 16px 8px" }}>
-                      <span style={{ ...(refined ? refinedEyebrow : eyebrowStyle), display: "block", marginBottom: 12 }}>{r.label} across every round</span>
+                  <motion.div key="open" onMouseEnter={() => onHover(null)} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={spring} style={{ overflow: "hidden" }}>
+                    <div style={{ margin: "4px 0 10px", padding: compact ? "12px 12px 8px" : "16px 16px 8px", background: ds.surface.general.cardWithinCard, borderRadius: dsRadius.lg }}>
+                      <span style={{ ...(refined ? refinedEyebrow : { ...dsText("Text xs", 600), color: ds.text.tertiary }), display: "block", marginBottom: 12 }}>{r.label} across every round</span>
                       <HistoryLineChart values={r.values} />
                     </div>
                   </motion.div>
@@ -174,28 +164,8 @@ function Dumbbell({ rows, hovered, onHover, open, onToggle }) {
           );
         })}
       </div>
-      {compact ? (
-        <div style={{ padding: `8px ${inset}px 0`, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ position: "relative", height: 16, borderTop: `1px solid ${T.gray300}` }}>
-            {ticks.map((t, i) => (
-              <span key={t} style={{ position: "absolute", top: 4, left: `${pos(t)}%`, transform: i === 0 ? "none" : i === ticks.length - 1 ? "translateX(-100%)" : "translateX(-50%)", fontSize: 11, color: T.gray500, fontWeight: i === 0 || i === ticks.length - 1 ? 700 : 400 }}>{t}</span>
-            ))}
-          </div>
-          <span style={{ fontSize: 11, color: T.gray500, lineHeight: "14px" }}>Score. {lo > 0 || hi < 100 ? `The scale runs from ${lo} to ${hi} so small moves show.` : ""} Small dot: the round before. Ringed dot: this round.</span>
-        </div>
-      ) : (
-        <div style={{ display: "flex", alignItems: "center", height: 36 }}>
-          <span style={{ flex: `0 0 ${LABEL_W}px`, boxSizing: "border-box", paddingRight: 16, textAlign: "right", fontSize: 11, fontWeight: 700, letterSpacing: "0.6px", color: T.gray700 }}>SCORE</span>
-          <div style={{ position: "relative", flex: 1, height: "100%" }}>
-            <div style={{ position: "absolute", left: inset, right: inset, top: 0, bottom: 0, borderTop: `1px solid ${T.gray300}` }}>
-              {ticks.map((t, i) => (
-                <span key={t} style={{ position: "absolute", top: 8, left: `${pos(t)}%`, transform: "translateX(-50%)", fontSize: 11, fontWeight: i === 0 || i === ticks.length - 1 ? 700 : 400, color: T.gray500 }}>{t}</span>
-              ))}
-            </div>
-          </div>
-          <span style={{ flex: `0 0 ${DELTA_W}px` }} />
-        </div>
-      )}
+      {cut && <div style={{ paddingTop: 10 }}><ShowAll open={showAll} total={ordered.length} onToggle={() => setShowAll((v) => !v)} /></div>}
+      {!rows.length && <p style={{ margin: 0, ...dsText("Text sm"), color: ds.text.tertiary }}>There are no {noun.toLowerCase()}s to compare yet.</p>}
     </div>
   );
 }

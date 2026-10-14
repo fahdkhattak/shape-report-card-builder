@@ -6,6 +6,7 @@ import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../../lib/bands.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace } from "../../../lib/ds.js";
 import { useStoryWidth } from "./storyWidth.js";
 import { dotRadius, clampScore } from "./breakdownRules.js";
+import { ShowAll } from "./BreakdownStory.jsx";
 
 /* ================================================================== */
 /* ZONE CHART — the Breakdown chart for a set of parts (Explorers,       */
@@ -19,8 +20,8 @@ import { dotRadius, clampScore } from "./breakdownRules.js";
 /* mode each dot is tied to a hollow marker showing where it was in the      */
 /* earlier round.                                                            */
 /* On a compact card (under 560px, see storyWidth.js) a scaled-down plot    */
-/* would be unreadable, so the same three zones are drawn as three tinted  */
-/* groups: the zone and its count, then a row per part, highest first.      */
+/* would be unreadable, so it becomes a slim strip of dots, a count line   */
+/* and a short list, lowest first (see ZoneGroups).                         */
 /* ================================================================== */
 const W = 776, PL = 16, PR = 16, R = 11, STEP = 2 * R + 3, HEAD = 56, AXIS = 34;
 const ZONES = [
@@ -126,33 +127,83 @@ export default function ZoneChart({ rows, cmpOn, refName, noun = "Explorer" }) {
   );
 }
 
+/* Compact: one slim 0–100 strip with every part as a small dot (the zones are thin tints, not big blocks), a one-line
+   count, then a plain list, lowest first, grouped under quiet status labels. Six rows until "Show all". Tapping a row
+   marks its dot on the strip. */
+const COMPACT_ROWS = 6;
+function stripLanes(dots) {
+  const placed = [];
+  [...dots].sort((a, b) => a.value - b.value).forEach((d) => {
+    const v = clampScore(d.value);
+    let lane = 0;
+    for (let k = 0; k < 7; k++) {
+      lane = k === 0 ? 0 : k % 2 ? (k + 1) / 2 : -k / 2;
+      if (placed.every((p) => p.lane !== lane || Math.abs(p.v - v) >= 3)) break;
+    }
+    placed.push({ d, v, lane });
+  });
+  return placed;
+}
 function ZoneGroups({ dots, counts, noun, cmpOn, refName }) {
-  const keys = [0, STRIVING_AT, FLOURISHING_AT];
+  const [showAll, setShowAll] = useState(false);
+  const [picked, setPicked] = useState(null);
+  const placed = stripLanes(dots);
+  const maxLane = Math.max(0, ...placed.map((p) => Math.abs(p.lane)));
+  const LANE = 9, stripH = 12 + maxLane * 2 * LANE;
+  const zoneOf = (v) => (v >= FLOURISHING_AT ? 2 : v >= STRIVING_AT ? 1 : 0);
+  const ordered = [...dots].sort((a, c) => a.value - c.value);
+  const shown = showAll ? ordered : ordered.slice(0, COMPACT_ROWS);
+  const plural = (n) => `${n} ${n === 1 ? noun : `${noun}s`}`;
   return (
     <div data-part="zone-groups" style={{ display: "flex", flexDirection: "column", gap: dsSpace[12], fontFamily: font }}>
-      {ZONES.map((z, zi) => {
-        const b = dsBand(keys[zi]);
-        const list = dots.filter((d) => d.value >= z.from && (z.to === 100 ? d.value <= 100 : d.value < z.to)).sort((a, c) => c.value - a.value);
-        return (
-          <section key={z.name} aria-label={`${z.name}: ${counts[zi]}`} style={{ background: b.bg, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[12]}px ${list.length ? dsSpace[4] : dsSpace[12]}px` }}>
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: dsSpace[8] }}>
-              <span style={{ ...dsText("Text xs", 700), color: b.cs }}>{z.name}</span>
-              <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>{z.from}{z.to === 100 ? " to 100" : ` to ${z.to - 1}`} · {counts[zi]} {counts[zi] === 1 ? noun : `${noun}s`}</span>
+      <div role="img" aria-label={ZONES.map((z, i) => `${z.name}: ${plural(counts[i])}`).join(", ")}>
+        <div style={{ position: "relative", height: stripH + 8, margin: "0 6px" }}>
+          {ZONES.map((z, i) => (
+            <span key={z.name} aria-hidden="true" style={{ position: "absolute", top: (stripH + 8) / 2 - 3, height: 6, left: `${z.from}%`, width: `${z.to - z.from}%`, background: dsBand(z.from).bg, borderRadius: i === 0 ? "3px 0 0 3px" : i === 2 ? "0 3px 3px 0" : 0, boxShadow: i ? `inset 1px 0 0 ${ds.surface.general.card}` : "none" }} />
+          ))}
+          {placed.map(({ d, v, lane }) => {
+            const on = picked === d.label;
+            const size = on ? 14 : 10;
+            return <span key={d.label} aria-hidden="true" style={{ position: "absolute", left: `${v}%`, top: (stripH + 8) / 2 + lane * LANE, width: size, height: size, margin: `${-size / 2}px 0 0 ${-size / 2}px`, borderRadius: "50%", boxSizing: "border-box", background: dsBand(d.value).c, border: `2px solid ${ds.surface.general.card}`, boxShadow: on ? `0 0 0 2px ${dsBand(d.value).c}` : "none", opacity: picked && !on ? 0.35 : 1, transition: "all 150ms ease" }} />;
+          })}
+        </div>
+        <div aria-hidden="true" style={{ position: "relative", height: 14, margin: "4px 6px 0" }}>
+          {[0, STRIVING_AT, FLOURISHING_AT, 100].map((t, i) => (
+            <span key={t} style={{ position: "absolute", left: `${t}%`, transform: i === 0 ? "none" : i === 3 ? "translateX(-100%)" : "translateX(-50%)", ...dsText("Text 3xs"), fontSize: 10, color: ds.text.tertiary, fontVariantNumeric: "tabular-nums" }}>{t}</span>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: `${dsSpace[4]}px ${dsSpace[12]}px` }}>
+        {ZONES.map((z, i) => (
+          <span key={z.name} style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[6], ...dsText("Text 2xs"), color: ds.text.secondary }}>
+            <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: dsBand(z.from).c }} />
+            <b style={{ fontWeight: 700, color: ds.text.primary }}>{counts[i]}</b> {z.name}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {shown.map((d, i) => {
+          const db = dsBand(d.value);
+          const z = zoneOf(d.value);
+          const head = i === 0 || zoneOf(shown[i - 1].value) !== z;
+          const on = picked === d.label;
+          return (
+            <div key={`${d.label}-${d.value}`}>
+              {head && <div style={{ ...dsText("Text 3xs-Header", 600), textTransform: "uppercase", letterSpacing: 0.4, color: ds.text.tertiary, padding: `${i ? dsSpace[12] : 0}px 0 ${dsSpace[4]}px` }}>{ZONES[z].name} · {counts[z]}</div>}
+              <button
+                type="button" aria-pressed={on} onClick={() => setPicked(on ? null : d.label)}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: dsSpace[8], minHeight: 40, padding: `0 ${dsSpace[4]}px`, border: "none", borderTop: `1px solid ${ds.border.tertiary}`, background: on ? ds.interactive.ghostHover : "transparent", borderRadius: 0, cursor: "pointer", fontFamily: font, textAlign: "left" }}
+              >
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: db.c, flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, ...dsText("Text sm", on ? 600 : 400), color: ds.text.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</span>
+                {cmpOn ? <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>{refName}: {d.prev}</span> : d.delta !== 0 && <TrendPill delta={d.delta} numberOnly />}
+                <span style={{ ...dsText("Text md", 700), color: db.cs, minWidth: 24, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{d.value}</span>
+              </button>
             </div>
-            {list.map((d) => {
-              const db = dsBand(d.value);
-              return (
-                <div key={`${d.label}-${d.value}`} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], minHeight: 40 }}>
-                  <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: db.c, flexShrink: 0 }} />
-                  <span style={{ flex: 1, minWidth: 0, ...dsText("Text sm"), color: ds.text.secondary }}>{d.label}</span>
-                  {cmpOn ? <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>{refName}: {d.prev}</span> : d.delta !== 0 && <TrendPill delta={d.delta} numberOnly />}
-                  <span style={{ ...dsText("Text md", 700), color: db.cs, minWidth: 24, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{d.value}</span>
-                </div>
-              );
-            })}
-          </section>
-        );
-      })}
+          );
+        })}
+      </div>
+      {ordered.length > COMPACT_ROWS && <ShowAll open={showAll} total={ordered.length} onToggle={() => setShowAll((v) => !v)} />}
     </div>
   );
 }

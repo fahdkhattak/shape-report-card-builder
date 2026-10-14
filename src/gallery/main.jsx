@@ -9,6 +9,9 @@ import { T, radius } from "../lib/tokens.js";
 import "../lib/ds.js";
 import ScopeRecipe from "../components/scope/scopeRecipes.jsx";
 import { StoryStyleContext } from "../components/scope/stories/storyStyle.js";
+import { STORIES } from "../components/widgetbuilder/storyCatalog.jsx";
+import { SAMPLE_SUBJECTS } from "../components/developer/sampleSubjects.js";
+import { ScopeNavContext } from "../components/scope/scopeNav.js";
 
 /* Scratch: ?scopes=a,b&style=refined (report Scopes) · ?family=a,b (library forms) or ?forms&only=a,b&subject=dim|overall&axes=gender,tenure (builder forms; axes repeats each form per grouping). */
 const params = new URLSearchParams(location.search);
@@ -22,10 +25,20 @@ const Card = ({ id, size, surface = {}, title, children }) => (
   </div>
 );
 let cells;
-if (params.has("scopes")) {
-  // ?scopes=enps,explorers&style=refined — each family's report Scope, as the Scope pane draws it.
+if (params.has("stories")) {
+  // ?stories[=id,id]&subject=0..4&w=360 — catalogue Stories for one sample subject (Story sweep's subjects).
+  const only = params.get("stories") ? params.get("stories").split(",") : null;
+  const subject = SAMPLE_SUBJECTS[Number(params.get("subject")) || 0].subject;
+  cells = STORIES.filter((d) => (!only || only.includes(d.id)) && !d.blocked?.(subject)).map((d) => (
+    <div key={d.id} data-catalog={d.id} style={{ width: Number(params.get("w")) || 808, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 12, color: "#888" }}>{d.id}</div>
+      <StoryStyleContext.Provider value={params.get("style") || "classic"}><ScopeNavContext.Provider value={{ depth: 0, open: () => {} }}>{d.render(subject, { stories: [d.id] })}</ScopeNavContext.Provider></StoryStyleContext.Provider>
+    </div>
+  ));
+} else if (params.has("scopes")) {
+  // ?scopes=enps,explorers&style=refined&w=360 — each family's report Scope, as the Scope pane draws it (w = card width).
   cells = params.get("scopes").split(",").map((id) => (
-    <div key={id} data-scope={id} style={{ width: 808, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div key={id} data-scope={id} style={{ width: Number(params.get("w")) || 808, display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ fontSize: 12, color: "#888" }}>{id}</div>
       <StoryStyleContext.Provider value={params.get("style") || "classic"}><ScopeRecipe familyId={id} /></StoryStyleContext.Provider>
     </div>

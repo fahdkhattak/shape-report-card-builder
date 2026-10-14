@@ -51,8 +51,18 @@ export default function SeverityBreakdownStory({ title, line, rows, unit = "Empl
   const lim = RULES.wellbeing.firstRows;
   const cut = rows.length > lim + 2;
   const chartRows = cut && !showAll ? rows.slice(0, lim) : rows;
-  const columns = [{ key: "label", label: "Measure" }, ...SEVERITY.map((b, i) => ({ key: `b${i}`, label: b, align: "center" }))];
-  const tableRows = rows.map((r) => ({ label: r.label, ...Object.fromEntries(r.cells.map((c, i) => [`b${i}`, personal ? (r.current === i ? "You are here" : "") : `${c.pct}% (${c.count} ${unit})`])) }));
+  // Table cells: the share in bold with the count beside it, quietly, on one line ("24% · 24"); the unit is in the line
+  // under the title, and Copy Table keeps the full "24% (24 Employees)".
+  const cellText = (r, i) => (personal ? (r.current === i ? "You are here" : "") : `${r.cells[i].pct}% (${r.cells[i].count} ${unit})`);
+  const columns = [
+    { key: "label", label: "Measure", render: (r) => <span style={{ color: ds.text.secondary, whiteSpace: "nowrap" }}>{r.label}</span> },
+    ...SEVERITY.map((b, i) => ({
+      key: `b${i}`, label: b, align: "center", text: (r) => cellText(r.src, i),
+      render: (r) => (personal ? (r.src.current === i ? <b style={{ color: ds.text.primary }}>You are here</b> : <span style={{ color: ds.text.quaternary }}>-</span>)
+        : <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}><b style={{ color: ds.text.primary, fontWeight: 600 }}>{r.src.cells[i].pct}%</b><span style={{ color: ds.text.quaternary }}> · {r.src.cells[i].count}</span></span>),
+    })),
+  ];
+  const tableRows = rows.map((r) => ({ label: r.label, src: r }));
   const controls = [<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="t" getText={() => tableText(columns, tableRows)} />];
   const grid = { flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: GAP };
 

@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { font } from "../../lib/tokens.js";
-import { ds, dsBand, dsText, dsRadius, dsSpace, dsShadow } from "../../lib/ds.js";
-import { polar, describeArc, TrendPill } from "./primitives.jsx";
+import { ds, dsBand } from "../../lib/ds.js";
+import { polar, describeArc } from "./primitives.jsx";
+import { TipCard } from "./ChartTip.jsx";
 import { DIMENSIONS, DIMENSION_DRIVERS, PREVIOUS, dimensionValue, driverValue } from "../../lib/dataset.js";
 
 /* ================================================================== */
@@ -35,19 +37,67 @@ const MAX_CHILD_LABELS = 25;
 const LEVEL2 = { success: "#D3F2E3", warning: "#FFF1CF", error: "#FCD7DD" }; // secondary tints from the board (not in the DS file)
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-/* Fit a label to a width: whole, truncated with an ellipsis, or null when not even four characters fit. */
+/* Text width in px, measured with the real font (canvas measureText), so a label is only truncated when it really
+   doesn't fit. Falls back to an average glyph width where there is no canvas. */
+let ctx2d = null;
+export function textWidth(text, size = 11, weight = 400) {
+  if (typeof document !== "undefined" && !ctx2d) ctx2d = document.createElement("canvas").getContext("2d");
+  if (!ctx2d) return text.length * size * 0.56;
+  ctx2d.font = `${weight} ${size}px "IBM Plex Sans", sans-serif`;
+  return ctx2d.measureText(text).width;
+}
+
+/* Fit a label to a width: whole, truncated with an ellipsis, or null when not even three letters and the ellipsis fit. */
 export function fitLabel(label, widthPx, size = 11) {
-  const chars = Math.floor(widthPx / (size * 0.54));
-  if (label.length <= chars) return label;
-  if (chars >= 4) return `${label.slice(0, chars - 1).trimEnd()}…`;
+  if (textWidth(label, size) <= widthPx) return label;
+  for (let n = label.length - 1; n >= 3; n--) {
+    const t = `${label.slice(0, n).trimEnd()}…`;
+    if (textWidth(t, size) <= widthPx) return t;
+  }
   return null;
+}
+
+/* Does a w × h box centred at (x, y) sit inside the ring slice (rIn..rOut, a0..a1 degrees, 0 = 12 o'clock, clockwise)
+   with `pad` px to spare on every side? The slice is convex apart from the hole, so the box's corners decide the arcs'
+   outer edge and the two straight edges, and its nearest point to the centre decides the hole. */
+function boxInSlice(cx, cy, rIn, rOut, a0, a1, x, y, w, h, pad = 2) {
+  const x0 = x - w / 2, x1 = x + w / 2, y0 = y - h / 2, y1 = y + h / 2;
+  const nx = clamp(cx, x0, x1) - cx, ny = clamp(cy, y0, y1) - cy;
+  if (Math.hypot(nx, ny) < rIn + pad) return false;
+  const edge = (a) => { const r = (a * Math.PI) / 180; return [Math.sin(r), -Math.cos(r)]; };
+  const [ux0, uy0] = edge(a0), [ux1, uy1] = edge(a1);
+  for (const [px, py] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) {
+    const dx = px - cx, dy = py - cy;
+    if (Math.hypot(dx, dy) > rOut - pad) return false;
+    // cross(edge, p) = |p|·sin(θ − a): the signed distance from that straight edge (positive = clockwise of it)
+    if (ux0 * dy - uy0 * dx < pad) return false;  // at least `pad` clockwise of a0
+    if (ux1 * dy - uy1 * dx > -pad) return false; // and at least `pad` anticlockwise of a1
+  }
+  return true;
+}
+/* The widest box (up to `max`) of height h that fits in the slice, centred on the slice's mid-angle at one of the
+   radii given; returns { w, r } for the best radius, or null. */
+function roomInSlice(cx, cy, rIn, rOut, a0, a1, radii, h, max, avoid) {
+  const mid = (a0 + a1) / 2;
+  // `avoid`: a box ({ x, y, w, h }) the result must keep 4px clear of (the score, when placing the label).
+  const clear = (x, y, w) => !avoid || Math.abs(x - avoid.x) >= (w + avoid.w) / 2 + 4 || Math.abs(y - avoid.y) >= (h + avoid.h) / 2 + 2;
+  const ok = (x, y, w) => boxInSlice(cx, cy, rIn, rOut, a0, a1, x, y, w, h) && clear(x, y, w);
+  let best = null;
+  for (const r of radii) {
+    const p = polar(cx, cy, r, mid);
+    let lo = 0, hi = max;
+    if (!ok(p.x, p.y, 4)) continue;
+    while (hi - lo > 1) { const m = (lo + hi) / 2; if (ok(p.x, p.y, m)) lo = m; else hi = m; }
+    if (!best || lo > best.w + 2) best = { w: Math.floor(lo), r, x: p.x, y: p.y };
+  }
+  return best;
 }
 
 function Txt({ x, y, w, h = 14, children, size = 11, weight = 400, color, align = "center" }) {
   const left = align === "end" ? x - w : align === "start" ? x : x - w / 2;
   return (
     <foreignObject x={left} y={y - h / 2} width={w} height={h} style={{ overflow: "visible", pointerEvents: "none" }}>
-      <div xmlns="http://www.w3.org/1999/xhtml" style={{ fontFamily: font, fontSize: size, fontWeight: weight, color: color || ds.text.primary, textAlign: align === "end" ? "right" : align === "start" ? "left" : "center", whiteSpace: "nowrap", overflow: "hidden", lineHeight: `${h}px` }}>{children}</div>
+      <div xmlns="http://www.w3.org/1999/xhtml" style={{ fontFamily: font, fontSize: size, fontWeight: weight, color: color || ds.text.primary, textAlign: align === "end" ? "right" : align === "start" ? "left" : "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: `${h}px` }}>{children}</div>
     </foreignObject>
   );
 }
@@ -87,37 +137,52 @@ function Ring({ wedges: all, center, size, title }) {
 
   const tint = (v, level) => (level === 2 ? LEVEL2[dsBand(v).key] : dsBand(v).bg);
   const active = (id, pid) => !hover || hover.id === id || hover.group === pid || hover.id === pid || hover.parent === Number(pid?.slice(1));
+  // Hover (mouse) or tap (touch) a segment: it stays lit, the others dim, and the shared chart tooltip opens at the
+  // pointer, rendered into the page so the card can never clip it.
   const on = (id, extra = {}) => ({
-    onPointerEnter: (e) => e.pointerType === "mouse" && setHover({ id, ...extra }),
+    onPointerEnter: (e) => e.pointerType === "mouse" && setHover({ id, ...extra, x: e.clientX, y: e.clientY }),
+    onPointerMove: (e) => e.pointerType === "mouse" && setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h)),
     onPointerLeave: (e) => e.pointerType === "mouse" && setHover(null),
-    onPointerDown: () => setHover((h) => (h?.id === id ? null : { id, ...extra })),
+    onPointerDown: (e) => e.pointerType !== "mouse" && setHover((h) => (h?.id === id ? null : { id, ...extra, x: e.clientX, y: e.clientY })),
   });
 
   const rim = [];
   const body = wedges.map((w, i) => {
     const a0 = i * step, a1 = a0 + step, mid = a0 + step / 2, kids = hasSub ? w.sub || [] : [];
     const pid = `p${i}`;
-    const chord = 2 * 120 * Math.sin((step / 2) * (Math.PI / 180));
-    const labelText = labelsOnWedge ? fitLabel(w.label, chord - 6) : null;
-    const valAt = polar(cx, cy, labelText ? 82 : (G.in + G.out) / 2, mid);
-    const nameAt = polar(cx, cy, 118, mid);
+    // Label in the outer half, score in the inner half, both inside the slice with 2px to spare (the board's safe zone).
+    // Horizontal text in a side slice crosses the ring's depth, not its arc, so the room is measured, not taken from the chord.
+    // The score is placed first (inner half); the label then takes the widest room left in the outer half that keeps
+    // clear of it. On a side slice both run horizontally along the same line, so the label stops before the score.
+    const depth = G.out - G.in;
+    const SCORE_W = 18;
+    const scoreIn = labelsOnWedge ? roomInSlice(cx, cy, G.in, G.out, a0, a1, [0.2, 0.26, 0.32, 0.38].map((f) => G.in + depth * f), 14, SCORE_W) : null;
+    const scoreBox = scoreIn && scoreIn.w >= SCORE_W - 1 ? { x: scoreIn.x, y: scoreIn.y, w: SCORE_W, h: 14 } : null;
+    // One line, as in the frames: the whole name if it fits, else truncated with an ellipsis ("Manag…"), else nothing.
+    // The full name is always in the tooltip.
+    const radii = [0.62, 0.68, 0.74, 0.8, 0.56].map((f) => G.in + depth * f);
+    const room = labelsOnWedge && scoreBox ? roomInSlice(cx, cy, G.in, G.out, a0, a1, radii, 14, 96, scoreBox) : null;
+    const labelText = room ? fitLabel(w.label, room.w) : null;
+    const valAt = labelText ? scoreBox : polar(cx, cy, (G.in + G.out) / 2, mid);
+    const nameAt = room;
     if (!kids.length) rim.push({ a0, a1, v: w.value });
     const childDeg = kids.length ? step / kids.length : 360;
     const smallKids = kids.length > 0 && childDeg < MIN_CHILD_DEG;
     return (
       <g key={pid} opacity={active(pid, pid) ? 1 : 0.55} style={{ transition: "opacity 120ms ease" }}>
         <path d={describeArc(cx, cy, G.in, G.out, a0, a1)} fill={tint(w.value, 1)} stroke="#fff" strokeWidth="1" style={{ cursor: "pointer" }} {...on(pid)} />
-        {labelText && <Txt x={nameAt.x} y={nameAt.y} w={clamp(chord - 4, 24, 80)}>{labelText}</Txt>}
-        <Txt x={valAt.x} y={valAt.y} w={30} h={16} weight={700} color={dsBand(w.value).cs}>{Math.round(w.value)}</Txt>
+        {labelText && <Txt x={nameAt.x} y={nameAt.y} w={nameAt.w}>{labelText}</Txt>}
+        <Txt x={valAt.x} y={valAt.y} w={30} h={16} size={12} weight={700} color={dsBand(w.value).cs}>{Math.round(w.value)}</Txt>
         {kids.map((c, j) => {
           const s0 = a0 + j * childDeg, s1 = s0 + childDeg;
           const at = polar(cx, cy, (G.out + G.r2Out) / 2, (s0 + s1) / 2);
+          const fits = !smallKids && boxInSlice(cx, cy, G.out, G.r2Out, s0, s1, at.x, at.y, 16, 12, 1);
           const cid = `c${i}.${j}`;
           rim.push({ a0: s0, a1: s1, v: c.value });
           return (
             <g key={cid} opacity={!hover || hover.id === cid || hover.group === pid ? 1 : 0.55} style={{ transition: "opacity 120ms ease" }}>
               <path d={describeArc(cx, cy, G.out, G.r2Out, s0, s1)} fill={tint(c.value, 2)} stroke="#fff" strokeWidth="1" style={{ cursor: "pointer" }} {...on(smallKids ? `g${i}` : cid, smallKids ? { group: pid } : { parent: i })} />
-              {!smallKids && <Txt x={at.x} y={at.y} w={24} h={12} weight={700} color={dsBand(c.value).cs}>{Math.round(c.value)}</Txt>}
+              {fits && <Txt x={at.x} y={at.y} w={24} h={12} weight={700} color={dsBand(c.value).cs}>{Math.round(c.value)}</Txt>}
             </g>
           );
         })}
@@ -129,20 +194,19 @@ function Ring({ wedges: all, center, size, title }) {
   let tip = null;
   if (hover) {
     const m = hover.id.match(/^([pcg])(\d+)(?:\.(\d+))?$/);
-    const i = Number(m[2]);
-    const w = wedges[i];
+    const w = wedges[Number(m[2])];
     if (w) {
-      const row = (label, value, prev) => ({ label, value: Math.round(value), delta: prev == null ? 0 : Math.round(value) - Math.round(prev) });
-      if (m[1] === "g") tip = { head: w.label, rows: (w.sub || []).map((c) => row(c.label, c.value, c.prev)), anchor: polar(cx, cy, G.r2Out, i * step + step / 2) };
-      else if (m[1] === "c") { const j = Number(m[3]), c = w.sub[j]; tip = { rows: [row(c.label, c.value, c.prev)], anchor: polar(cx, cy, (G.out + G.r2Out) / 2, i * step + ((j + 0.5) * step) / w.sub.length) }; }
-      else tip = { rows: [row(w.label, w.value, w.prev)], anchor: polar(cx, cy, (G.in + G.out) / 2 + 20, i * step + step / 2) };
+      const row = (label, value, prev) => ({ label, value: Math.round(value), delta: prev == null ? 0 : Math.round(value) - Math.round(prev), score: true });
+      if (m[1] === "g") tip = { head: w.label, rows: (w.sub || []).map((c) => row(c.label, c.value, c.prev)) };
+      else if (m[1] === "c") { const c = w.sub[Number(m[3])]; tip = { head: w.label, rows: [row(c.label, c.value, c.prev)] }; }
+      else tip = { rows: [row(w.label, w.value, w.prev)] };
     }
   }
 
   const rimEls = rim.map((c, k) => <path key={k} d={describeArc(cx, cy, rimIn, rimOut, c.a0 + 0.4, c.a1 - 0.4)} fill={dsBand(c.v).c} style={{ pointerEvents: "none" }} />);
 
   const labelEls = outsideOk ? outside.map((o) => (
-    <g key={o.id} style={{ cursor: "pointer" }} opacity={!hover || hover.id === o.id ? 1 : 0.6} onPointerEnter={(e) => e.pointerType === "mouse" && setHover({ id: o.id, parent: o.parent })} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}>
+    <g key={o.id} style={{ cursor: "pointer" }} opacity={!hover || hover.id === o.id ? 1 : 0.6} {...on(o.id, { parent: o.parent })}>
       <line x1={o.p0.x} y1={o.p0.y} x2={o.p1.x} y2={o.p1.y} stroke={ds.border.primary} strokeWidth="1" />
       <Txt x={o.side === "r" ? o.p2.x + 2 : o.p2.x - 2} y={o.p2.y} w={Math.min(o.avail, 104)} align={o.side === "r" ? "start" : "end"}>{o.text}</Txt>
     </g>
@@ -151,7 +215,6 @@ function Ring({ wedges: all, center, size, title }) {
   // With no labels outside the rim the ring has the whole box: crop the view to the ring so it is as big as it can be.
   const crop = hasSub && !outsideOk;
   const vb = crop ? { x: cx - (rimOut + 8), y: cy - (rimOut + 8), w: 2 * (rimOut + 8), h: 2 * (rimOut + 8) } : { x: 0, y: 0, w: W, h: H };
-  const below = tip ? (tip.anchor.y - vb.y) / vb.h < 0.5 : false; // a tooltip for the top half opens downward, so the card never clips it
   const big = center >= 100 ? 52 : 64;
   return (
     <div style={{ flex: 1, alignSelf: "stretch", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible", minWidth: 0, minHeight: 0 }}>
@@ -162,26 +225,12 @@ function Ring({ wedges: all, center, size, title }) {
           <circle cx={cx} cy={cy} r={G.hole} fill="#fff" />
           <foreignObject x={cx - G.hole} y={cy - G.hole} width={G.hole * 2} height={G.hole * 2} style={{ pointerEvents: "none" }}>
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font }}>
-              <span style={{ fontSize: big, fontWeight: 700, letterSpacing: -big * 0.02, lineHeight: 1, color: dsBand(center).cs }}>{center}</span>
+              <span style={{ fontSize: big, fontWeight: 700, letterSpacing: -big * 0.02, lineHeight: 1, color: ds.status[dsBand(center).key].text }}>{center}</span>
             </div>
           </foreignObject>
           {labelEls}
         </svg>
-        {tip && (
-          <div
-            role="status"
-            style={{ position: "absolute", left: `${clamp(((tip.anchor.x - vb.x) / vb.w) * 100, 26, 74)}%`, top: `${((tip.anchor.y - vb.y) / vb.h) * 100}%`, transform: below ? "translate(-50%, 10px)" : "translate(-50%, calc(-100% - 10px))", pointerEvents: "none", zIndex: 5, minWidth: 150, maxWidth: 230, boxSizing: "border-box", background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, boxShadow: dsShadow("sm"), display: "flex", flexDirection: "column", gap: dsSpace[6], fontFamily: font }}
-          >
-            {tip.head && <span style={{ ...dsText("Text 2xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{tip.head}</span>}
-            {tip.rows.map((r) => (
-              <div key={r.label} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${dsBand(r.value).c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-                <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{r.label}</span>
-                {r.delta !== 0 && <TrendPill delta={r.delta} numberOnly />}
-                <span style={{ ...dsText("Text md", 700), color: dsBand(r.value).cs }}>{r.value}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {tip && hover && typeof document !== "undefined" && createPortal(<TipCard x={hover.x} y={hover.y} content={tip} />, document.body)}
       </div>
     </div>
   );

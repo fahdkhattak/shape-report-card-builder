@@ -137,15 +137,16 @@ function ChangePill({ d }) {
 function CompositionTable({ blocks }) {
   const { compact } = useStoryWidth();
   const [open, setOpen] = useState(() => ({ [blocks[0]?.key]: true }));
-  const minWidth = compact ? 560 : 0; // six columns need room; a narrow card scrolls sideways
+  // On a phone the six columns don't fit, so each group is two lines: name and score, then people · share · against the
+  // average, with the change pill. Nothing scrolls sideways.
   return (
-    <EvidenceSection style={{ padding: dsSpace[16], overflowX: "auto" }}>
-      <div style={{ minWidth, display: "flex", flexDirection: "column", gap: dsSpace[16], fontFamily: font }}>
-        <div role="row" data-part="table-head" style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: `0 ${dsSpace[8]}px` }}>
+    <EvidenceSection style={{ padding: compact ? `${dsSpace[12]}px 0` : dsSpace[16] }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: compact ? dsSpace[12] : dsSpace[16], fontFamily: font }}>
+        {!compact && <div role="row" data-part="table-head" style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: `0 ${dsSpace[8]}px` }}>
           {["Group", "Employees", "Population", "Score", "Change", "Compared with average"].map((h) => (
             <span key={h} role="columnheader" style={{ ...dsText("Text xs", 500), color: ds.text.tertiary, textTransform: "uppercase" }}>{h}</span>
           ))}
-        </div>
+        </div>}
         {blocks.map((b) => {
           const isOpen = !!open[b.key];
           return (
@@ -160,8 +161,16 @@ function CompositionTable({ blocks }) {
                 </button>
               </div>
               {isOpen && (
-                <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[16], paddingTop: 0 }}>
-                  {b.rows.map((r) => (
+                <div style={{ display: "flex", flexDirection: "column", gap: compact ? 0 : dsSpace[16], paddingTop: 0 }}>
+                  {compact && b.rows.map((r) => (
+                    <div key={r.group} role="row" data-part="table-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: `${dsSpace[4]}px ${dsSpace[8]}px`, padding: `${dsSpace[12]}px ${dsSpace[8]}px`, borderBottom: `${dsBorder.sm}px solid ${ds.border.tertiary}` }}>
+                      <span style={{ ...dsText("Text sm", 700), color: ds.text.secondary, minWidth: 0 }}>{r.group}</span>
+                      <span style={{ ...dsText("Text md", 700), color: r.hidden ? ds.text.quaternary : dsBand(r.score).cs, textAlign: "right", fontVariantNumeric: "tabular-nums" }} title={r.hidden ? `Fewer than ${SUPPRESS_BELOW} people, so the score isn't shown` : undefined}>{r.hidden ? "-" : r.score}</span>
+                      <span style={{ ...dsText("Text xs"), color: ds.text.tertiary, minWidth: 0 }}>{r.n} {r.n === 1 ? "person" : "people"} · {r.pct}%{vsAvgText(r.vsAvg) ? ` · ${vsAvgText(r.vsAvg)}` : ""}</span>
+                      <span style={{ display: "flex", justifyContent: "flex-end" }}><ChangePill d={r.hidden ? null : r.change} /></span>
+                    </div>
+                  ))}
+                  {!compact && b.rows.map((r) => (
                     <div key={r.group} role="row" data-part="table-row" style={{ display: "grid", gridTemplateColumns: COLS, alignItems: "center", padding: `${dsSpace[16] - dsBorder.sm}px ${dsSpace[8]}px 0`, borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}`, height: 20, boxSizing: "content-box" }}>
                       <p style={{ ...cellText, fontWeight: 700 }}>{r.group}</p>
                       <p style={cellText}>{r.n}</p>
@@ -171,7 +180,7 @@ function CompositionTable({ blocks }) {
                       <p style={cellText}>{vsAvgText(r.vsAvg)}</p>
                     </div>
                   ))}
-                  <div aria-hidden="true" style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}` }} />
+                  {!compact && <div aria-hidden="true" style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}` }} />}
                 </div>
               )}
             </div>

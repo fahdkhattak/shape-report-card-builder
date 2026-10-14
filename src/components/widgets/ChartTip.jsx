@@ -30,7 +30,7 @@ export function useChartTip() {
   return { bind, node, active: tip?.content ?? null };
 }
 
-function TipCard({ x, y, content }) {
+export function TipCard({ x, y, content }) {
   const below = y < 140;
   const left = Math.max(110, Math.min(x, (window.innerWidth || 1200) - 110));
   return (

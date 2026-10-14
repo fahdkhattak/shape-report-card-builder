@@ -85,11 +85,11 @@ export function SampleTag({ children = "Sample copy" }) {
   );
 }
 
-/* The evidence section: a hairline above and below (border/primary) with 16px of space around its content.
+/* The evidence section: a hairline above and below (border/tertiary) with 16px of space around its content.
    Figma 13622:39516 (Insight Summary), 13622:35958 (Breakdown). */
 export function EvidenceSection({ children, pad = dsSpace[16], gap, style, ...rest }) {
   return (
-    <div data-part="evidence" style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.primary}`, borderBottom: `${dsBorder.sm}px solid ${ds.border.primary}`, padding: `${pad}px 0`, display: "flex", flexDirection: "column", gap, boxSizing: "border-box", ...style }} {...rest}>
+    <div data-part="evidence" style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}`, borderBottom: `${dsBorder.sm}px solid ${ds.border.tertiary}`, padding: `${pad}px 0`, display: "flex", flexDirection: "column", gap, boxSizing: "border-box", ...style }} {...rest}>
       {children}
     </div>
   );

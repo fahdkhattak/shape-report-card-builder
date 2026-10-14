@@ -58,7 +58,7 @@ const common = (node, cardSize) => [
 ];
 const STAND_CHECKS = [
   ...common("13622:37240", "808 × 278"),
-  { part: "Evidence section: height · lines", node: "13622:37246", figma: "164 · 1/1 · #b4b2b1", read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${Math.round(rect(e).height)} · ${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } },
+  { part: "Evidence section: height · lines (softened from Figma's #b4b2b1)", node: "13622:37246", figma: "164 · 1/1 · #e5e4e3", read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${Math.round(rect(e).height)} · ${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } },
   { part: "Cards: size · gap", node: "13622:37247", figma: "379 × 130 · 16", read: (r) => { const [a, b] = qa(r, '[data-part="stat-card"]'); return `${size(a)} · ${px(rect(b).left - rect(a).right)}`; } },
   { part: "Inner card fill · border · radius · padding", node: "13622:37247", figma: "#ffffff · 1 #cecdcc · 12 · 16", read: (r) => { const c = q(r, '[data-part="stat-card"]'), s = css(c); return `${lightHexOf(c, ["background", "backgroundColor"])} · ${px(s.borderTopWidth)} ${lightHexOf(c, ["border", "borderTop"])} · ${px(s.borderTopLeftRadius)} · ${px(s.paddingTop)}`; } },
   { part: "Label: size / line · weight · colour", node: "13622:37249", figma: "14/20 · 700 · #504c4d", read: (r) => { const l = q(r, '[data-part="stat-label"]'); return `${type(l)} · ${lightHexOf(l, ["color"], true)}`; } },
@@ -73,7 +73,7 @@ const STAND_CHECKS = [
 ];
 const AREA_CHECKS = [
   ...common("13622:37281", "808 × 340"),
-  { part: "Evidence section: height · lines", node: "13622:37286", figma: "226 · 1/1 · #b4b2b1", read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${Math.round(rect(e).height)} · ${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } },
+  { part: "Evidence section: height · lines (softened from Figma's #b4b2b1)", node: "13622:37286", figma: "226 · 1/1 · #e5e4e3", read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${Math.round(rect(e).height)} · ${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } },
   { part: "Cards: size · gaps", node: "13622:37288", figma: "379 × 88 · 16 · 16", read: (r) => { const c = qa(r, '[data-part="group-card"]'); return `${size(c[0])} · ${px(rect(c[1]).left - rect(c[0]).right)} · ${px(rect(c[2]).top - rect(c[0]).bottom)}`; } },
   { part: "Inner card fill · border · radius · padding", node: "13622:37288", figma: "#ffffff · 1 #cecdcc · 12 · 16", read: (r) => { const c = q(r, '[data-part="group-card"]'), s = css(c); return `${lightHexOf(c, ["background", "backgroundColor"])} · ${px(s.borderTopWidth)} ${lightHexOf(c, ["border", "borderTop"])} · ${px(s.borderTopLeftRadius)} · ${px(s.paddingTop)}`; } },
   { part: "Icon size", node: "13622:37292", figma: "20 × 20", read: (r) => { const c = q(r, '[data-part="group-card"]'); const i = c.firstElementChild.firstElementChild.firstElementChild; return size(i); } },
@@ -178,7 +178,7 @@ function DeveloperView({ style }) {
       <Section id="spec" title="Specification" lead="Every value, written down. Colours are design-system tokens (Light · Dark); never hard-code the hex.">
         <SpecTable head={["Part", "Property", "Value"]} widths={["20%", "22%", "58%"]} rows={[
           ["Card", "Shell", "The shared Story card: up to 808px, 18px radius, 16px padding, 16px between parts."],
-          ["Evidence section", "Lines and space", <span key="e" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>1px above and below {T("border/primary")}; 16px above and below the cards</span>],
+          ["Evidence section", "Lines and space", <span key="e" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>1px above and below {T("border/tertiary")}; 16px above and below the cards</span>],
           ["Card grid", "Layout", "Two columns 16px apart on a wide card, one column on a compact card. Cards in a row stretch to the same height."],
           ["Inner card", "Surface", <span key="i" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>{T("surface/General/card")}, 1px {T("border/secondary")}, radius/lg (12), 16px padding, 16px between parts</span>],
           ["Stat card", "Header", <span key="h" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>Label Text sm / Bold {T("text/secondary")}, 12px, then the score Text md-Trim / Bold in the status colour</span>],

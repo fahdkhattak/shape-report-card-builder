@@ -135,7 +135,7 @@ export function ComparisonRadar({ title = "How You Compare", line, parts, entiti
             <div data-part="radar-slot" style={{ flex: side ? "1 1 0" : "1 1 auto", minWidth: 0 }}>
               <ScopeRadar items={items} series={series} />
             </div>
-            {!side && <div style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.primary}` }} />}
+            {!side && <div style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}` }} />}
             <div style={{ flex: side ? "0 0 247px" : "1 1 auto", minWidth: 0 }}>
               <ComparisonLegend entities={entities} on={on} setOn={setOn} colors={colors} layout={side ? "vertical" : "horizontal"} />
             </div>
@@ -267,7 +267,7 @@ export function ComparisonArea({ title = "How You Compare", line, parts, entitie
           </div>
         )}
         {view === "chart" && numbered && <NumberedList rows={order.map((i) => ({ label: parts[i], value: shown[0] ? shown[0].values[i] : 0, series: shown.map((e) => ({ color: colors[e.id], value: e.values[i] })) }))} active={hover} onPick={setHover} hoverable onHover={setHover} />}
-        {view === "chart" && <div style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.primary}`, paddingTop: dsSpace[16] }}><ComparisonLegend entities={entities} on={on} setOn={setOn} colors={colors} layout="horizontal" /></div>}
+        {view === "chart" && <div style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}`, paddingTop: dsSpace[16] }}><ComparisonLegend entities={entities} on={on} setOn={setOn} colors={colors} layout="horizontal" /></div>}
       </EvidenceSection>
     </StoryCard>
     </div>
@@ -329,7 +329,7 @@ export function HealthAgeComparison({ title = "Health Age Compared", line, entit
     <div ref={cardRef}>
     <StoryCard title={title} line={line} data-story="comparison-age" controls={[<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, entities)} />]}>
       {view === "table" ? <DataTable columns={columns} rows={entities} /> : groups.map((g, gi) => (
-        <div key={gi} style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.primary}`, paddingTop: dsSpace[16], display: "flex", flexDirection: "column", gap: dsSpace[8], ...(gi === groups.length - 1 ? { borderBottom: "none" } : null) }}>
+        <div key={gi} style={{ borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}`, paddingTop: dsSpace[16], display: "flex", flexDirection: "column", gap: dsSpace[8], ...(gi === groups.length - 1 ? { borderBottom: "none" } : null) }}>
           {g[0].kind === "team" && <div style={{ width: compact ? "100%" : 247 }}><TeamsHeader /></div>}
           {g.map(row)}
         </div>

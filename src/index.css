@@ -101,3 +101,22 @@ body {
    and scroll it sideways); a 4px thumb drawn on top shows while scrolling or hovering and fades away after. */
 .scroll-minimal { scrollbar-width: none; -ms-overflow-style: none; }
 .scroll-minimal::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* Library · Refined (components/library/LibraryRefined.jsx): hover, press and focus feedback */
+.lib2 .lib2-card { transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease; }
+.lib2 .lib2-card:hover { box-shadow: 0 1px 2px rgba(35,31,32,0.06), 0 10px 24px -12px rgba(35,31,32,0.22); transform: translateY(-2px); border-color: var(--ds-color-border-secondary, #cecdcc); }
+.lib2 .lib2-btn { transition: background-color 150ms ease, opacity 150ms ease; }
+.lib2 .lib2-btn:hover { opacity: 0.86; }
+.lib2 .lib2-index:hover { background: var(--ds-color-bg-primary, #f2f2f2); }
+.lib2 button:focus-visible, .lib2 input:focus-visible { outline: 2px solid var(--ds-color-text-accent, #00a9eb); outline-offset: 2px; border-radius: 9999px; }
+.lib2 .lib2-search:focus-within { box-shadow: 0 0 0 2px var(--ds-color-text-accent, #00a9eb); }
+@media (prefers-reduced-motion: reduce) { .lib2 .lib2-card:hover { transform: none; } }
+
+/* Score History changes rows: the whole row tints on hover / keyboard focus (ScoreHistoryStory.jsx). */
+.sh-row { transition: background 120ms ease; }
+.sh-row:hover { background: var(--ds-color-interactive-ghost-hover); }
+.sh-row:focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: 1px; }
+/* Round strip tiles (HistoryCards.jsx). */
+.round-tile { transition: background 140ms ease, box-shadow 140ms ease; }
+.round-tile:not([aria-selected="true"]):hover { background: var(--ds-color-interactive-ghost-hover); }
+.round-tile:focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: 1px; }

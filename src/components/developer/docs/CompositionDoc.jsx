@@ -46,7 +46,7 @@ const SHELL = (node) => [
   { part: "Tabs: track fill · height", node: "13622:39611", figma: "#f2f2f2 · 24", read: (r) => { const t = q(r, '[data-part="pill-tabs"]'); return `${lightHexOf(t, ["background"])} · ${Math.round(rect(t).height)}`; } },
   { part: "Chosen tab: fill · text colour · type", node: "13622:39612", figma: "#504c4d · #e5e4e3 · 12/16 · 400", read: (r) => { const t = tabOn(r); return `${lightHexOf(t, ["background"])} · ${lightHexOf(t, ["color"])} · ${type(t)}`; } },
   { part: "Other tabs: text colour · padding", node: "13622:39613", figma: "#3a3737 · 4/8", read: (r) => { const t = tabOff(r), s = css(t); return `${lightHexOf(t, ["color"])} · ${px(s.paddingTop)}/${px(s.paddingLeft)}`; } },
-  { part: "Evidence section: lines", node: "13622:39631", figma: "1/1 · #b4b2b1", read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } },
+  { part: "Evidence section: lines (softened from Figma's #b4b2b1)", node: "13622:39631", figma: "1/1 · #e5e4e3", read: (r) => { const e = q(r, '[data-part="evidence"]'), c = css(e); return `${px(c.borderTopWidth)}/${px(c.borderBottomWidth)} · ${lightHexOf(e, ["borderTop"])}`; } },
 ];
 const CHART_CHECKS = [
   { part: "Card size (one row of rings)", node: "13622:39607", figma: "808 × 322", read: (r) => size(card(r)) },
@@ -115,7 +115,7 @@ function DeveloperView({ style }) {
         <SpecTable head={["Part", "Property", "Value"]} widths={["20%", "22%", "58%"]} rows={[
           ["Card", "Shell", "The shared Story card: up to 808px, 18px radius, 16px padding, 16px between parts. Title Text lg / Bold."],
           ["Tabs", "Pill", <span key="t" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>Track {T("bg/primary")}, fully rounded. Each tab Text 2xs, 4px top and bottom, 8px sides. Chosen: {T("button/brand/primary/bg/active")} with {T("button/brand/primary/items/default text")}; others {T("button/brand/ghost/items/default text")}.</span>],
-          ["Evidence section", "Lines and space", <span key="e" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>1px {T("border/primary")} above and below. Chart: 16px above and below the rings. Table: 16px on every side.</span>],
+          ["Evidence section", "Lines and space", <span key="e" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>1px {T("border/tertiary")} above and below. Chart: 16px above and below the rings. Table: 16px on every side.</span>],
           ["Ring", "Geometry", "A 176px box; the ring is its centre 160px: outer radius 80, inner 56 (24px thick). Segments touch, start at 12 o'clock and run clockwise, sized by share of people. Rings 16px apart, centred, wrapping."],
           ["", "Colours", <span key="c" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>The graph palette in order: Lavender Violet, Amber Orange, Mint Green, Golden Yellow, Coral Red, Teal, Purple, Turquoise, Hot Pink, Orange Coral, then round again. Work Composition uses Personal Blue, Org Blue, Mint Green. Never status colours: these are categories.</span>],
           ["", "Centre", <span key="m" style={{ display: "inline-flex", gap: dsSpace[8], flexWrap: "wrap", alignItems: "center" }}>The axis icon (24px, {T("icon/primary")}) over the axis name (Text sm / Medium, {T("text/secondary")}), 8px apart, wrapping to two lines.</span>],

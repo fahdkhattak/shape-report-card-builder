@@ -42,7 +42,7 @@ export const GROUPS = [
   { id: "Score Comparisons", blurb: "Your score next to your team's and the organisation's.", about: ["Comparisons line up your own score, your team's and the organisation's on the same 0–100 scale so you can see whether you are above or below the people around you.", "A comparison unlocks once enough people in each group have answered."] },
   { id: "Health Age", blurb: "Whether health habits are making people biologically older or younger.", about: ["Health Age estimates how old your health habits make you, compared with your actual age. Sleep, exercise, nutrition and smoking all move it.", "It is an estimate for conversation, not a medical measurement."] },
   { id: "Mental Well-being", blurb: "How many people are feeling low, anxious or stressed.", about: ["Mental Well-being groups the Depression, Anxiety and Stress questions into three feelings. Personal views show a severity for each; team and organisation views show the share of people affected.", "It is a screening signal, not a diagnosis. If someone needs support, point them to the Support widgets."] },
-  { id: "Time & Money", blurb: "What wellbeing is worth in hours and in dollars.", about: ["Time widgets turn a score into hours gained or lost per year. Money Composition shows where the cost of poor wellbeing lands — productivity, absenteeism, retention and claims.", "These are estimates from the model behind the survey, not accounting figures."] },
+  { id: "Time & Money", blurb: "The time and money people would get back if scores reached Flourishing.", about: ["Time Impact is the hours a year each person would get back if everyone below Flourishing reached it: more focused work (productivity) and fewer days lost (absenteeism). Money Impact is the same idea in dollars for the organisation, and adds retention and injury / claims. Time to Gain is one person's own hours, with no breakdown.", "The gaps behind them are measured from people's answers; the rates that turn a point into hours or dollars are a sample model until the SHAPE impact model is connected."] },
   { id: "Support", blurb: "Nudges that point people to help when they need it.", about: ["Support widgets appear when a score suggests someone could use help, and link to the relevant service — for example Mindfulness for low Psychological Health.", "They carry no data of their own."] },
 ];
 export const groupById = (id) => GROUPS.find((g) => g.id === id);
@@ -166,15 +166,15 @@ export const FAMILIES = [
   ] },
 
   /* ---- Time & Money ---- */
-  { id: "time-impact", name: "Time Impact", category: "Time & Money", blurb: "Estimated hours gained or lost per year.", owned: false, persona: "org", forms: [
-    { size: "1x1", label: "Hours/annum", name: "Time Impact", blurb: "Hours gained or lost per year, estimated from work-life balance." },
-    { size: "1x1", label: "Team hours/annum", name: "Team Time Impact", blurb: "Hours gained or lost per year for your team.", title: "Time Impact", persona: "team", sample: true },
+  { id: "time-impact", name: "Time Impact", category: "Time & Money", blurb: "Hours a year each person would get back if scores reached Flourishing.", owned: false, persona: "org", forms: [
+    { size: "1x1", label: "Hours/annum", name: "Time Impact", blurb: "Hours a year each person would get back if everyone reached Flourishing.", sample: true },
+    { size: "1x1", label: "Team hours/annum", name: "Team Time Impact", blurb: "Hours a year each team member would get back if the team reached Flourishing.", title: "Time Impact", persona: "team", sample: true },
   ] },
   { id: "time-gain", name: "Time to Gain", category: "Time & Money", blurb: "Time you could win back each year by improving.", owned: false, persona: "personal", forms: [
-    { size: "1x1", label: "Weeks/annum", name: "Time to Gain", blurb: "How much time improving your habits could give back each year.", sample: true },
+    { size: "1x1", label: "Hours/annum", name: "Time to Gain", blurb: "The hours a year you would get back by reaching Flourishing.", sample: true },
   ] },
-  { id: "money-composition", name: "Money Composition", category: "Time & Money", blurb: "Where the money goes: productivity, absenteeism, retention, claims.", owned: false, persona: "org", forms: [
-    { size: "1x1", label: "Four-way split", name: "Money Composition", blurb: "Where the cost of poor wellbeing lands.", sample: true },
+  { id: "money-composition", name: "Money Impact", category: "Time & Money", blurb: "The money the organisation would get back a year if scores reached Flourishing.", owned: false, persona: "org", forms: [
+    { size: "1x1", label: "Four-way split", name: "Money Impact", blurb: "What the organisation would get back a year: productivity, absenteeism, retention and claims.", title: "Money Impact", sample: true },
   ] },
 
   /* ---- Support ---- */

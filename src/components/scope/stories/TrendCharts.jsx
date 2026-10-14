@@ -242,6 +242,82 @@ export function StateOverTime({ title = "State over time", line, rounds, measure
   );
 }
 
+/* ---- Status Over Time (share of people in each status) ------------------------------------------------------------ */
+/* counts: [{ flourishing, striving, struggling }] per round (people). One stacked bar per round in the shared frame, on a
+   percentage axis: Flourishing on top, Struggling at the base, in the status graph colours. A segment tall enough to hold
+   it prints its share; hover (tap on a phone) names the segment with its share, people and the change since the round
+   before. A legend with the latest round's shares sits under the chart. Built on StateOverTime's frame so the Trend
+   family reads the same. */
+const STATUS_KEYS = [
+  { key: "flourishing", label: "Flourishing", c: ds.status.success.graph, cs: ds.status.success.textIndicator },
+  { key: "striving", label: "Striving", c: ds.status.warning.graph, cs: ds.status.warning.textStrong },
+  { key: "struggling", label: "Struggling", c: ds.status.error.graph, cs: ds.status.error.text },
+];
+export function StatusOverTime({ title = "Status Over Time", line, rounds, counts }) {
+  const [view, setView] = useView();
+  const [hover, setHover] = useState(null); // [round, statusIndex]
+  const n = rounds.length, cx = slotCentre(n);
+  const share = counts.map((c) => {
+    const total = STATUS_KEYS.reduce((a, k) => a + (c[k.key] || 0), 0) || 1;
+    // Largest-remainder rounding so each round's shares add up to exactly 100.
+    const raw = STATUS_KEYS.map((k) => ((c[k.key] || 0) / total) * 100);
+    const fl = raw.map(Math.floor); let left = 100 - fl.reduce((a, b) => a + b, 0);
+    raw.map((v, k) => [v - fl[k], k]).sort((a, b) => b[0] - a[0]).forEach(([, k]) => { if (left > 0) { fl[k] += 1; left -= 1; } });
+    return { pct: fl, people: STATUS_KEYS.map((k) => c[k.key] || 0), total };
+  });
+  const columns = [{ key: "round", label: "Round" }, ...STATUS_KEYS.map((k, j) => ({ key: k.key, label: k.label, align: "right", render: (r) => <span><b style={{ color: k.cs }}>{r.s.pct[j]}%</b> <span style={{ color: ds.text.quaternary }}>· {r.s.people[j]}</span></span>, text: (r) => `${r.s.pct[j]}% (${r.s.people[j]})` }))];
+  const rows = rounds.map((r, i) => ({ round: r.label, s: share[i] }));
+  const last = share[n - 1], prev = n > 1 ? share[n - 2] : null;
+  const h = hover;
+  const tip = h && (() => {
+    const [i, j] = h, d = i > 0 ? share[i].pct[j] - share[i - 1].pct[j] : null;
+    return (
+      <div data-part="status-tip" role="status" style={{ position: "absolute", left: `${cx(i) * 100}%`, top: -8, transform: `translate(${i === 0 ? "-16%" : i === n - 1 ? "-84%" : "-50%"}, -100%)`, zIndex: 3, pointerEvents: "none", whiteSpace: "nowrap", background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, boxShadow: dsShadow("sm"), borderLeft: `2px solid ${STATUS_KEYS[j].c}`, display: "flex", flexDirection: "column", gap: dsSpace[2], fontFamily: font }}>
+        <span style={{ ...dsText("Text 2xs", 500), color: ds.text.tertiary }}>{rounds[i].label}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
+          <b style={{ ...dsText("Text sm", 700), color: STATUS_KEYS[j].cs }}>{STATUS_KEYS[j].label} {share[i].pct[j]}%</b>
+          {d != null && d !== 0 && <span style={{ ...dsText("Text 2xs", 600), color: ds.text.secondary }}>{d > 0 ? "+" : "−"}{Math.abs(d)} pts</span>}
+        </span>
+        <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{share[i].people[j]} of {share[i].total} people</span>
+      </div>
+    );
+  })();
+  return (
+    <StoryCard title={title} line={line} data-story="trend-status" controls={[<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows)} />]}>
+      <EvidenceSection style={{ padding: dsSpace[16], gap: dsSpace[24] }}>
+        {view === "table" ? <DataTable columns={columns} rows={rows} /> : (<>
+          <Frame title="Percentage" ticks={[100, 80, 60, 40, 20, 0]} gridAt={evenGrid(6)} rounds={rounds} centre={cx} plotH={BAR_PLOT}>{(f) => (<>
+            {share.map((s, i) => (
+              <div key={i} data-part="stack" role="img" aria-label={`${rounds[i].label}: ${STATUS_KEYS.map((k, j) => `${k.label} ${s.pct[j]}%`).join(", ")}`}
+                style={{ position: "absolute", left: `${cx(i) * 100}%`, bottom: 0, transform: "translateX(-50%)", width: f.barW, height: BAR_PLOT, display: "flex", flexDirection: "column", gap: 2, borderRadius: `${dsRadius.xs}px ${dsRadius.xs}px 0 0`, overflow: "hidden" }}>
+                {STATUS_KEYS.map((k, j) => s.pct[j] > 0 && (
+                  <div key={k.key} onPointerEnter={(e) => e.pointerType === "mouse" && setHover([i, j])} onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)} onPointerDown={(e) => e.pointerType !== "mouse" && setHover((c) => (c && c[0] === i && c[1] === j ? null : [i, j]))}
+                    style={{ flex: `${s.pct[j]} 0 0`, minHeight: 0, background: k.c, opacity: h && (h[0] !== i || h[1] !== j) ? 0.45 : 1, transition: "opacity 120ms ease", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "pan-y" }}>
+                    {(s.pct[j] / 100) * BAR_PLOT >= 18 && f.barW >= 28 && <span aria-hidden="true" style={{ ...dsText("Text 3xs", 700), lineHeight: 1, color: k.key === "striving" ? ds.text.primary : ds.text.inverse, pointerEvents: "none" }}>{s.pct[j]}%</span>}
+                  </div>
+                ))}
+              </div>
+            ))}
+            {tip}
+          </>)}</Frame>
+          <div data-part="legend" style={{ display: "flex", gap: `${dsSpace[8]}px ${dsSpace[24]}px`, flexWrap: "wrap", fontFamily: font }}>
+            {STATUS_KEYS.map((k, j) => {
+              const d = prev ? last.pct[j] - prev.pct[j] : null;
+              return (
+                <span key={k.key} style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[8], ...dsText("Text xs"), color: ds.text.tertiary }}>
+                  <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 3, background: k.c }} />
+                  {k.label} <b style={{ color: k.cs, fontVariantNumeric: "tabular-nums" }}>{last.pct[j]}%</b>
+                  {d != null && d !== 0 && <span style={{ ...dsText("Text 2xs"), color: ds.text.quaternary }}>{d > 0 ? "+" : "−"}{Math.abs(d)}</span>}
+                </span>
+              );
+            })}
+          </div>
+        </>)}
+      </EvidenceSection>
+    </StoryCard>
+  );
+}
+
 /* ---- Level Over Time (one bar per round at its severity level) -------------------------------------------------- */
 /* levels: one severity index (0 Normal … 4 Extremely Severe) per round. `dates` (optional) for the hover. */
 const LEVEL_H = [180, 141, 106, 71, 34];

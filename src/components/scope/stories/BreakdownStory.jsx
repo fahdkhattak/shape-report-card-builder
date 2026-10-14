@@ -129,7 +129,7 @@ export default function BreakdownStory({ title = "What's Behind Your Score", lin
         </>
       )}
       {footnote && view === "chart" && <p data-part="footnote" style={noteText}>{compact ? footnote.replace(/^Hover over a point/, "Tap a point").replace(/^Hover over the chart/, "Tap a point on the chart") : footnote}</p>}
-      {variant === "zones" && barStyle === "zones" && view === "chart" && <p style={noteText}>{hint || (compact ? "The tinted groups show the three status ranges." : "Hover a dot to see its score, status and what it means. The background shows the three status ranges.")}</p>}
+      {variant === "zones" && barStyle === "zones" && view === "chart" && <p style={noteText}>{hint || (compact ? "Lowest first. Tap a name to find it on the line." : "Hover a dot to see its score, status and what it means. The background shows the three status ranges.")}</p>}
           </>)}
           {missing > 0 && <p data-part="missing" style={noteText}>{missing} {noun}{missing === 1 ? "" : "s"} {missing === 1 ? "isn't" : "aren't"} shown because {missing === 1 ? "it has" : "they have"} no score yet.</p>}
         </>
@@ -203,7 +203,7 @@ function ListRows({ rows, compact, tight }) {
     const b = dsBand(r.value);
     return (
       <div key={`${i}-${r.label}`} style={{ display: "contents" }}>
-        {i > 0 && <div aria-hidden="true" style={{ height: 0, borderTop: `${dsBorder.sm}px solid ${ds.border.secondary}`, width: "100%" }} />}
+        {i > 0 && <div aria-hidden="true" style={{ height: 0, borderTop: `${dsBorder.sm}px solid ${ds.border.tertiary}`, width: "100%" }} />}
         <div data-part="list-row" style={{ display: "flex", flexDirection: tight ? "column" : "row", alignItems: tight ? "flex-start" : "center", gap: tight ? dsSpace[8] : dsSpace[16], fontFamily: font }}>
           <div data-part="list-value" style={{ width: tight ? "auto" : compact ? 84 : 115, flexShrink: 0, display: "flex", alignItems: "baseline", justifyContent: tight ? "flex-start" : "center", gap: dsSpace[4], whiteSpace: "nowrap" }}>
             <span data-part="number" style={{ ...dsText("Display md-Trim", 700), lineHeight: "normal", textBox: "trim-both cap alphabetic", color: b.cs }}>{r.value}</span>
