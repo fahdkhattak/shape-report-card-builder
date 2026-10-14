@@ -37,12 +37,19 @@ import { T, font, radius } from "../../lib/tokens.js";
 
 // Exported so SearchOverlay.jsx can list these same report types under its
 // "Services" section without redefining the list a second time.
+// `owned`/`color` are for that same Search "Services" section (Figma node
+// 13750:16126) — `owned` mirrors families.js's own note: true only for
+// "SHAPE Performance Index", the one service App.jsx's `createReport()`
+// actually seeds onto every new report, a real signal rather than a
+// fabricated flag. `color` is purely decorative (Search shows a small
+// colored dot per service, standing in for a per-service logo we don't
+// have) — drawn from the existing Graph/Dataviz palette, not new tokens.
 export const SERVICES = [
-  { id: "shape-perf", label: "SHAPE Performance Index", scoped: true },
-  { id: "workplace-exp", label: "Workplace Experience Report" },
-  { id: "total-brand", label: "Total Employee Brand Report" },
-  { id: "brain-health", label: "Brain Health Report" },
-  { id: "das", label: "DAS Report" },
+  { id: "shape-perf", label: "SHAPE Performance Index", scoped: true, owned: true, color: "accent" },
+  { id: "workplace-exp", label: "Workplace Experience Report", owned: false, color: "orgBlue" },
+  { id: "total-brand", label: "Total Employee Brand Report", owned: false, color: "lavender" },
+  { id: "brain-health", label: "Brain Health Report", owned: false, color: "mintGreen" },
+  { id: "das", label: "DAS Report", owned: false, color: "turquoise" },
 ];
 const SCOPES = ["Org", "Team", "Personal"];
 

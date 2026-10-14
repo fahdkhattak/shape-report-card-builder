@@ -1,4 +1,5 @@
 import raw from "../data/shape-survey-dataset.json";
+import { STRIVING_AT, statusName } from "./bands.js";
 
 /* ================================================================== */
 /* DATASET ACCESS — thin read layer over the generated survey dataset  */
@@ -7,6 +8,16 @@ import raw from "../data/shape-survey-dataset.json";
 /* raw JSON directly, so the aggregation logic (rounding, trend deltas,*/
 /* group-by-gender/work-model) lives in one place.                     */
 /* ================================================================== */
+/* The JSON was generated against the old 40 / 70 bands. Re-band every person's overall score on the current
+   status scale (lib/bands.js) and recount each round, so the stored `status` and the org counts can't disagree
+   with the scale the app draws. Scores themselves are untouched. */
+raw.users.forEach((u) => u.rounds.forEach((r) => { r.status = statusName(r.overallScore); }));
+raw.orgSummaries.forEach((o) => {
+  const rs = raw.users.map((u) => u.rounds.find((r) => r.round === o.round)).filter(Boolean);
+  o.flourishing = rs.filter((r) => r.status === "Flourishing").length;
+  o.striving = rs.filter((r) => r.status === "Striving").length;
+  o.struggling = rs.filter((r) => r.status === "Struggling").length;
+});
 export const dataset = raw;
 export const ROUNDS = raw.orgSummaries; // one entry per survey round, oldest first
 export const LATEST = ROUNDS[ROUNDS.length - 1];
@@ -25,6 +36,16 @@ export const DIMENSION_DRIVERS = DIMENSIONS.reduce((acc, dim) => {
 }, {});
 
 const r0 = (v) => Math.round(v);
+
+/* Org Score's "Employees" / "Participation Rate" stat row. Headcount is every
+   user in the dataset; participation is the share of them with a response in
+   the latest round (the generator gives every user every round, so this reads
+   100% — real, not the 85% sample in the Figma mockup). */
+export const EMPLOYEE_COUNT = raw.users.length;
+export function participationRate() {
+  const answered = raw.users.filter((u) => u.rounds.some((r) => r.round === LATEST.round)).length;
+  return Math.round((answered / raw.users.length) * 100);
+}
 export const delta = (curr, prev) => r0(curr - prev);
 
 export function dimensionValue(dim, round = LATEST) { return round.dimensionAvg[dim]; }
@@ -57,7 +78,7 @@ export function driverRankedRows() {
 
 /* roundsFromEnd: 0 = latest round, 1 = previous round — lets callers compute
    a group's round-over-round delta, not just its current value. */
-function groupAverage(keyFn, order, roundsFromEnd = 0) {
+function groupAverage(keyFn, order, roundsFromEnd = 0, minN = 0) {
   const groups = {};
   dataset.users.forEach((u) => {
     const key = keyFn(u);
@@ -66,7 +87,7 @@ function groupAverage(keyFn, order, roundsFromEnd = 0) {
     (groups[key] ||= []).push(r.overallScore);
   });
   const keys = order || Object.keys(groups);
-  return keys.filter((k) => groups[k]?.length).map((key) => [key, r0(groups[key].reduce((a, b) => a + b, 0) / groups[key].length)]);
+  return keys.filter((k) => groups[k]?.length >= Math.max(1, minN)).map((key) => [key, r0(groups[key].reduce((a, b) => a + b, 0) / groups[key].length)]);
 }
 export function avgScoreByGender() { return groupAverage((u) => u.gender, ["Male", "Female", "Other", "Prefer not to respond"]); }
 export function avgScoreByWorkModel() { return groupAverage((u) => u.workModel, ["Onsite", "Hybrid", "Remote"]); }
@@ -75,6 +96,10 @@ export function avgScoreByWorkModel() { return groupAverage((u) => u.workModel, 
    data/generate-dataset.js) — no ethnicity/age field exists, unlike Figma's
    sampled "Areas to Focus" instance, so this scans the axes we actually
    have rather than reproducing that exact one. */
+/* A group smaller than this is never singled out (the Scope's Composition
+   story applies the same rule) — with 1–4 people a "group average" is
+   really one person's answers. */
+const MIN_GROUP_SIZE = 5;
 const DEMOGRAPHIC_AXES = [
   ["Gender", (u) => u.gender],
   ["Department", (u) => u.department],
@@ -95,8 +120,8 @@ const DEMOGRAPHIC_AXES = [
 export function worstDemographicGroup() {
   let best = null;
   DEMOGRAPHIC_AXES.forEach(([axisLabel, keyFn]) => {
-    const latestRows = groupAverage(keyFn, null, 0);
-    const prevRows = groupAverage(keyFn, null, 1);
+    const latestRows = groupAverage(keyFn, null, 0, MIN_GROUP_SIZE);
+    const prevRows = groupAverage(keyFn, null, 1, MIN_GROUP_SIZE);
     latestRows.forEach(([group, value]) => {
       if (!best || value < best[2]) {
         const prevRow = prevRows.find(([g]) => g === group);
@@ -105,6 +130,72 @@ export function worstDemographicGroup() {
     });
   });
   return best;
+}
+
+/* ---- Extra read helpers for the Library widgets ------------------------- */
+
+/* Every group of 5+ people on every real demographic axis, lowest first:
+   { axis, group, value, delta, n, struggling } — `struggling` counts the
+   people in that group whose own score sits below 40. Feeds Areas to Focus'
+   list / by-category / by-group forms. */
+export function focusGroups() {
+  const rows = [];
+  DEMOGRAPHIC_AXES.forEach(([axis, keyFn]) => {
+    const buckets = {};
+    dataset.users.forEach((u) => {
+      const last = u.rounds[u.rounds.length - 1];
+      const prev = u.rounds[u.rounds.length - 2];
+      (buckets[keyFn(u)] ||= []).push([last.overallScore, prev ? prev.overallScore : last.overallScore]);
+    });
+    Object.entries(buckets).forEach(([group, list]) => {
+      if (list.length < MIN_GROUP_SIZE) return;
+      const avg = (i) => list.reduce((a, r) => a + r[i], 0) / list.length;
+      rows.push({ axis, group, value: r0(avg(0)), delta: delta(avg(0), avg(1)), n: list.length, struggling: list.filter((r) => r[0] < STRIVING_AT).length });
+    });
+  });
+  return rows.sort((a, b) => a.value - b.value);
+}
+
+/* Promoters / passives / detractors for a round, from each person's 0–10
+   "would you recommend" answer (9–10 / 7–8 / 0–6). `roundsFromEnd` 0 = latest. */
+export function enpsGroups(roundsFromEnd = 0) {
+  const out = { promoters: 0, passives: 0, detractors: 0, total: 0 };
+  dataset.users.forEach((u) => {
+    const r = u.rounds[u.rounds.length - 1 - roundsFromEnd];
+    if (!r) return;
+    out.total += 1;
+    if (r.recommendScore >= 9) out.promoters += 1;
+    else if (r.recommendScore >= 7) out.passives += 1;
+    else out.detractors += 1;
+  });
+  return out;
+}
+
+/* Share of people (%) who are low on the Depression / Anxiety / Stress
+   drivers (below 40; higher = better on all three) — "feeling low / anxious /
+   stressed". Returns the latest value and the change since the round before. */
+const FEELINGS = [["Feeling Low", "Depression"], ["Feeling Anxious", "Anxiety"], ["Feeling Stressed", "Stress"]];
+export function feelingShare() {
+  const share = (driver, roundsFromEnd) => {
+    const rs = dataset.users.map((u) => u.rounds[u.rounds.length - 1 - roundsFromEnd]).filter(Boolean);
+    return (rs.filter((r) => r.driverScores[driver] < STRIVING_AT).length / rs.length) * 100;
+  };
+  return FEELINGS.map(([label, driver]) => [label, r0(share(driver, 0)), delta(share(driver, 0), share(driver, 1))]);
+}
+
+/* Departments (5+ people) × the first Explorers, average score in the latest
+   round — the Org Heat Map. Returns { columns, rows: [[dept, [v, v, v], overall]] },
+   largest departments first. */
+export function heatMap(columnCount = 3, rowCount = 4) {
+  const columns = DIMENSIONS.slice(0, columnCount);
+  const byDept = {};
+  dataset.users.forEach((u) => (byDept[u.department] ||= []).push(u.rounds[u.rounds.length - 1]));
+  const rows = Object.entries(byDept)
+    .filter(([, list]) => list.length >= MIN_GROUP_SIZE)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, rowCount)
+    .map(([dept, list]) => [dept, columns.map((c) => r0(list.reduce((a, r) => a + r.dimensionScores[c], 0) / list.length)), r0(list.reduce((a, r) => a + r.overallScore, 0) / list.length)]);
+  return { columns, rows };
 }
 
 /* ---- Topic -> real metric resolution, for the chat generative engine ---- */
@@ -160,11 +251,12 @@ export function metricForTopic(topic) {
   return { value: trend[trend.length - 1], trend };
 }
 
-/* Real Pearson correlation between two topics' per-user latest-round values
-   — only meaningful (and only returned) when both topics resolve to
-   something real; replaces a purely-random correlation. Bespoke topics
-   correlate on each user's own average across their driver cluster. */
-export function correlationForTopics(topicA, topicB) {
+/* Each person's latest-round value for two topics — [[x, y], …], one pair per
+   person — or null when either topic doesn't resolve to something real.
+   Feeds the scatter widget's dots (the real ones, not a drawn-looking cloud)
+   and the Pearson correlation below. Bespoke topics use each person's own
+   average across their driver cluster. */
+export function pairedScores(topicA, topicB) {
   const a = normalizeTopic(topicA), b = normalizeTopic(topicB);
   if (!a || !b) return null;
   const valueFor = (u, n) => {
@@ -174,8 +266,16 @@ export function correlationForTopics(topicA, topicB) {
     else raw = n.isDim ? r.dimensionScores[n.key] : r.driverScores[n.key];
     return n.invert ? 100 - raw : raw;
   };
-  const xs = dataset.users.map((u) => valueFor(u, a));
-  const ys = dataset.users.map((u) => valueFor(u, b));
+  return dataset.users.map((u) => [Math.round(valueFor(u, a)), Math.round(valueFor(u, b))]);
+}
+
+/* Real Pearson correlation between two topics' per-user latest-round values
+   — only meaningful (and only returned) when both topics resolve to
+   something real; replaces a purely-random correlation. */
+export function correlationForTopics(topicA, topicB) {
+  const pairs = pairedScores(topicA, topicB);
+  if (!pairs) return null;
+  const xs = pairs.map((p) => p[0]), ys = pairs.map((p) => p[1]);
   const n = xs.length, mx = xs.reduce((s, v) => s + v, 0) / n, my = ys.reduce((s, v) => s + v, 0) / n;
   let num = 0, dx = 0, dy = 0;
   for (let i = 0; i < n; i++) { num += (xs[i] - mx) * (ys[i] - my); dx += (xs[i] - mx) ** 2; dy += (ys[i] - my) ** 2; }

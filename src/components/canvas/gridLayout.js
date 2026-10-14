@@ -19,7 +19,8 @@ export function pxForSpan(span) {
 }
 
 /* Responsive column count for the canvas grid — 6 across at full desktop
-   width, 4 across once space gets tight, 2 across at mobile widths. Cell
+   width, 4 across once space gets tight, 2 across at mobile widths. Always
+   an even number: odd counts leave 2x2 widgets stranded and break the layout. Cell
    size itself never changes (per the fixed-pixel rule above); only the
    number of columns that fit in a row does, so bigger widgets (2x2/3x3)
    still lay out correctly at any column count via their existing

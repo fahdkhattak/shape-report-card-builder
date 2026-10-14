@@ -1,3 +1,5 @@
+import { dsBand } from "./ds.js";
+
 /* ================================================================== */
 /* FORMA TOKENS — sourced from docs/shape-design-system.md             */
 /* ================================================================== */
@@ -64,8 +66,11 @@ export const font = "'IBM Plex Sans', sans-serif";
 export const rand = (min, max) => Math.round(min + Math.random() * (max - min));
 export const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+/* Status colours for a 0-100 score. These are design-system variables (status/{kind}/graph,
+   text-indicator, bg) rather than hex, so they follow the light/dark mode of whatever they sit in;
+   in light mode they resolve to exactly the T.green / greenStrong / greenBg values they replaced.
+   Use them as a whole value (fill, stroke, color, border shorthand) - never append alpha digits. */
 export function band(val) {
-  if (val >= 70) return { c: T.green, cs: T.greenStrong, bg: T.greenBg };
-  if (val >= 40) return { c: T.amber, cs: T.amberStrong, bg: T.amberBg };
-  return { c: T.red, cs: T.redStrong, bg: T.redBg };
+  const { c, cs, bg } = dsBand(val);
+  return { c, cs, bg };
 }

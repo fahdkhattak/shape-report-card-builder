@@ -53,7 +53,7 @@ function liveStarterChips() {
 /* straight into CanvasScreen's docked chat panel — this is one          */
 /* continuous conversation, not a reset between screens.                */
 /* ================================================================== */
-export default function ChatLanding({ mainChat, scopeInfo, onAddWidgetDirect, onCreateReport, onScopeConfirmed, onBlankCanvas, navExpanded, onNavExpandedChange, onOpenSearch }) {
+export default function ChatLanding({ mainChat, scopeInfo, onAddWidgetDirect, onCreateReport, onScopeConfirmed, onBlankCanvas, navExpanded, onNavExpandedChange, onOpenSearch, onOpenReportBuilder, onOpenSurveyBuilder }) {
   const { messages, send, pushUser, pushAI, updateVariantTitle, updateVariantSpec, regenerateVariant, createBlank, typing } = mainChat;
   const [input, setInput] = useState("");
   const [starterChips] = useState(liveStarterChips);
@@ -145,7 +145,7 @@ export default function ChatLanding({ mainChat, scopeInfo, onAddWidgetDirect, on
 
   return (
     <div style={{ height: "100%", display: "flex", fontFamily: font }}>
-      <NavRail active="chat" expanded={navExpanded} onExpandedChange={onNavExpandedChange} onOpenSearch={onOpenSearch} />
+      <NavRail active="chat" expanded={navExpanded} onExpandedChange={onNavExpandedChange} onOpenSearch={onOpenSearch} onOpenReportBuilder={onOpenReportBuilder} onOpenSurveyBuilder={onOpenSurveyBuilder} />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: T.gray50, overflow: "hidden" }}>
         {/* Thin white header strip — present on every chat frame in the

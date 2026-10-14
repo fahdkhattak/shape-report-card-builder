@@ -1,0 +1,313 @@
+{
+ "files": {
+  "src/components/scope/stories/ActionStories.jsx": {
+   "tPrimitives": 22,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [
+    15,
+    22
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10,
+    28
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/AddOnStories.jsx": {
+   "tPrimitives": 10,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [
+    15
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    28
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/AreaChart.jsx": {
+   "tPrimitives": 12,
+   "hex": 1,
+   "rgba": 5,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/BreakdownStory.jsx": {
+   "tPrimitives": 22,
+   "hex": 2,
+   "rgba": 0,
+   "offScaleFont": [],
+   "offScaleRadius": [
+    1
+   ],
+   "offScaleSpace": [
+    10
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/CompositionStory.jsx": {
+   "tPrimitives": 9,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [
+    15
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    14
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/DataTable.jsx": {
+   "tPrimitives": 10,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/DiagnosticStory.jsx": {
+   "tPrimitives": 12,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [
+    15,
+    32
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10,
+    14
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/DonutChart.jsx": {
+   "tPrimitives": 23,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [
+    15
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/ExtraStories.jsx": {
+   "tPrimitives": 104,
+   "hex": 2,
+   "rgba": 3,
+   "offScaleFont": [
+    15,
+    22,
+    28,
+    32
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    -10,
+    -7,
+    3,
+    7,
+    9,
+    10,
+    14,
+    18,
+    38
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/HistoryCards.jsx": {
+   "tPrimitives": 19,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [
+    32
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    1,
+    10,
+    14
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/HistoryLineChart.jsx": {
+   "tPrimitives": 13,
+   "hex": 1,
+   "rgba": 5,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10,
+    14
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/ScoreHistoryStory.jsx": {
+   "tPrimitives": 25,
+   "hex": 0,
+   "rgba": 5,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    -3,
+    10,
+    14
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/StoryCard.jsx": {
+   "tPrimitives": 13,
+   "hex": 0,
+   "rgba": 2,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    3,
+    28
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/SummaryStories.jsx": {
+   "tPrimitives": 22,
+   "hex": 0,
+   "rgba": 1,
+   "offScaleFont": [
+    15,
+    28,
+    40,
+    80
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    -7,
+    14,
+    22
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/TrendStory.jsx": {
+   "tPrimitives": 20,
+   "hex": 0,
+   "rgba": 7,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10,
+    14
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/ZoneChart.jsx": {
+   "tPrimitives": 21,
+   "hex": 0,
+   "rgba": 5,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/controls.jsx": {
+   "tPrimitives": 18,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    -1
+   ],
+   "dsTokens": 0
+  },
+  "src/components/scope/stories/storyStyle.js": {
+   "tPrimitives": 0,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [],
+   "dsTokens": 0
+  },
+  "src/components/developer/DeveloperScreen.jsx": {
+   "tPrimitives": 25,
+   "hex": 0,
+   "rgba": 3,
+   "offScaleFont": [
+    17
+   ],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    7,
+    10,
+    14,
+    18,
+    36,
+    120
+   ],
+   "dsTokens": 0
+  },
+  "src/components/developer/docKit.jsx": {
+   "tPrimitives": 59,
+   "hex": 10,
+   "rgba": 3,
+   "offScaleFont": [
+    12.5,
+    15,
+    22
+   ],
+   "offScaleRadius": [
+    3,
+    10
+   ],
+   "offScaleSpace": [
+    3,
+    10,
+    14,
+    44
+   ],
+   "dsTokens": 0
+  },
+  "src/components/developer/docs/InsightSummaryDoc.jsx": {
+   "tPrimitives": 1,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    28
+   ],
+   "dsTokens": 0
+  },
+  "src/components/developer/docs/ScoreMeaningDoc.jsx": {
+   "tPrimitives": 9,
+   "hex": 0,
+   "rgba": 0,
+   "offScaleFont": [],
+   "offScaleRadius": [],
+   "offScaleSpace": [
+    10,
+    28
+   ],
+   "dsTokens": 0
+  }
+ },
+ "totals": {
+  "files": 22,
+  "tPrimitives": 469,
+  "hex": 16,
+  "rgba": 39,
+  "offScaleFont": 20,
+  "offScaleRadius": 3,
+  "offScaleSpace": 47,
+  "dsTokens": 0
+ }
+}

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { MoreHorizontal, Shuffle, Edit3, Sparkles, Trash2 } from "lucide-react";
+import { MoreHorizontal, Shuffle, Edit3, Sparkles, Trash2, ArrowDown } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
-import { familyById } from "../../lib/families.js";
+import { familyById, formTitle, cardSurface, nextFormIndex } from "../../lib/families.js";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
 import { Header } from "../widgets/primitives.jsx";
@@ -12,7 +12,7 @@ import MenuRow from "./MenuRow.jsx";
 /* WIDGET CARD (canvas instance) — handles both kinds:                 */
 /* library-sourced (fixed family/form) and generated (chat spec).      */
 /* ================================================================== */
-export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onRename, dragProps, onOpenModal }) {
+export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onRename, dragProps, onOpenModal, selected = false, startHere = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [hover, setHover] = useState(false);
@@ -20,7 +20,8 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
   const family = isLib ? familyById(widget.familyId) : null;
   const size = isLib ? family.forms[widget.formIndex].size : widget.spec.size;
   const span = sizeToSpan(size);
-  const defaultTitle = isLib ? family.name : widget.spec.title;
+  const defaultTitle = isLib ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title;
+  const surface = isLib ? cardSurface(widget.familyId, widget.formIndex) : {};
   const title = widget.customTitle || defaultTitle;
 
   return (
@@ -34,8 +35,9 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
         gridRow: `span ${span.row}`,
         width: pxForSpan(span.col),
         height: pxForSpan(span.row),
-        background: T.white,
-        border: `1px solid ${T.gray100}`,
+        background: surface.background || T.white,
+        border: `1px solid ${selected ? T.gray500 : surface.borderColor || T.gray100}`,
+        boxShadow: selected ? "0 1px 2px rgba(0,0,0,0.14), 0 3px 3px rgba(0,0,0,0.07), 0 6px 4px rgba(0,0,0,0.05)" : "none",
         borderRadius: radius.widget,
         padding: 16,
         display: "flex",
@@ -46,6 +48,11 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
         boxSizing: "border-box",
       }}
     >
+      {startHere && (
+        <span style={{ position: "absolute", top: -11, left: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 4, background: T.gray900, color: T.white, fontSize: 11, lineHeight: "16px", padding: "2px 8px 2px 6px", borderRadius: radius.sm, pointerEvents: "none" }}>
+          <ArrowDown size={11} />Start here
+        </span>
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         {renaming ? (
           <input
@@ -74,7 +81,7 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
 
       {menuOpen && (
         <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 34, right: 10, background: T.white, border: `1px solid ${T.gray75}`, borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", padding: 6, zIndex: 20, width: 190 }}>
-          {isLib && family.forms.length > 1 && (
+          {isLib && nextFormIndex(widget.familyId, widget.formIndex) !== widget.formIndex && (
             <MenuRow icon={<Shuffle size={13} />} label="Change widget" onClick={() => { onChangeForm(widget.id); setMenuOpen(false); }} />
           )}
           <MenuRow icon={<Edit3 size={13} />} label="Rename" onClick={() => { setRenaming(true); setMenuOpen(false); }} />

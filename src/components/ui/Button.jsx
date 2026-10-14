@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { font } from "../../lib/tokens.js";
+import { dsVar } from "../../lib/ds.js";
 
 /* ================================================================== */
 /* BUTTON — ported from the real Figma `Buttons/Button` component      */
@@ -26,24 +27,18 @@ const SIZES = {
 const ICON_SIZE = 20;
 const ICON_GAP = 8;
 
-/* Color tables — colorButton{Theme}{Variation}* from docs/shape-design-system.md §2.3, light mode. */
-const THEMES = {
-  accent: {
-    primary: { bg: "#00A9EB", bgHover: "#0094CD", bgActive: "#007EB0", bgDisabled: "#A5A2A2", text: "#FFFFFF", textDisabled: "#E5E4E3" },
-    secondary: { bg: "transparent", bgHover: "#EBFBFF", bgActive: "#DCF5FF", border: "#00A9EB", borderDisabled: "#908D8E", text: "#00A9EB", textDisabled: "#B4B2B1" },
-    ghost: { bg: "transparent", bgHover: "#EBFBFF", bgActive: "#DCF5FF", text: "#00A9EB", textDisabled: "#B4B2B1" },
-  },
-  brand: {
-    primary: { bg: "#231F20", bgHover: "#3A3737", bgActive: "#504C4D", bgDisabled: "#A5A2A2", text: "#E5E4E3", textDisabled: "#E5E4E3" },
-    secondary: { bg: "transparent", bgHover: "#E5E4E3", bgActive: "#CECDCC", border: "#231F20", borderDisabled: "#908D8E", text: "#3A3737", textDisabled: "#B4B2B1" },
-    ghost: { bg: "transparent", bgHover: "#E5E4E3", bgActive: "#CECDCC", text: "#3A3737", textDisabled: "#B4B2B1" },
-  },
-  destructive: {
-    primary: { bg: "#A32136", bgHover: "#7A1929", bgActive: "#5E121F", bgDisabled: "#A5A2A2", text: "#FFFFFF", textDisabled: "#E5E4E3" },
-    secondary: { bg: "transparent", bgHover: "#FEEBEE", bgActive: "#FCE3E7", border: "#CC2944", borderDisabled: "#908D8E", text: "#CC2944", textDisabled: "#B4B2B1" },
-    ghost: { bg: "transparent", bgHover: "#FEEBEE", bgActive: "#FCE3E7", text: "#CC2944", textDisabled: "#B4B2B1" },
-  },
+/* Colour tables - every value is a design-system button token (color/button/{theme}/{variation}/...),
+   so buttons follow light/dark. In light mode these resolve to the same hex the table used to hold
+   (checked against docs/shape-design-system-v4.md by scripts/audit-ds.mjs). */
+const tok = (theme, variation, rest) => dsVar(`color/button/${theme}/${variation}/${rest}`);
+const table = (theme, variation) => {
+  const t = (rest) => tok(theme, variation, rest);
+  const c = { bg: variation === "primary" ? t("bg/default") : "transparent", bgHover: t("bg/hover"), bgActive: t("bg/active"), text: t("items/default text"), textDisabled: t("items/disabled text") };
+  if (variation === "primary") c.bgDisabled = t("bg/disabled");
+  if (variation === "secondary") { c.border = t("border/default"); c.borderDisabled = t("border/disabled"); }
+  return c;
 };
+const THEMES = Object.fromEntries(["accent", "brand", "destructive"].map((th) => [th, Object.fromEntries(["primary", "secondary", "ghost"].map((v) => [v, table(th, v)]))]));
 
 export default function Button({
   children,

@@ -2,46 +2,62 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import {
   Search, Briefcase, LayoutGrid, MessageSquare, FileText, Building2, Wand2, BookOpen,
-  Settings, Bell, Star, ArrowLeftRight, LogOut, X, Clock,
+  Settings, Bell, Star, ArrowLeftRight, LogOut, X, Clock, Frown,
 } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
 import { FAMILIES } from "../../lib/families.js";
 import { SAMPLE_REPORTS, SAMPLE_DRAFTS } from "./navRailData.js";
 import { SERVICES } from "../chat/AttachMenu.jsx";
+import { dimensionRankedRows } from "../../lib/dataset.js";
+import Button from "../ui/Button.jsx";
 
 /* ================================================================== */
 /* SEARCH OVERLAY — the product-wide command palette, opened from        */
-/* NavRail's "Search" nav item or Cmd/Ctrl+K from anywhere. No specific   */
-/* Figma reference exists for this yet — built to the user's own          */
-/* explicit description (a ChatGPT/Spotlight-style floating search),      */
-/* restyled against two ChatGPT search screenshots the user shared        */
-/* (glass materials, category tabs, "No results" state), then corrected   */
-/* a third time per explicit feedback on the empty state and tab          */
-/* behavior — see the two notes below, both are direct answers to that    */
-/* feedback, not a Figma port.                                            */
+/* NavRail's "Search" nav item or Cmd/Ctrl+K from anywhere.               */
 /*                                                                        */
-/* "First state... should be Recent searches and maybe recent drafts" —   */
-/* the empty-query landing view is no longer a generic "Recents" of        */
-/* whatever was last clicked across every category + a fixed Tools row.   */
-/* It's now two specific, real things: **Recent Searches** (the actual     */
-/* query strings the user typed, persisted to localStorage — clicking one  */
-/* re-runs it) and **Recent Drafts** (`SAMPLE_DRAFTS`, same honest-sample-  */
-/* data status it already has in the sidebar). Nothing fabricated —        */
-/* Recent Searches starts empty and only shows once a real search           */
-/* happened; Quick Access/Tools is no longer force-surfaced on empty query  */
-/* (still reachable normally once you type, e.g. "home"/"library").         */
+/* Rebuilt against a real Figma reference (984qJvMt7fCHASYHRwgrab, node   */
+/* 13750:16126, "Search Function" — 6 annotated states: first-use empty,  */
+/* returning-user empty, active results, loading, no-results, and a       */
+/* fuller results reference). Previously this file had no design           */
+/* reference at all and explored 3 visual "materials" live (solid/light-   */
+/* glass/dark-glass) via a prototype-only switcher — that open question    */
+/* is now resolved by the Figma node itself, which shows a plain solid      */
+/* white card over a flat dark scrim, not a frosted/blurred one. The        */
+/* switcher and the other two themes are removed; every color/spacing/      */
+/* shadow value below is sampled directly off that node's real nodes         */
+/* (13750:16469/16221/16333/16412), not eyeballed.                          */
 /*                                                                        */
-/* "Once user starts to write something in - the categories/tabs show up  */
-/* - and only the relevant ones should show up" — tabs are now hidden      */
-/* entirely until there's a query, and only render for sections that       */
-/* actually have a match (plus "All"), computed fresh per keystroke —      */
-/* not the reference screenshot's own fixed always-all-tabs-visible         */
-/* behavior, a deliberate improvement the user asked for past what         */
-/* ChatGPT's own UI does.                                                  */
-/*                                                                        */
-/* PROTOTYPE-ONLY: the small pill above the card ("Prototype style ▾")    */
-/* is a design-exploration aid, not a real product setting — see its own  */
-/* inline comment below.                                                  */
+/* Six behavioral pieces this rebuild adds, one per annotated state:       */
+/*  - First-use vs. returning landing views (see `recentSearches.length`   */
+/*    check below) — a session with no real search history yet shows        */
+/*    "Suggested Search" (today's real worst-3 dimensions, same signal      */
+/*    ChatLanding's own starter chips use) + "Featured Services"; once a    */
+/*    real search has happened, it's Recent Searches + Recent Drafts, as     */
+/*    before.                                                               */
+/*  - A real ~300ms debounce between the raw `query` (what the input        */
+/*    shows) and `debouncedQuery` (what filtering/tabs run against) — the   */
+/*    gap between them drives a genuine loading state (3 skeleton rows +    */
+/*    "Searching records...", tabs hidden), not an instant synchronous      */
+/*    filter.                                                               */
+/*  - "No results" redesigned to the reference's actual dead-end treatment  */
+/*    — sad-face icon, two-line copy, a "Clear Search" button — plus three  */
+/*    fallback chips rendered *below* the card itself, not inside it        */
+/*    ("Explore Services" has a real destination, `onGoLibrary`; "Create a  */
+/*    Service"/"Review Insights" close the palette with no other effect,    */
+/*    the same honest-inert treatment already used for Services/Reports/    */
+/*    Drafts/Settings results below).                                       */
+/*  - Sections cap at 3 (was 5) with a real "See all" link that jumps to     */
+/*    that section's own tab — matches the reference's own per-section cap. */
+/*  - An "OWNED" badge on Services/Widgets results, sourced from a real      */
+/*    `owned` flag on FAMILIES/SERVICES (see families.js's and               */
+/*    AttachMenu.jsx's own comments for what "owned" means for each — it's   */
+/*    not fabricated per-item, it's derived from what this app actually      */
+/*    seeds/uses by default).                                                */
+/*  - Type-specific secondary text — Drafts show recency (`SAMPLE_DRAFTS`'s  */
+/*    new `edited` field), Reports show a one-line description               */
+/*    (`SAMPLE_REPORTS`'s new `blurb` field), Services/Widgets show "SHAPE"  */
+/*    / category — matching the reference's own "secondary info is type-     */
+/*    specific" annotation.                                                  */
 /* ================================================================== */
 
 const TOOLS = [
@@ -59,82 +75,59 @@ const SETTINGS_ITEMS = [
   { id: "sign-out", label: "Sign out", icon: LogOut },
 ];
 
-// Static — computed once, not per-render. Every item carries its section's
-// real, un-fabricated data (FAMILIES/SAMPLE_REPORTS/SAMPLE_DRAFTS/SERVICES,
-// same sources as before); `icon` here is a fallback used when an item has
-// none of its own (Tools/Settings rows already carry a specific one).
+// Order matches the reference's own tab order (All / Drafts / Services /
+// Reports / Widgets) — Tools/Settings appended after, still real and
+// searchable, just outside the sampled node.
 const ALL_SECTIONS = [
-  { key: "services", label: "Services", icon: Briefcase, items: SERVICES.map((s) => ({ id: s.id, label: s.label })) },
-  { key: "widgets", label: "Widgets", icon: LayoutGrid, items: FAMILIES.map((f) => ({ id: f.id, label: f.name, sub: f.category, familyId: f.id })) },
-  { key: "drafts", label: "Drafts", icon: MessageSquare, items: SAMPLE_DRAFTS.map((d) => ({ id: d.id, label: d.name })) },
-  { key: "reports", label: "Reports", icon: FileText, items: SAMPLE_REPORTS.map((r) => ({ id: r.id, label: r.name })) },
+  { key: "drafts", label: "Drafts", icon: MessageSquare, items: SAMPLE_DRAFTS.map((d) => ({ id: d.id, label: d.name, sub: d.edited })) },
+  { key: "services", label: "Services", icon: Briefcase, items: SERVICES.map((s) => ({ id: s.id, label: s.label, sub: "SHAPE", owned: s.owned, color: s.color })) },
+  { key: "reports", label: "Reports", icon: FileText, items: SAMPLE_REPORTS.map((r) => ({ id: r.id, label: r.name, sub: r.blurb })) },
+  { key: "widgets", label: "Widgets", icon: LayoutGrid, items: FAMILIES.map((f) => ({ id: f.id, label: f.name, sub: f.category, familyId: f.id, owned: f.owned })) },
   { key: "tools", label: "Tools", items: TOOLS },
   { key: "settings", label: "Settings", items: SETTINGS_ITEMS },
 ];
 
-const MAX_PER_SECTION = 5;
+const MAX_PER_SECTION = 3; // the reference caps every section at 3 + "See all"
 const RECENT_SEARCHES_KEY = "shape-search-recent-queries";
 const RECENT_SEARCHES_MAX = 5;
-const RECENT_DRAFTS_MAX = 4;
+const RECENT_DRAFTS_MAX = 2; // matches the reference's "2 most recently edited Drafts"
+const SEARCH_DEBOUNCE_MS = 300; // matches the Loading state's own "debounce ~300ms" annotation
 const SPRING = { type: "spring", bounce: 0, duration: 0.28 };
 
-// Three visual treatments to compare live — see the PROTOTYPE-ONLY note
-// above. "solid" is the original plain-card look; the other two are the
-// glass exploration the user asked for (a light frost and a ChatGPT-style
-// dark frost), both using `backdrop-filter` per the Apple interaction-
-// design skill's own materials guidance (translucent layers, not opaque
-// bars — see CLAUDE.md's Apple pass for the rest of that skill's rules).
-const STYLE_THEMES = {
-  solid: {
-    name: "Solid (original)",
-    scrim: "rgba(35,31,32,0.4)", blur: "none",
-    cardBg: T.white, cardBorder: "1px solid transparent",
-    shadow: "0 24px 48px rgba(0,0,0,0.24), 0 4px 16px rgba(0,0,0,0.12)",
-    text: T.gray900, textSecondary: T.gray500, textMuted: T.gray400,
-    divider: T.gray75, rowHover: T.gray50, iconBg: T.gray50, iconColor: T.gray700,
-    activeTabBg: T.gray900, activeTabText: T.white, inactiveTabText: T.gray500, tabHover: T.gray50,
-    chipBg: T.gray50, chipText: T.gray400,
-  },
-  "light-glass": {
-    name: "Light Glass",
-    scrim: "rgba(35,31,32,0.28)", blur: "blur(28px) saturate(180%)",
-    cardBg: "rgba(255,255,255,0.62)", cardBorder: "1px solid rgba(255,255,255,0.6)",
-    shadow: "0 24px 48px rgba(0,0,0,0.16), 0 4px 16px rgba(0,0,0,0.08)",
-    text: T.gray900, textSecondary: T.gray600, textMuted: T.gray500,
-    divider: "rgba(35,31,32,0.08)", rowHover: "rgba(35,31,32,0.06)", iconBg: "rgba(35,31,32,0.05)", iconColor: T.gray700,
-    activeTabBg: "rgba(35,31,32,0.82)", activeTabText: T.white, inactiveTabText: T.gray600, tabHover: "rgba(35,31,32,0.05)",
-    chipBg: "rgba(35,31,32,0.06)", chipText: T.gray500,
-  },
-  "dark-glass": {
-    name: "Dark Glass",
-    scrim: "rgba(0,0,0,0.55)", blur: "blur(32px) saturate(180%)",
-    cardBg: "rgba(32,32,34,0.76)", cardBorder: "1px solid rgba(255,255,255,0.1)",
-    shadow: "0 24px 56px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35)",
-    text: "#f5f5f5", textSecondary: "rgba(255,255,255,0.55)", textMuted: "rgba(255,255,255,0.4)",
-    divider: "rgba(255,255,255,0.1)", rowHover: "rgba(255,255,255,0.09)", iconBg: "rgba(255,255,255,0.08)", iconColor: "rgba(255,255,255,0.85)",
-    activeTabBg: "rgba(255,255,255,0.16)", activeTabText: "#fff", inactiveTabText: "rgba(255,255,255,0.55)", tabHover: "rgba(255,255,255,0.08)",
-    chipBg: "rgba(255,255,255,0.08)", chipText: "rgba(255,255,255,0.5)",
-  },
-};
+// Sampled off node 13750:16469's real shadow tokens (Shadow/shadow-md, 5
+// DROP_SHADOW layers) rather than the old hand-guessed two-layer shadow.
+const CARD_SHADOW = "0px 1px 2px rgba(0,0,0,0.14), 0px 3px 3px rgba(0,0,0,0.12), 0px 8px 5px rgba(0,0,0,0.07), 0px 14px 6px rgba(0,0,0,0.02), 0px 22px 6px rgba(0,0,0,0.01)";
+// The active-tab pill's real color — Figma's own "brand/primary/bg/hover"
+// token (#3A3737), one shade lighter than T.gray800 — same value Button.jsx
+// already uses for that exact state, sampled here rather than approximated.
+const TAB_ACTIVE_BG = "#3A3737";
 
 function matches(text, q) {
   return !q || (text || "").toLowerCase().includes(q);
 }
 
+// Real, non-fabricated suggested searches for the first-use empty state —
+// today's three worst-scoring dimensions, the same signal ChatLanding's own
+// `liveStarterChips()` already surfaces, not a hardcoded list.
+function suggestedSearches() {
+  return dimensionRankedRows().slice(-3).reverse().map(([name]) => name);
+}
+
 export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGoCreate, onGoLibrary, onAddWidget }) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [activeIndex, setActiveIndex] = useState(0);
-  const [styleVariant, setStyleVariant] = useState("dark-glass");
+  const [suggested] = useState(suggestedSearches);
   const [recentSearches, setRecentSearches] = useState(() => {
     try { return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || "[]"); } catch { return []; }
   });
   const inputRef = useRef(null);
-  const theme = STYLE_THEMES[styleVariant];
 
   useEffect(() => {
     if (open) {
       setQuery("");
+      setDebouncedQuery("");
       setActiveTab("all");
       setActiveIndex(0);
       const t = setTimeout(() => inputRef.current?.focus(), 10);
@@ -142,57 +135,81 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
     }
   }, [open]);
 
-  const showLanding = !query.trim();
+  // The input reflects `query` instantly; filtering/tabs run against
+  // `debouncedQuery`, which only catches up SEARCH_DEBOUNCE_MS after typing
+  // stops — the gap between the two IS the loading state below. Clearing
+  // the query skips the wait, since there's nothing to debounce back to.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setDebouncedQuery(""); return; }
+    const t = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  // Every section filtered against the current query, regardless of which
-  // tab is active — this is also what decides which tabs are even offered
-  // (a section with zero matches doesn't get a tab at all).
+  const isLanding = !query.trim();
+  const isLoading = !isLanding && query.trim().toLowerCase() !== debouncedQuery.trim().toLowerCase();
+
+  // Every section filtered against the debounced query — also what decides
+  // which tabs are offered (a section with zero matches gets no tab).
   const matchingSections = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
+    if (!q) return [];
     return ALL_SECTIONS.map((sec) => ({
       ...sec,
       items: sec.items
         .filter((it) => matches(it.label, q) || matches(it.sub, q))
         .map((it) => ({ ...it, _section: sec.key, _icon: it.icon || sec.icon })),
     })).filter((sec) => sec.items.length > 0);
-  }, [query]);
+  }, [debouncedQuery]);
 
-  const tabs = useMemo(() => {
-    if (showLanding) return [];
-    return [{ key: "all", label: "All" }, ...matchingSections.map((s) => ({ key: s.key, label: s.label }))];
-  }, [showLanding, matchingSections]);
+  // Tabs (and the FilterBar itself) are hidden during landing AND loading —
+  // matches the reference's Loading frame, where FilterBar stays hidden too.
+  const showTabs = !isLanding && !isLoading;
+  const tabs = useMemo(
+    () => (showTabs ? [{ key: "all", label: "All" }, ...matchingSections.map((s) => ({ key: s.key, label: s.label }))] : []),
+    [showTabs, matchingSections]
+  );
 
-  // Query cleared, or the active tab no longer has any matches (its own tab
-  // button just disappeared above) — both cases fall back to "All" rather
-  // than silently showing a stale, now-invalid filter.
   useEffect(() => {
-    if (!query.trim()) { setActiveTab("all"); return; }
+    if (isLanding) { setActiveTab("all"); return; }
     if (activeTab !== "all" && !matchingSections.some((s) => s.key === activeTab)) setActiveTab("all");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, matchingSections]);
+  }, [debouncedQuery, matchingSections]);
 
   const displaySections = useMemo(() => {
-    if (showLanding) {
+    if (isLanding) {
+      if (recentSearches.length === 0) {
+        // First-ever use of this session — no real history to show yet.
+        return [
+          { key: "suggested", label: "Suggested Search", items: suggested.map((q) => ({ id: q, label: q, _section: "recent-search", _icon: Search })) },
+          {
+            key: "featured-services", label: "Featured Services", seeAll: true,
+            items: SERVICES.slice(0, 2).map((s) => ({ id: s.id, label: s.label, sub: "SHAPE", _section: "services", color: s.color })),
+          },
+        ];
+      }
       return [
-        ...(recentSearches.length
-          ? [{ key: "recent-searches", label: "Recent Searches", icon: Search, items: recentSearches.map((q) => ({ id: q, label: q, _section: "recent-search", _icon: Search })) }]
-          : []),
-        { key: "recent-drafts", label: "Recent Drafts", icon: MessageSquare, items: SAMPLE_DRAFTS.slice(0, RECENT_DRAFTS_MAX).map((d) => ({ id: d.id, label: d.name, _section: "drafts", _icon: MessageSquare })) },
+        { key: "recent-searches", label: "Recent Searches", items: recentSearches.map((q) => ({ id: q, label: q, _section: "recent-search", _icon: Search })) },
+        { key: "recent-drafts", label: "Recent Drafts", items: SAMPLE_DRAFTS.slice(0, RECENT_DRAFTS_MAX).map((d) => ({ id: d.id, label: d.name, sub: d.edited, _section: "drafts", _icon: MessageSquare })) },
       ];
     }
-    if (activeTab === "all") return matchingSections.map((sec) => ({ ...sec, items: sec.items.slice(0, MAX_PER_SECTION) }));
+    if (isLoading) return [];
+    if (activeTab === "all") {
+      return matchingSections.map((sec) => ({ ...sec, _hasMore: sec.items.length > MAX_PER_SECTION, items: sec.items.slice(0, MAX_PER_SECTION) }));
+    }
     return matchingSections.filter((s) => s.key === activeTab);
-  }, [showLanding, matchingSections, activeTab, recentSearches]);
+  }, [isLanding, isLoading, matchingSections, activeTab, recentSearches, suggested]);
+
+  const isNoResults = !isLanding && !isLoading && matchingSections.length === 0;
+  const totalResults = !isLanding && !isLoading ? matchingSections.reduce((n, s) => n + s.items.length, 0) : null;
 
   const flat = useMemo(() => displaySections.flatMap((sec) => sec.items), [displaySections]);
 
-  useEffect(() => { setActiveIndex(0); }, [query, activeTab]);
+  useEffect(() => { setActiveIndex(0); }, [debouncedQuery, activeTab]);
 
   // Funnels every way the palette can close through one place so a real,
   // completed search always gets remembered — whether the user picked a
-  // result, hit Escape, clicked the scrim, or clicked the X — the same
-  // "did you actually search for something" moment Google/ChatGPT's own
-  // history treats as worth keeping, not just an explicit "save" action.
+  // result, hit Escape, clicked the scrim, or clicked the X.
   const closeAndCommit = () => {
     const q = query.trim();
     if (q.length >= 2) {
@@ -205,10 +222,12 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
     onClose();
   };
 
+  const clearQuery = () => { setQuery(""); inputRef.current?.focus(); };
+
   const activate = (item) => {
     if (!item) return;
-    // A past search, clicked from the landing view — re-run it rather than
-    // "activating" it; the palette stays open so the (now non-empty) query
+    // A past (or suggested) search, clicked from the landing view — re-run
+    // it rather than "activating" it; the palette stays open so the query
     // immediately shows real filtered/tabbed results.
     if (item._section === "recent-search") {
       setQuery(item.label);
@@ -223,9 +242,8 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
       else if (item.id === "create") onGoCreate();
       else if (item.id === "library") onGoLibrary();
     }
-    // Services/Reports/Drafts/Settings: no real destination exists yet
-    // (see header comment) — just close, same as clicking any of those
-    // elsewhere in this app today.
+    // Services/Reports/Drafts/Settings: no real destination exists yet —
+    // just close, same as clicking any of those elsewhere in this app today.
     closeAndCommit();
   };
 
@@ -236,6 +254,12 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
     if (e.key === "Enter") { e.preventDefault(); activate(flat[activeIndex]); }
   };
 
+  const fallbackChips = [
+    { id: "explore", label: "Explore Services", onClick: () => { onGoLibrary(); closeAndCommit(); } },
+    { id: "create-service", label: "Create a Service", onClick: closeAndCommit },
+    { id: "insights", label: "Review Insights", onClick: closeAndCommit },
+  ];
+
   return (
     <motion.div
       onClick={closeAndCommit}
@@ -243,56 +267,36 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={SPRING}
-      style={{ position: "fixed", inset: 0, background: theme.scrim, backdropFilter: styleVariant === "solid" ? "none" : "blur(4px)", zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "12vh" }}
+      style={{ position: "fixed", inset: 0, background: "rgba(35,31,32,0.4)", zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "12vh" }}
     >
-      {/* PROTOTYPE-ONLY style switcher — see file header comment. */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", borderRadius: radius.full, padding: "6px 6px 6px 14px", fontFamily: font }}
-      >
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>🧪 Prototype style</span>
-        <select
-          value={styleVariant}
-          onChange={(e) => setStyleVariant(e.target.value)}
-          style={{ fontSize: 12, fontFamily: font, fontWeight: 600, color: T.gray900, background: T.white, border: "none", borderRadius: radius.full, padding: "5px 10px", cursor: "pointer" }}
-        >
-          {Object.entries(STYLE_THEMES).map(([key, t]) => (
-            <option key={key} value={key}>{t.name}</option>
-          ))}
-        </select>
-      </div>
-
       <motion.div
         onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.96, y: -8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: -8 }}
         transition={SPRING}
-        style={{ width: 640, maxWidth: "90vw", maxHeight: "70vh", background: theme.cardBg, backdropFilter: theme.blur, WebkitBackdropFilter: theme.blur, border: theme.cardBorder, borderRadius: radius.modal, boxShadow: theme.shadow, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: font }}
+        style={{ width: 688, maxWidth: "90vw", maxHeight: "70vh", background: T.white, borderRadius: radius.modal, boxShadow: CARD_SHADOW, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: font }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${theme.divider}`, flexShrink: 0 }}>
-          <Search size={20} color={theme.textMuted} style={{ flexShrink: 0 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 24px", borderBottom: `1px solid ${T.gray100}`, flexShrink: 0 }}>
+          <Search size={20} color={T.gray400} style={{ flexShrink: 0 }} />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search services, widgets, drafts, reports..."
-            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: 17, fontFamily: font, color: theme.text }}
+            placeholder="Search for anything"
+            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: 14, fontFamily: font, color: T.gray900 }}
           />
           {query && (
-            <button onClick={() => setQuery("")} style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: theme.textSecondary, fontFamily: font, flexShrink: 0, padding: "4px 6px" }}>
+            <span onClick={clearQuery} style={{ fontSize: 12, fontFamily: font, color: T.gray700, textDecoration: "underline", cursor: "pointer", flexShrink: 0 }}>
               Clear
-            </button>
+            </span>
           )}
-          <div style={{ width: 1, height: 20, background: theme.divider, flexShrink: 0 }} />
-          <button onClick={closeAndCommit} style={{ border: "none", background: "transparent", cursor: "pointer", display: "flex", color: theme.textSecondary, flexShrink: 0, padding: 4 }}>
-            <X size={18} />
-          </button>
+          <Button theme="brand" variation="ghost" size="xs" iconLeft={<X size={20} />} onClick={closeAndCommit} />
         </div>
 
-        {tabs.length > 0 && (
-          <div style={{ display: "flex", gap: 6, padding: "10px 16px", overflowX: "auto", flexShrink: 0, borderBottom: `1px solid ${theme.divider}` }}>
+        {showTabs && tabs.length > 0 && (
+          <div style={{ display: "flex", gap: 6, padding: "10px 16px", overflowX: "auto", flexShrink: 0, borderBottom: `1px solid ${T.gray75}` }}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.key;
               return (
@@ -301,9 +305,10 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
                   onClick={() => setActiveTab(tab.key)}
                   style={{
                     border: "none", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
-                    padding: "6px 14px", borderRadius: radius.full, fontSize: 13, fontWeight: 500, fontFamily: font,
-                    background: isActive ? theme.activeTabBg : "transparent",
-                    color: isActive ? theme.activeTabText : theme.inactiveTabText,
+                    padding: "4px 16px", borderRadius: radius.full, fontSize: 14, fontFamily: font,
+                    fontWeight: isActive ? 600 : 400,
+                    background: isActive ? TAB_ACTIVE_BG : "transparent",
+                    color: isActive ? T.gray75 : T.gray400,
                     transition: "background 100ms ease",
                   }}
                 >
@@ -314,18 +319,49 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
           </div>
         )}
 
-        <div style={{ overflowY: "auto", padding: 8, minHeight: 200 }}>
-          {flat.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "48px 12px", color: theme.textMuted }}>
-              <Search size={28} color={theme.textMuted} />
-              <span style={{ fontSize: 14 }}>No results</span>
+        <div style={{ overflowY: "auto", padding: "4px 0", minHeight: 160 }}>
+          {isLoading ? (
+            <>
+              <div style={{ padding: "8px 24px 4px" }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: T.gray300, textTransform: "uppercase", letterSpacing: 0.4, fontFamily: font }}>Searching records...</span>
+              </div>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 24px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: radius.md, background: T.gray75, flexShrink: 0 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 0 }}>
+                    <div style={{ height: 12, width: "62%", maxWidth: 320, borderRadius: 4, background: T.gray75 }} />
+                    <div style={{ height: 8, width: "38%", maxWidth: 192, borderRadius: 4, background: T.gray100 }} />
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : isNoResults ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "48px 24px" }}>
+              <div style={{ width: 64, height: 64, borderRadius: 32, background: T.gray75, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Frown size={32} color={T.gray500} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", textAlign: "center" }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: T.gray900, fontFamily: font }}>Sorry we couldn't find any results</span>
+                <span style={{ fontSize: 14, color: T.gray500, fontFamily: font }}>Try searching for something else</span>
+              </div>
+              <Button theme="brand" variation="primary" size="xs" onClick={clearQuery}>Clear Search</Button>
             </div>
           ) : (
             displaySections.map((sec) => (
               <div key={sec.key} style={{ marginBottom: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 12px 4px", fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: "uppercase", letterSpacing: 0.4 }}>
-                  {(sec.key === "recent-searches" || sec.key === "recent-drafts") && <Clock size={11} />}
-                  {sec.label}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 24px 4px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 500, color: T.gray300, textTransform: "uppercase", letterSpacing: 0.4, fontFamily: font }}>
+                    {(sec.key === "recent-searches" || sec.key === "recent-drafts") && <Clock size={11} />}
+                    {sec.label}
+                  </div>
+                  {(sec._hasMore || sec.seeAll) && (
+                    <span
+                      onClick={sec._hasMore ? () => setActiveTab(sec.key) : undefined}
+                      style={{ fontSize: 12, fontFamily: font, color: T.gray700, textDecoration: "underline", cursor: sec._hasMore ? "pointer" : "default", opacity: sec._hasMore ? 1 : 0.7 }}
+                    >
+                      See all
+                    </span>
+                  )}
                 </div>
                 {sec.items.map((it) => {
                   const flatIndex = flat.indexOf(it);
@@ -336,13 +372,24 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
                       key={`${sec.key}-${it.id}`}
                       onMouseEnter={() => setActiveIndex(flatIndex)}
                       onClick={() => activate(it)}
-                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: radius.sm, background: isActive ? theme.rowHover : "transparent", cursor: "pointer" }}
+                      style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 24px", background: isActive ? T.gray50 : "transparent", cursor: "pointer" }}
                     >
-                      <div style={{ width: 28, height: 28, borderRadius: radius.sm, background: theme.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Icon size={15} color={theme.iconColor} />
+                      {it.color ? (
+                        <div style={{ width: 32, height: 32, borderRadius: radius.md, background: T.white, border: `1px solid ${T.gray100}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 11, background: T[it.color] }} />
+                        </div>
+                      ) : (
+                        <div style={{ width: 32, height: 32, borderRadius: radius.md, background: T.gray50, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon size={16} color={T.gray700} />
+                        </div>
+                      )}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, fontFamily: font, color: T.gray700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
+                        {it.sub && <span style={{ fontSize: 12, fontFamily: font, color: T.gray300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.sub}</span>}
                       </div>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: theme.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span>
-                      {it.sub && <span style={{ fontSize: 12, color: theme.textMuted, marginLeft: "auto", flexShrink: 0, paddingLeft: 8 }}>{it.sub}</span>}
+                      {it.owned && (
+                        <span style={{ fontSize: 11, fontFamily: font, color: T.gray700, background: T.gray50, borderRadius: radius.full, padding: "4px 6px", flexShrink: 0 }}>OWNED</span>
+                      )}
                     </div>
                   );
                 })}
@@ -351,12 +398,32 @@ export default function SearchOverlay({ open, onClose, onGoHome, onGoStore, onGo
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", borderTop: `1px solid ${theme.divider}`, flexShrink: 0 }}>
-          {["↑↓ navigate", "↵ select", "esc close"].map((hint) => (
-            <span key={hint} style={{ fontSize: 11, color: theme.chipText, background: theme.chipBg, borderRadius: 4, padding: "2px 6px" }}>{hint}</span>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "8px 24px 10px", borderTop: `1px solid ${T.gray75}`, flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontFamily: font, color: T.gray500 }}>{totalResults !== null ? `${totalResults} Result${totalResults === 1 ? "" : "s"}` : ""}</span>
+          <div style={{ display: "flex", gap: 12 }}>
+            {[["Navigate", "↑↓"], ["Open", "↵"], ["Close", "esc"]].map(([label, key]) => (
+              <span key={label} style={{ fontSize: 11, fontFamily: font, color: T.gray500 }}>
+                <span style={{ color: T.gray300 }}>{label} </span>
+                <b>{key}</b>
+              </span>
+            ))}
+          </div>
         </div>
       </motion.div>
+
+      {isNoResults && (
+        <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          {fallbackChips.map((c) => (
+            <button
+              key={c.id}
+              onClick={c.onClick}
+              style={{ border: `1px solid ${T.gray100}`, background: T.white, borderRadius: radius.full, padding: "8px 16px", fontSize: 13, fontWeight: 500, fontFamily: font, color: T.gray700, cursor: "pointer" }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

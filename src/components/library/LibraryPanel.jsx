@@ -115,7 +115,7 @@ export default function LibraryPanel({ onClose, onLibraryDragStart, onQuickAdd, 
                           style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: SLOT_W, flexShrink: 0, cursor: "grab" }}
                         >
                           <MiniWidgetPreview familyId={family.id} formIndex={i} onQuickAdd={() => onQuickAdd(family.id, i)} />
-                          <span style={{ fontSize: 13, fontWeight: 600, color: T.gray900, textAlign: "center" }}>{form.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: T.gray900, textAlign: "center" }}>{form.name || form.label}</span>
                           <span style={{ fontSize: 12, fontWeight: 600, color: T.gray500 }}>{form.size}</span>
                         </div>
                       ))}

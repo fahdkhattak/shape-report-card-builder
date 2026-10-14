@@ -23,7 +23,7 @@
 /* factor, applied to nearly every driver — without a single strong      */
 /* factor like this, double-averaging (driver -> dimension -> overall)   */
 /* regresses every user toward the same score and nobody ever crosses    */
-/* the Flourishing (>=70) / Struggling (<40) thresholds, which is what    */
+/* the Flourishing (>=80) / Struggling (<60) thresholds, which is what    */
 /* actually happened on the first pass (see corr/histogram output).      */
 /* Sleep is computed before Stress/Depression/Anxiety and fed directly    */
 /* into them (not just through a shared latent) so that relationship is  */
@@ -225,7 +225,7 @@ for (const u of users) {
       dimensionScores[dim] = round1(ds.reduce((a, b) => a + b, 0) / ds.length);
     });
     const overallScore = round1(DIMENSIONS.reduce((a, dim) => a + dimensionScores[dim], 0) / DIMENSIONS.length);
-    const status = overallScore >= 70 ? "Flourishing" : overallScore >= 40 ? "Striving" : "Struggling";
+    const status = overallScore >= 80 ? "Flourishing" : overallScore >= 60 ? "Striving" : "Struggling";
     // eNPS-sheet-derived metrics, correlated with orgFit/pride/morale
     const recommendScore = Math.round(clip((latent.orgFit + orgShock[round] * 1.2) / 10 + randNorm(0, 1.3), 0, 10));
     const morale = Math.round(clip((dimensionScores["Corporate Culture"]) / 10 + randNorm(0, 1), 0, 10));

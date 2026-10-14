@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
-import { familyById } from "../../lib/families.js";
+import { familyById, formTitle } from "../../lib/families.js";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
 import { Header } from "../widgets/primitives.jsx";
@@ -12,7 +12,7 @@ export default function DetailModal({ widget, onClose }) {
   if (!widget) return null;
   const isLib = widget.kind === "library";
   const family = isLib ? familyById(widget.familyId) : null;
-  const title = widget.customTitle || (isLib ? family.name : widget.spec.title);
+  const title = widget.customTitle || (isLib ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title);
   const category = isLib ? family.category : "AI-generated";
 
   return (
@@ -31,7 +31,7 @@ export default function DetailModal({ widget, onClose }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div style={{ border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: 16, minHeight: 220, display: "flex", flexDirection: "column", gap: 12 }}>
             <Header title="Your Organisation" />
-            {isLib ? <WidgetBody familyId={widget.familyId} formIndex={Math.min(1, family.forms.length - 1)} /> : <GeneratedBody spec={widget.spec} />}
+            {isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
           </div>
           <div style={{ border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: 16, display: "flex", flexDirection: "column", gap: 10, justifyContent: "center" }}>
             <p style={{ fontSize: 13, color: T.gray900, fontWeight: 600 }}>{isLib ? "What this means" : "Why this widget"}</p>

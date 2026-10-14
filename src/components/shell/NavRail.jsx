@@ -9,7 +9,9 @@ import {
   Search, BookOpen, PanelLeft, ChevronRight, ChevronDown, ChevronUp,
   Plus, MoreHorizontal, ChevronsUpDown, Star, LogOut, ArrowLeftRight,
   Share2, Globe, Check, UserPlus,
+  Workflow, FileQuestion, FileText, LayoutGrid, Presentation, BadgeCheck, Code2,
 } from "lucide-react";
+import { useNavActions } from "../../lib/navActions.js";
 import { T, font, radius } from "../../lib/tokens.js";
 import shapeLogo from "../../assets/shape-logo.svg";
 import linkedinMark from "../../assets/linkedin-mark.svg";
@@ -68,16 +70,42 @@ const SHADOW_RIGHT = "1px 0 2px rgba(0,0,0,0.06), 8px 0 5px rgba(0,0,0,0.03), 18
 
 // Figma's own copy (Home/Search/Store/Create/Library) — kept distinct from
 // the `active` id, which still matches the app's real screens (chat/org/
-// generate). "Search" now opens the real SearchOverlay.jsx command palette
-// (see its `onClick` wiring below) — Library is still inert, no real
-// destination exists for it as a nav-rail item (the Library *panel* itself
-// is real, just not reachable from this specific icon).
+// generate). "Search" opens the real SearchOverlay.jsx command palette,
+// "Create" opens the CreateToolsMenu below (see the `onClick`/`itemRef`
+// wiring further down); "Library" opens the full Library screen
+// (components/library/LibraryScreen.jsx), collapsed or expanded.
 const NAV_ITEMS = [
   { id: "chat", label: "Home", icon: MessageSquare },
   { id: "search", label: "Search", icon: Search, expandedOnly: true },
   { id: "org", label: "Store", icon: Building2 },
   { id: "generate", label: "Create", icon: Wand2 },
-  { id: "library", label: "Library", icon: BookOpen, expandedOnly: true },
+  { id: "library", label: "Library", icon: BookOpen },
+  { id: "developer", label: "Developer", icon: Code2 }, // the handoff area — components, states and specs (components/developer/)
+];
+
+// CREATE TOOLS MENU — a real Figma reference for this one
+// (Z6YmEggwvoiX3j4d3kCKqV "SHAPE 3.0 Roughwork", node 2111:7157/7158),
+// giving the "Create" nav item somewhere real to open instead of doing
+// nothing. Five tools + a "Coming soon" card, matching that node's own
+// two-column layout exactly (333px tool list + 275px promo panel).
+//
+// "Report Builder" and "Survey Builder" are wired to real destinations
+// (`onOpenReportBuilder`/`onOpenSurveyBuilder`, threaded from App.jsx the
+// same way `onOpenSearch` already is). Report Builder just goes to the
+// existing chat-first flow's own entry point (Home) — that flow already IS
+// this app's report builder, nothing new to build. Survey Builder opens the
+// real node-based blueprint editor (components/survey/SurveyBuilderScreen.jsx).
+// The other three rows exist so there's real layout space for them, per
+// explicit product direction ("I need space for all these tools to sit") —
+// for now they close the menu with no other effect, the same honest-inert
+// treatment this app already uses elsewhere for a real-looking control with
+// no destination yet (e.g. AttachMenu's "Add Files or Photos").
+const CREATE_TOOLS = [
+  { id: "service-builder", label: "Service Builder", sub: "Package surveys, reports and tools", icon: Workflow },
+  { id: "survey-builder", label: "Survey Builder", sub: "Create your own survey", icon: FileQuestion, real: true },
+  { id: "report-builder", label: "Report Builder", sub: "Build reports that drive action", icon: FileText, real: true },
+  { id: "widget-builder", label: "Widget Builder", sub: "Turn data into insight", icon: LayoutGrid, real: true },
+  { id: "exec-summary", label: "Executive Summary Generator", sub: "Key insights. Ready to share.", icon: Presentation },
 ];
 
 /* Position-only — no dismiss behavior, used for the collapsed-mode
@@ -199,7 +227,7 @@ function Avatar({ size = 40 }) {
    feedback, the tooltip is secondary/informational. Active color is the
    icon's own primary (`gray900`), not the brand accent — confirmed
    against real usage, not the app's earlier (wrong) accent-blue guess. */
-function NavItemRow({ item, active, expanded, hovered, onHover, onClick }) {
+function NavItemRow({ item, active, expanded, hovered, onHover, onClick, itemRef }) {
   const [showTip, setShowTip] = useState(false);
   const timerRef = useRef(null);
   const Icon = item.icon;
@@ -215,10 +243,18 @@ function NavItemRow({ item, active, expanded, hovered, onHover, onClick }) {
     setShowTip(false);
   };
 
+  // Composes the tooltip's own positioning ref with an optional external
+  // one (e.g. CreateToolsMenu's anchor) — a row only ever needs the second
+  // when it also opens a floating menu of its own.
+  const setRefs = (node) => {
+    refs.setReference(node);
+    if (itemRef) itemRef(node);
+  };
+
   return (
     <div onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <button
-        ref={refs.setReference}
+        ref={setRefs}
         onClick={onClick}
         style={{
           width: expanded ? "100%" : 44, height: 36, border: "none", cursor: "pointer",
@@ -253,16 +289,19 @@ function NavItemRow({ item, active, expanded, hovered, onHover, onClick }) {
 
 function SubItemRow({ item, isMenuOpen, onOpenChange }) {
   const [hover, setHover] = useState(false);
+  const { openReport } = useNavActions();
+  const hasReport = item.id === "shape-perf-org"; // the only persona version with a built report so far
   const { refs, floatingStyles, getFloatingProps } = useMenuFloating({ open: isMenuOpen, onClose: () => onOpenChange(false), placement: "bottom-start", gap: 4 });
   return (
     <div
-      style={{ display: "flex", alignItems: "center", padding: "8px 8px 8px 24px", borderRadius: radius.sm, background: hover ? T.gray25 : "transparent", transition: "background 100ms ease" }}
+      onClick={hasReport ? () => openReport(item.id) : undefined}
+      style={{ display: "flex", alignItems: "center", padding: "8px 8px 8px 24px", borderRadius: radius.sm, background: hover ? T.gray25 : "transparent", transition: "background 100ms ease", cursor: hasReport ? "pointer" : "default" }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       <span style={{ flex: 1, fontSize: 14, color: T.gray700 }}>{item.name}</span>
       {(hover || isMenuOpen) && (
-        <GhostIconButton btnRef={refs.setReference} icon={<MoreHorizontal size={16} />} active={isMenuOpen} onClick={() => onOpenChange(!isMenuOpen)} size={28} />
+        <GhostIconButton btnRef={refs.setReference} icon={<MoreHorizontal size={16} />} active={isMenuOpen} onClick={(e) => { e?.stopPropagation?.(); onOpenChange(!isMenuOpen); }} size={28} />
       )}
       <AnimatePresence>
         {isMenuOpen && (
@@ -449,7 +488,80 @@ function ExtraLinksPanel({ floatingRef, style, floatingProps }) {
   );
 }
 
-function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch }) {
+// Own shell rather than the shared `FloatingMenu` (gray25 rows-list look) —
+// the real node samples a plain white surface, 16px radius, and a two-
+// column layout `FloatingMenu` isn't built for. Colors/spacing/shadow below
+// are sampled directly off node 2111:7158, not eyeballed.
+function CreateToolsMenu({ floatingRef, style, floatingProps, onSelectReportBuilder, onSelectSurveyBuilder, onSelectWidgetBuilder, onClose }) {
+  const [hoveredTool, setHoveredTool] = useState(null);
+  return (
+    <FloatingPortal>
+      <div ref={floatingRef} {...floatingProps} style={{ ...style, zIndex: 100 }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.94 }}
+          transition={POP_SPRING}
+          style={{
+            display: "flex", gap: 16, padding: 16, background: T.white, border: `1px solid ${T.gray100}`,
+            borderRadius: radius.xl, boxShadow: "0px 5px 7.5px rgba(102,102,102,0.1)", fontFamily: font, boxSizing: "border-box",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: 333 }}>
+            {CREATE_TOOLS.map((tool) => {
+              const Icon = tool.icon;
+              const hovered = hoveredTool === tool.id;
+              return (
+                <button
+                  key={tool.id}
+                  onMouseEnter={() => setHoveredTool(tool.id)}
+                  onMouseLeave={() => setHoveredTool(null)}
+                  onClick={() => {
+                    if (tool.id === "report-builder") onSelectReportBuilder();
+                    if (tool.id === "survey-builder") onSelectSurveyBuilder();
+                    if (tool.id === "widget-builder") onSelectWidgetBuilder();
+                    onClose();
+                  }}
+                  style={{
+                    width: "100%", height: 48, border: "none", cursor: "pointer", textAlign: "left",
+                    display: "flex", alignItems: "center", gap: 12, padding: "0 8px",
+                    background: hovered ? T.gray75 : "transparent", borderRadius: radius.lg,
+                    transition: "background 100ms ease", fontFamily: font, boxSizing: "border-box",
+                  }}
+                >
+                  <div style={{ width: 48, height: 48, flexShrink: 0, border: `1px solid ${T.gray75}`, borderRadius: radius.lg, background: T.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={24} color={T.gray700} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: T.gray900, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tool.label}</span>
+                    <span style={{ fontSize: 12, color: T.gray500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tool.sub}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ width: 275, alignSelf: "stretch", background: T.gray50, borderRadius: radius.md, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 16, boxSizing: "border-box" }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: T.gray900 }}>Coming soon</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 123, height: 123, border: `1px solid ${T.gray75}`, borderRadius: radius.lg, background: T.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <BadgeCheck size={40} color={T.accent} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center" }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.gray900 }}>Survey Validator</span>
+                <span style={{ fontSize: 12, color: T.gray500 }}>Check quality, clarity and readiness.</span>
+              </div>
+            </div>
+            <span style={{ fontSize: 20, fontWeight: 700, color: T.gray900 }}>Be first to know</span>
+          </div>
+        </motion.div>
+      </div>
+    </FloatingPortal>
+  );
+}
+
+function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch, onOpenReportBuilder, onOpenSurveyBuilder }) {
+  const { openReport, openWidgetBuilder, openLibrary, openDeveloper } = useNavActions();
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = expanded ?? internalExpanded;
   const setExpanded = onExpandedChange ?? setInternalExpanded;
@@ -463,6 +575,7 @@ function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [switchAccountsOpen, setSwitchAccountsOpen] = useState(false);
   const [extraLinksOpen, setExtraLinksOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   const toggleExpanded = () => setExpanded(!isExpanded);
   const closeProfileMenu = () => { setProfileMenuOpen(false); setSwitchAccountsOpen(false); };
@@ -476,6 +589,7 @@ function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch }) {
     nodeId: profileNodeId,
   });
   const extraLinksFloating = useMenuFloating({ open: extraLinksOpen, onClose: () => setExtraLinksOpen(false), placement: "top-start" });
+  const createFloating = useMenuFloating({ open: createMenuOpen, onClose: () => setCreateMenuOpen(false), placement: "right-start", gap: 12 });
 
   return (
     <motion.div
@@ -525,9 +639,23 @@ function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch }) {
             expanded={isExpanded}
             hovered={hoveredItem === item.id}
             onHover={(v) => setHoveredItem(v ? item.id : null)}
-            onClick={item.id === "search" ? onOpenSearch : undefined}
+            onClick={item.id === "search" ? onOpenSearch : item.id === "generate" ? () => setCreateMenuOpen((v) => !v) : item.id === "org" ? () => openReport("shape-perf-org") : item.id === "library" ? openLibrary : item.id === "developer" ? openDeveloper : undefined}
+            itemRef={item.id === "generate" ? createFloating.refs.setReference : undefined}
           />
         ))}
+        <AnimatePresence>
+          {createMenuOpen && (
+            <CreateToolsMenu
+              floatingRef={createFloating.refs.setFloating}
+              style={createFloating.floatingStyles}
+              floatingProps={createFloating.getFloatingProps()}
+              onSelectReportBuilder={onOpenReportBuilder}
+              onSelectSurveyBuilder={onOpenSurveyBuilder}
+              onSelectWidgetBuilder={openWidgetBuilder}
+              onClose={() => setCreateMenuOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
         {isExpanded && (
           <div style={{ marginTop: 14 }}>

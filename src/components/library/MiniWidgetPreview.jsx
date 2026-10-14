@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Info, X } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
-import { familyById } from "../../lib/families.js";
+import { familyById, formTitle, cardSurface } from "../../lib/families.js";
 import { Header } from "../widgets/primitives.jsx";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
@@ -28,6 +28,12 @@ export const nativeForSize = (size) => NATIVE_PX[size] || 164;
 const CARD_SHADOW = "0 22px 6px rgba(0,0,0,0.01), 0 14px 6px rgba(0,0,0,0.02), 0 8px 5px rgba(0,0,0,0.07), 0 3px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14)";
 const TOOLBAR_SHADOW = "0 17px 3px rgba(0,0,0,0), 0 11px 2px rgba(0,0,0,0.01), 0 6px 2px rgba(0,0,0,0.03), 0 3px 2px rgba(0,0,0,0.05), 0 1px 1px rgba(0,0,0,0.06)";
 
+const TOOLTIPS = {
+  add: (inUse) => (inUse ? "Added to Report" : "Add to Report"),
+  info: (inUse, rl, r, hasInfo) => (hasInfo ? "View Detail" : null),
+  delete: (inUse, removeLabel, hasRemove) => (hasRemove ? removeLabel : null),
+};
+
 const TOOLBAR_BTNS = [
   { id: "add", icon: Plus, hoverBg: T.gray75 },
   { id: "info", icon: Info, hoverBg: T.gray75 },
@@ -40,13 +46,14 @@ const TOOLBAR_BTNS = [
    and title source. `onRemove` (generated only) wires the toolbar's
    delete button, which is otherwise inert (no remove-from-library concept
    exists for the fixed catalog). */
-export default function MiniWidgetPreview({ familyId, formIndex, spec, onQuickAdd, onRemove }) {
+export default function MiniWidgetPreview({ familyId, formIndex, spec, onQuickAdd, onRemove, onInfo, inUse = false, removeLabel = "Remove", dimDisabled = false }) {
   const [hover, setHover] = useState(false);
   const [hoveredBtn, setHoveredBtn] = useState(null);
   const isGenerated = !!spec;
   const family = isGenerated ? null : familyById(familyId);
   const formSize = isGenerated ? spec.size : family.forms[formIndex].size;
-  const title = isGenerated ? spec.title : family.name;
+  const title = isGenerated ? spec.title : formTitle(familyId, formIndex);
+  const surface = isGenerated ? {} : cardSurface(familyId, formIndex);
   const native = nativeForSize(formSize);
   const cardDisplay = CARD_DISPLAY[formSize] || 100;
   const scale = cardDisplay / native;
@@ -59,7 +66,7 @@ export default function MiniWidgetPreview({ familyId, formIndex, spec, onQuickAd
       onMouseLeave={() => { setHover(false); setHoveredBtn(null); }}
       style={{ width: SLOT_W, height: SLOT_H, flexShrink: 0, position: "relative", borderRadius: radius.lg, overflow: "hidden" }}
     >
-      <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", top: offsetY, left: offsetX, background: T.white, border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, boxShadow: CARD_SHADOW, overflow: "hidden" }}>
+      <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", top: offsetY, left: offsetX, background: surface.background || T.white, border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, boxShadow: CARD_SHADOW, overflow: "hidden" }}>
         <Header title={title} estimated={isGenerated && spec.real === false} />
         {isGenerated ? <GeneratedBody spec={spec} /> : <WidgetBody familyId={familyId} formIndex={formIndex} />}
       </div>
@@ -68,26 +75,32 @@ export default function MiniWidgetPreview({ familyId, formIndex, spec, onQuickAd
         <>
           <div style={{ position: "absolute", inset: 0, background: T.gray800, opacity: 0.15, mixBlendMode: "multiply", borderRadius: radius.widget, pointerEvents: "none" }} />
           <div style={{ position: "absolute", top: 8, right: 8, display: "flex", alignItems: "center", gap: 4, background: T.white, borderRadius: 9999, padding: 4, boxShadow: TOOLBAR_SHADOW }}>
-            {TOOLBAR_BTNS.map(({ id, icon: Icon, hoverBg, color }) => (
-              <button
-                key={id}
-                onClick={
-                  id === "add" ? (e) => { e.stopPropagation(); onQuickAdd?.(); } :
-                  id === "delete" && onRemove ? (e) => { e.stopPropagation(); onRemove(); } :
-                  undefined
-                }
-                onMouseEnter={() => setHoveredBtn(id)}
-                onMouseLeave={() => setHoveredBtn((h) => (h === id ? null : h))}
-                style={{ border: "none", background: hoveredBtn === id ? hoverBg : "transparent", borderRadius: 9999, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: (id === "delete" && !onRemove) ? "default" : "pointer", position: "relative", padding: 0 }}
-              >
-                <Icon size={20} color={color || T.gray700} />
-              </button>
-            ))}
+            {TOOLBAR_BTNS.map(({ id, icon: Icon, hoverBg, color }) => {
+              // In the Library a card that is already on the report can't be added
+              // again, and one that isn't can't be removed — those buttons dim.
+              const disabled = (id === "add" && inUse) || (id === "delete" && !onRemove) || (id === "info" && !onInfo);
+              return (
+                <button
+                  key={id}
+                  onClick={
+                    disabled ? undefined :
+                    id === "add" ? (e) => { e.stopPropagation(); onQuickAdd?.(); } :
+                    id === "info" ? (e) => { e.stopPropagation(); onInfo(); } :
+                    (e) => { e.stopPropagation(); onRemove(); }
+                  }
+                  onMouseEnter={() => setHoveredBtn(id)}
+                  onMouseLeave={() => setHoveredBtn((h) => (h === id ? null : h))}
+                  style={{ border: "none", background: hoveredBtn === id && !disabled ? hoverBg : "transparent", borderRadius: 9999, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: disabled ? "default" : "pointer", position: "relative", padding: 0, opacity: disabled && dimDisabled ? 0.4 : 1 }}
+                >
+                  <Icon size={20} color={color || T.gray700} />
+                </button>
+              );
+            })}
           </div>
 
-          {hoveredBtn === "add" && (
+          {hoveredBtn && TOOLTIPS[hoveredBtn]?.(inUse, removeLabel, !!onRemove, !!onInfo) && (
             <span style={{ position: "absolute", top: 44, right: 8, background: T.gray25, color: T.gray700, fontSize: 12, fontFamily: font, borderRadius: radius.md, padding: "8px 12px", whiteSpace: "nowrap", boxShadow: CARD_SHADOW, zIndex: 10 }}>
-              Add to Report
+              {TOOLTIPS[hoveredBtn](inUse, removeLabel, !!onRemove, !!onInfo)}
             </span>
           )}
         </>
