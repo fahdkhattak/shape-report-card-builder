@@ -1,18 +1,19 @@
 import { T, band } from "../../lib/tokens.js";
-import { LATEST, PREVIOUS, DIMENSIONS, DRIVERS, DRIVER_DIMENSION, dimensionRankedRows, driverRankedRows, worstDemographicGroup } from "../../lib/dataset.js";
+import { ROUNDS, LATEST, PREVIOUS, DIMENSIONS, DRIVERS, DRIVER_DIMENSION, dimensionRankedRows, driverRankedRows, worstDemographicGroup } from "../../lib/dataset.js";
 import {
-  LAST, statusOf, overallSeries, dimensionSeries, driverSeries, enpsSeries, enpsPartSeries, statusSeries, groupRows, groupSeries, focusGroups, ALL_AXES, driverAt,
+  LAST, fmtMonth, fmtDate, enpsParts, statusOf, overallSeries, dimensionSeries, driverSeries, enpsSeries, enpsPartSeries, statusSeries, groupRows, groupSeries, focusGroups, ALL_AXES, driverAt,
 } from "../../lib/scopeData.js";
 import { InsightSummaryStory, SummaryP, Strong, STATUS_TEXT, statusText, BandBar, MeaningStory, StatusMeaningStory, MethodologyStory } from "./stories/SummaryStories.jsx";
 import BreakdownStory from "./stories/BreakdownStory.jsx";
-import { SplitBreakdownStory } from "./stories/FamilyStories.jsx";
+import { SplitBreakdownStory, ChangesStory, WithinReachStory, PriorityMapStory, SpreadStory, BrightSpotsStory, GroupGapStory } from "./stories/FamilyStories.jsx";
+import { ScoreOverTime, ScoreOverTimeRows, ENPSOverTime } from "./stories/TrendCharts.jsx";
 import { StrongestWeakestStory, AreasToFocusStory } from "./stories/DiagnosticStory.jsx";
 import CompositionStory from "./stories/CompositionStory.jsx";
 import TrendStory from "./stories/TrendStory.jsx";
 import ScoreHistoryStory from "./stories/ScoreHistoryStory.jsx";
 import { ActionsStoryBar } from "./stories/ActionStories.jsx";
 import { ResourceStory, UpgradePathStory } from "./stories/AddOnStories.jsx";
-import { dimensionSubject } from "../../lib/scopeSubject.js";
+import { dimensionSubject, overallSubject } from "../../lib/scopeSubject.js";
 import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
 
 /* ================================================================== */
@@ -22,10 +23,18 @@ import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
 /* → Composition → Trend → Actions → Resource → Methodology → Upgrade.    */
 /* Each widget gets the Stories its own data can honestly support:        */
 /*   - Comparison (Me / Team / Org) needs per-team data we don't have     */
-/*   - Citation needs real sources; Questionnaire / Video aren't designed  */
+/*   - Citation needs real sources; Questionnaire / Video need content    */
+/* Trend uses the newer Trend forms (TrendCharts.jsx: Score Over Time,    */
+/* by part, eNPS Over Time) and the Diagnostic family's newer Stories     */
+/* (What Changed, Within Reach, Priority Map, Spread, Bright Spots, Gaps)  */
+/* — the same ones the Widget Builder offers. Status Over Time keeps the   */
+/* older TrendStory: no newer form shows status shares round by round.    */
 /* Draft recipes — expected to change as each Scope is refined.           */
 /* ================================================================== */
 const r0 = Math.round;
+/* Every round in the dataset, as the Trend forms want them (latest in bold). */
+const ROUNDS_LIVE = () => ROUNDS.map((r, i) => ({ label: fmtMonth(r.date), latest: i === LAST, date: fmtDate(r.date) }));
+const rowsOver = (series) => series.map((x) => ({ label: x.label, values: x.values }));
 export const ORG_MEANING = {
   Flourishing: "Most parts of work feel supportive and easy to move through. The few that don't are where to look next.",
   Striving: "Some parts of work feel clear and easy to move through. Others create delays or ask for more effort than they should.",
@@ -80,6 +89,9 @@ function OverallRecipe() {
       <MeaningStory title="What Your Score Is Telling You" value={score} unit="/100" values={overallSeries()} headline={<>Your score of <span style={{ color: band(score).cs }}>{score}</span>/100 places you in {status}.</>} text={ORG_MEANING[status]} />
       <BreakdownStory variant="radar" items={dimItems()} line={`See how your results compare across the ${rows.length} Explorers.`} hint="Hover over the chart to see each Explorer's score. For each answer, the higher the score, the better." />
       <StrongestWeakestStory {...bestWorst(rows)} />
+      <ChangesStory items={dimItems()} noun="Explorer" />
+      <WithinReachStory items={dimItems()} noun="Explorer" />
+      <PriorityMapStory items={dimItems()} noun="Explorer" />
       <ScoreHistoryStory overall={overallSeries()} items={dimItems()} />
       <MethodologyStory kind="score" />
       <MethodologyStory kind="status" />
@@ -105,6 +117,7 @@ function OrgStatusRecipe() {
         ]}
       />
       <BreakdownStory title="Explorers by Status" variant="zones" items={dimItems()} noun="Explorer" line="Where each Explorer sits against the three status ranges." />
+      <SpreadStory scoreOf={overallSubject().scoreOf} label="the Org Score" />
       <TrendStory
         title="Status Over Time" line="The share of people in each status, round by round." mode="multi" banded={false} unit=""
         series={[
@@ -126,7 +139,9 @@ function ExplorersRecipe() {
       <ExplorerSummary headline="Here's how each Explorer is doing." />
       <BreakdownStory title="What's Behind Your Score" variant="bars" items={dimItems()} line="Every Explorer, ranked from strongest to weakest." />
       <StrongestWeakestStory {...bestWorst(rows)} />
-      <TrendStory title="Explorer History" line="Pick an Explorer to see how it has moved." series={explorerTrendSeries().slice(1)} chipLabel="Explorer" />
+      <ChangesStory items={dimItems()} noun="Explorer" />
+      <PriorityMapStory items={dimItems()} noun="Explorer" />
+      <ScoreOverTimeRows title="Explorer History" line="Every Explorer, round by round, under the overall score." rounds={ROUNDS_LIVE()} rows={[{ label: "Overall Score", overall: true, values: overallSeries() }, ...rowsOver(explorerTrendSeries().slice(1))]} />
       <ActionsStoryBar drivers={weakestDrivers(6)} />
       <MethodologyStory kind="score" />
     </>
@@ -143,7 +158,8 @@ function FactorsRecipe() {
       </InsightSummaryStory>
       <BreakdownStory title="What's Behind Your Explorers" variant="bars" noun="Driver" items={driverItems()} limit={8} line="Every Driver, ranked from strongest to weakest." />
       <StrongestWeakestStory actionsCta noun="Driver" strongest={{ label: ranked[0][0], value: ranked[0][1] }} weakest={{ label: ranked[ranked.length - 1][0], value: ranked[ranked.length - 1][1] }} />
-      <TrendStory title="Weakest Drivers Over Time" line="The three lowest-scoring Drivers, round by round." mode="multi" series={weak.map((d) => ({ key: d, label: d, values: driverSeries(d) }))} />
+      <WithinReachStory items={driverItems()} noun="Driver" />
+      <ScoreOverTimeRows title="Weakest Drivers Over Time" line="The three lowest-scoring Drivers, round by round." rounds={ROUNDS_LIVE()} rows={weak.map((d) => ({ label: d, values: driverSeries(d) }))} />
       <ActionsStoryBar drivers={weakestDrivers(6)} />
       <MethodologyStory kind="score" />
     </>
@@ -181,7 +197,7 @@ function EnpsRecipe() {
           { label: "Detractors (0–6)", color: T.red, counts: enpsPartSeries("detractors") },
         ]}
       />
-      <TrendStory title="eNPS Over Time" series={[{ key: "enps", label: "eNPS", values: enpsSeries() }]} banded={false} domain={[-100, 100]} ticks={[-100, -50, 0, 50, 100]} />
+      <ENPSOverTime title="eNPS Over Time" line="Promoters, Passives and Detractors each round, with the eNPS they add up to." rounds={ROUNDS_LIVE()} parts={ROUNDS.map((_, i) => { const p = enpsParts(i); const pc = (k) => r0((p[k] / p.total) * 100); return { promoters: pc("promoters"), passives: pc("passives"), detractors: pc("detractors"), enps: p.enps }; })} />
       <MethodologyStory kind="enps" />
     </>
   );
@@ -195,6 +211,8 @@ function AreasFocusRecipe() {
         <SummaryP>Across {ALL_AXES.length} ways of grouping people, <b>{group}</b> ({axis}) has the lowest score at <Strong c={statusText(score)}>{score}</Strong>/100.</SummaryP>
       </InsightSummaryStory>
       <AreasToFocusStory groups={focusGroups(4)} />
+      <BrightSpotsStory scoreOf={overallSubject().scoreOf} label="the Org Score" />
+      <GroupGapStory scoreOf={overallSubject().scoreOf} label="the Org Score" />
       <CompositionStory initialTab="People" line="See who is in each group and how each is scoring. Pick a tab to look at a different part of your organisation." />
     </>
   );
@@ -215,7 +233,7 @@ function CompositionRecipe({ axisKey, tab, noun }) {
     <>
       <GapSummary axisKey={axisKey} noun={noun} />
       <CompositionStory initialTab={tab} />
-      <TrendStory title={`Score by ${noun} Over Time`} line="Groups with fewer than 5 people are left out." mode="multi" series={groupSeries(axisKey)} />
+      <ScoreOverTimeRows title={`Score by ${noun} Over Time`} line="Groups with fewer than 5 people are left out." rounds={ROUNDS_LIVE()} rows={rowsOver(groupSeries(axisKey))} />
     </>
   );
 }
@@ -226,7 +244,7 @@ function TimeImpactRecipe() {
   return (
     <>
       <MeaningStory title="What This Is Telling You" value={hours[LAST]} bandColor={false} unit="hrs / year" values={hours} headline={`About ${hours[LAST]} hours a year, estimated from work-life balance.`} text="Higher work-life balance means more time gained back across the year. Treat this as an indicative estimate." />
-      <TrendStory title="Work-life Balance Over Time" line="The score this estimate is built from." series={[{ key: "wlb", label: "Work-life balance", values: wlb }]} />
+      <ScoreOverTime title="Work-life Balance Over Time" line="The score this estimate is built from." rounds={ROUNDS_LIVE()} values={wlb} />
       <ResourceStory title="Explore Work-life Balance Further" description="A guide to the habits and working patterns that most affect how much time people get back." />
       <MethodologyStory kind="time" />
     </>

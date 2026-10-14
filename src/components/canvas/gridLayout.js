@@ -18,15 +18,13 @@ export function pxForSpan(span) {
   return span > 1 ? CELL * span + GAP * (span - 1) : CELL;
 }
 
-/* Responsive column count for the canvas grid — 6 across at full desktop
-   width, 4 across once space gets tight, 2 across at mobile widths. Always
-   an even number: odd counts leave 2x2 widgets stranded and break the layout. Cell
-   size itself never changes (per the fixed-pixel rule above); only the
-   number of columns that fit in a row does, so bigger widgets (2x2/3x3)
-   still lay out correctly at any column count via their existing
-   `gridColumn: span N`. */
+/* Responsive column count for the canvas grid: 6, 5, 4, 3 or 2 across — as
+   many 164px columns as fit, never fewer than 2 (product direction: 3 and 5
+   are allowed too, not only even counts). Cell size never changes (per the
+   fixed-pixel rule above); only the number of columns does. Grids that use
+   this pack with `grid-auto-flow: row dense`, so on an odd count a 2x2 never
+   leaves a hole: the next 1x1 that fits drops into the gap. */
 export function colsForWidth(width) {
-  if (width >= pxForSpan(6)) return 6;
-  if (width >= pxForSpan(4)) return 4;
+  for (const n of [6, 5, 4, 3]) if (width >= pxForSpan(n)) return n;
   return 2;
 }

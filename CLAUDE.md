@@ -2857,6 +2857,187 @@ Colour & type). Main: the page, with a header toggle **Style: Current | Refined*
   and non-answers, neighbours, open questions: paragraphs chosen by band not data, who is "you", status copy for other bands,
   Health Age needs ages, should 100 read differently from 80).
 
+## Insight widget rules — Index, Graph and Chart (Figma boards 9158:28363, 9158:28146, 9158:22652)
+
+The three specification boards are **rules, not mock-ups** (limits, sizes, when a widget grows or gives way to the detailed
+view). All of them are written down in **`docs/widget-insight-rules.md`** — read it before touching any chart in a widget.
+Started on the other machine (rules doc, Index ring, the two components below), finished here.
+- **Limits live in one place, `lib/insightRules.js`** (`GRAPH_LIMITS`/`graphFit`, `CHART_LIMITS`/`chartLimit`/`chartFit`/
+  `chartSizes`). Pure, no React: the widgets and the Widget Builder's sizing both read it, so a widget is never offered a size
+  the rules forbid. `GraphInsight.jsx` / `ChartInsight.jsx` re-export them for older imports.
+- **Index** (`RingIndex.jsx`): equal slices, 1px white dividers, label outer half / score inner half, 2x2 ≤12 labelled, 13–20
+  scores only, 3x3 ≤12 parents, ≤25 child labels outside on connectors, children under 12° lose their score.
+- **Graph** (`GraphInsight.jsx`): fixed 0–100, 28px between ticks (1x1 0/50/100, 2x2 every 20), 1x1 ≤3 points / 1 line,
+  2x2 ≤7 points / 3 lines, 8px markers, optional benchmark, evidence sentence (2 lines max) at 2x2. Used by Score History (library),
+  the builder's History form and chat-generated trend widgets. **At 1x1 the caret pill sits inside the plot's right corner**
+  (bottom corner when the latest point is 70+): the graph height is fixed and a two-line title left no room for a pill row.
+- **Chart** (`ChartInsight.jsx`): `HBars` (Comparison: category column 50–100px ≤45%, 8px bars 12px apart, fixed scale, value
+  area 48/64px, 1x1 ≤5 / 2x2 ≤13, "N more" past that), `VBars` (24px axis, 8px bars, zero baseline, 1x1 ≤4 / 2x2 ≤10), `TileGrid`
+  (compact grid: 40px tiles, 2px rail, proportion bar, 1x1 ≤4), `DonutInsight` (ring from 12 o'clock; 1x1 = a small ring with a legend (≤4)
+  or the Largest Group callout (≤7); 2x2 = ring + 3-column legend, or ring + Total / Largest / Smallest callouts; the name in a callout
+  truncates, the "(19%)" never does), `Treemap` (new: value-proportional, deterministic — largest first, split into two runs of near-
+  equal total along the longer side — 4px gaps, name upper-case one line top-left, value bold bottom-left, labels drop when a tile is
+  too small; 1x1 exactly 3, 2x2 3–7).
+- **Wired in:** Gender / Work Composition → `HBars` (no value labels at 1x1: the 48px value area would leave a 26px plot); Focus by
+  Group → `HBars`; Popular Responses → `Treemap` (the 1x1 now shows the three largest of the same sample as the 2x2, so the two
+  agree); Money Composition → `TileGrid` (`$26K`); builder Groups → `HBars` (all groups, was capped at 6), Composition → `TileGrid` /
+  `DonutInsight`, Spread → `VBars`; chat-generated bar → `HBars`. `MiniBarChart`, `Treemap` (primitives), `PopularTreemap`,
+  `MoneyComposition` and `GroupBars` are no longer used by any widget (left in place, not deleted).
+- **Builder sizing follows the data**: a form can declare `fitSizes(payload)`; `buildFormSpec` stores the allowed sizes on the spec
+  (`spec.sizes`) and grows a 1x1 that doesn't fit. Composition with 8+ groups (e.g. 13 departments) is 2x2 only; History with 4+ rounds
+  would be; Spread (10 bars) is 2x2 only. The size switch (`WidgetOptions`) shows only allowed sizes, and "make it smaller" in chat says
+  why when it can't.
+- **Widget header now stops at two lines** (ellipsis, full title on hover) — the design allows a second line, never a third, which had
+  been pushing 1x1 bodies out of the card.
+- **Gallery** (`widgets-gallery.html`, scratch): `?family=a,b` library forms, `?forms&only=a,b&subject=dim|overall&axes=gender,tenure`
+  builder forms. Verified every library family (61 cards) and every builder form for both subjects: no errors, nothing spilling out of
+  its card except two untouched widgets — Focus List by Categories (more rows than the 2x2 holds) and Heat Map (table wider than 1x1) —
+  which are still open.
+- Not done: the "detailed view" (modal) the rules send overflow to doesn't exist; past a limit a widget shows what fits and "N more".
+  Head to head (two different measures on one graph) and Momentum were left as they are — the graph rules allow several lines only for
+  the *same* measure across groups.
+
+### Widget polish + the report catches up (follow-up pass)
+
+Product direction, standing rules from here on:
+- **Widget titles: never more than two lines, and the content wins.** `Header` (`primitives.jsx`) measures its own card (its
+  parent): if anything else in the card ends below the card's inner bottom edge, the title drops to one line (ellipsis, full
+  title on hover); it goes back to two only when a whole line of room appears, so it can't flicker. Works in every host that
+  renders `Header` as a direct child of the card (canvas, Library, Scope, builders, gallery).
+- **"N more" always sits at the foot of the widget** (as in Parts): `MoreLine` pins itself (`marginTop: auto`) by default.
+- **One footnote style** for a widget's bottom note — `Footnote` (`widgetParts.jsx`), What if's style (10.5px, gray500, 15px
+  lines), pinned to the bottom. Used by What if, Groups, Movers and Focus.
+- **Hovers on the chart widgets** — `ChartTip.jsx` (`useChartTip`): the Index tooltip's card, rendered into `document.body` at
+  the pointer so a card can't clip it. Bars (`HBars`/`VBars`, hit areas are the full row/column, others dim), tiles and
+  treemap tiles (value + share), and the line graph (hover a round's column: each line's score and change, a dashed guide).
+- **Areas to Focus (builder Focus 2x2)**: header → 12px → "The lowest-scoring groups across your organisation." → rows 12px
+  apart → footnote "Groups under 5 people are never shown." (was spread with `space-between` and an odd "each way of splitting
+  people" line). Library Focus List by Categories now shows 3 categories so its "N more" isn't cut off; the 1x1 Heat Map shows
+  overall + two Explorer columns (it ran past the card edge).
+- **Real bug: the Department icon never rendered** — `assets/axis-icons/department.svg` had a duplicated `d` attribute
+  (`d="Icon"` then the path), which is invalid XML, so it failed as a mask image everywhere (Composition rings, Diagnostic cards).
+
+**Applied to the main report (Org report Scope pane):**
+- **Stories: Current | Refined** switch in the Scope pane header — the same stored preference as the Widget Builder
+  (`widget-builder-story-style`), so choosing it in one place carries to the other. Refined spaces cards 20px apart.
+- **Recipes (`scopeRecipes.jsx`) now use the newer Stories**: Org Score adds What Changed, Within Reach and Priority Map; Org
+  Status adds How Scores Are Spread; Explorers adds What Changed and Priority Map; Factors adds Within Reach; Areas to Focus adds
+  Bright Spots and Where Gaps Are Widest. Old `TrendStory` replaced by the Trend forms: Explorer History / Weakest Drivers / Score
+  by Gender or Work Model → `ScoreOverTimeRows`, eNPS → `ENPSOverTime` (own −100…100 axis), Work-life Balance → `ScoreOverTime`.
+  Status Over Time keeps `TrendStory` — no newer form shows status shares round by round.
+- Widget-level changes (charts, hovers, titles) already reach the report: `WidgetCard` uses the shared bodies.
+- Not brought over: the builder's editing tools (outline rail, story toolbar, add-story menu, phone-width preview) — the report's
+  Scopes are fixed recipes, not editable; a builder widget added to the report keeps its Stories via `BuiltScope`.
+- Gallery gained `?scopes=a,b&style=refined` (render report Scopes directly) — used to check every changed recipe in both styles.
+
+### Widget hover + three-dot menu (Figma "Hovers" 15266:24599) and the Explorer rings (14531:20690)
+
+- **Hover** (`canvas/WidgetCard.jsx`): the card lifts — the md shadow (`dsShadow("md")`) and a 2px rise — and a 28px round
+  three-dot button (`dots-horizontal`, 4px padding) fades in 7px from the top-right corner. The old 3% grey wash and 14px dots
+  are gone (the older "dims the card ~3% on hover" note in Widget anatomy is superseded). **Press** (ours, per direction to make
+  it feel alive): a quick squash to 0.97 on pointer-down, released on a bouncy spring (bounce 0.45), then the Scope opens.
+  The card is two layers: the outer cell keeps the grid placement and native HTML5 drag (motion takes over `onDrag*` on its own
+  elements); the inner `motion.div` is the visible card. The header is now a direct child of the card (the dots float over the
+  corner), which also makes the two-line title rule measure the right element.
+- **Menu** (`canvas/WidgetMenu.jsx`): 220px, radius 12, md shadow, `surface/card` rows 36px tall (8/12, 20px icon, 10px gap, Text
+  sm): Change Widget (only when the family has another form), About Widget (opens the Scope / detail), then a `border/secondary`
+  hairline and Remove Widget in the destructive ghost colours. Opens just right of the card (3px), level with the dots
+  (`right-start`, crossAxis −33), portaled, flips/shifts on screen; Escape / outside click close it. The dots sit on
+  `ghost/bg/hover` when hovered and `ghost/bg/active` while open. Icons downloaded to `assets/widget-menu/` and drawn as masks.
+  **Rename and Edit with AI aren't in the frame** — kept as extra rows in the same style because they're working features;
+  drop them if the design is meant to be exactly three items. The Org Score card's eye icon in the frame isn't built (its
+  meaning isn't shown).
+- **Explorer rings** (`canvas/ExplorerRingCard.jsx`): 80px ring (8px stroke, `border/secondary` track, status `graph` arc, round
+  caps, 12 o'clock), the number Display sm 30/38 Bold in the status `text-indicator` colour (Figma's file names that token
+  `text-strong`), header box always two lines tall so every ring lines up. Character (ours): on arrival each arc sweeps to its
+  score on a spring while the number counts up, staggered 50ms per card; hover lifts the card and swells the ring 5%; press
+  squashes like the widgets. Reduced motion skips the sweep and count.
+
+### Report: protected width, minimal scrollbars, 2–6 columns, device preview (phone 14679:86632 + iPhone Duo)
+
+- **The report's 536px (344 grid + 2 × 32 card padding + 2 × 64 margin) is never compromised.** The sideways scroll when a
+  Scope opened came from the native vertical scrollbar eating ~15px of that width at the floor. Fix: **minimal overlay
+  scrollbars** — `scroll-minimal` (index.css) hides the native bar so it takes no width, and `ScrollThumb`
+  (`components/ui/MinimalScroll.jsx`) draws a 4px thumb, 3px from the edge, visible only while scrolling (fades ~0.8s after) or
+  hovering, draggable. Used by the report and the Scope pane (and the phone preview). Report scroller is also `overflowX: hidden`.
+- **Columns are 2, 3, 4, 5 or 6** (product direction — odd counts allowed now). `colsForWidth()` picks as many 164px columns
+  as fit; report grids use `grid-auto-flow: row dense` so a 2x2 never leaves a hole on an odd count. The Org report has a
+  designed widget order for 6, 5, 4, 3 and 2 columns (`App.jsx` `layouts`). Steps land at about 900 (3), 1,000 (4), 1,144 (5)
+  and 1,264px (6) of window with the rail collapsed. (Older notes saying "always even" / "6/4/2" are superseded.)
+- **Scope pane header** stays on one line: the title truncates, and the Stories switch drops its label under 560px.
+- **Device preview** (`canvas/DevicePreview.jsx`, prototype tool): a **Device** dropdown in the report's top bar
+  (`ReportHeader.jsx` `DeviceMenu`: Desktop / Phone / iPhone Duo). Rules read off the three Figma phone frames (375 / 402 / 440):
+  widgets never shrink (2 columns = 344); with S = (screen − 344)/2 per side, the card padding is S up to 32 (floored, so 15 at
+  375 — Figma's 375 card is 1px wider than the screen) and the outside margin is S − 32 (0 to 64) — the same sum gives the
+  desktop's 64 + 32 + 344. Phone top bar (44): menu, title (truncates), divider, persona, "…" — no round picker or Filter. Then
+  "Org Report ›" + Add Widget (28, 8px down), the card 16px below. **Scope on a phone is a sheet**: the report dims below the
+  top bar, the sheet's top sits 48px under it, top corners rounded, Stories 16px in, no expand or Stories switch; tap the dim to
+  close (`ScopePanel` `sheet` prop). Phone width picker 375 / 402 / 440 above the device. Device chrome (bezel, Dynamic
+  Island, 9:41 status bar, home indicator) is drawn, scaled down to fit the stage. Add Widget and Edit with AI switch back to
+  Desktop (the Library and chat panels live there).
+
+### iPhone Duo preview — rebuilt from Apple's guidance and the Duo References board
+
+Sources: Apple HIG "Designing for iPhone Duo", "Preparing your app for iPhone Duo", and the user's board (Figma
+`Z6YmEggwvoiX3j4d3kCKqV` node `2352:2764`: Do / Don't (10 rules), Layout guides, Adaptive Patterns, Templates, Examples). The
+first version (two phone screens on a hinge) was **wrong**: the iPhone Duo is a **foldable** with a compact **outer display
+(466 × 678)** used closed and one large **inner display (951 × 669)** that folds through its centre (fold 475.5pt from the edge).
+Facts worth keeping (board's Layout guides): outer trailing inset 84pt (vertical bar), inner portrait top 84 / bottom 95, inner
+landscape trailing 84, leading inset 0 everywhere; content margin 20; pane gap 16 outer / 24 inner; text max 600; fold takes no
+space flat, 27pt keep-clear band when partially folded; columns: outer 4/6, inner 6/8, partial book 4 + 4 (always even).
+- **`DuoPreview`** (`canvas/DevicePreview.jsx`), with a pose switch **Closed / Open / Half-folded** above the device.
+- **Vertical bar** on the trailing edge (84pt), same items in the same order in every pose ("keep control order stable"):
+  (outer camera) · 9:41 + status · navigation (Back out of a layer; **Close** for a Scope on the outer display) · the prominent
+  action **Add Widget** (accent circle) · toolbar pill (Share, the single "…" overflow) · the **tab bar** pill at the foot
+  (Chat, Reports active, Library — the nav rail's role). Icon-only, every item titled. The report header keeps only the title
+  and the persona menu (text items stay out of the vertical bar); the phone's menu / "…" / Add Widget buttons aren't shown.
+- **Closed**: the phone rules on 382pt of content (466 − 84) — 2 columns, card padding 19. A Scope covers the content like a
+  sheet with Close in the bar (`ScopePanel` `hideClose`).
+- **Open**: **master-detail meeting at the fold** (the board's Master Detail + Dashboard patterns; HIG split view): the report on
+  the leading half (0–475.5pt → exactly 2 columns with the desktop's 32pt card padding and 33pt margin), the selected widget's
+  Scope on the trailing half. Even split, so no widget straddles the fold; no Close (the detail pane always shows the selection);
+  arriving with nothing open shows the "Start here" Org Score Scope, otherwise a "Pick a widget" prompt.
+- **Half-folded**: the same layout (no rearranging), with the 27pt keep-clear band drawn at the fold; nothing interactive is in it.
+- **Task continuity**: selection, the Explorers layer and the report's scroll position carry across poses (`scrollMemo`).
+- Verified in-browser: all three poses, the Scope sheet + Close on the outer display, the band, scroll 300 kept Open → Closed → Open.
+
+**SHAPE is a web app, so on the Duo it lives inside Safari** (user direction, with screenshots of Safari and the Weather app
+on the Duo). The native vertical bar above is kept only as the **"App · Native bars"** variant; the Duo toolbar now has a
+**layout switch** (default **Safari · Dashboard**) next to the poses. `canvas/DuoSafari.jsx`; `MobileReport` was extracted to
+`canvas/MobileReport.jsx` (`onScrollY`, `topInset` props) so both files share it.
+- **Safari's chrome (inner display, from the screenshots):** one 64pt bar across the top — back + bookmarks pill, the address
+  pill centred (page menu · domain · reload), new tab + tabs pill, then 9:41 + Wi-Fi top-trailing; translucent (blur), the page
+  scrolls under it. **Scrolling down shrinks it to a small address pill** at the top centre; scrolling up or tapping the pill brings
+  it back (`useSafariChrome`). Outer display (no screenshot, inferred from the HIG's side-bar rule): Safari's controls in the 84pt
+  trailing bar, minimised to camera + time + one button. Home indicator drawn on the inner display.
+- **Safari · Split:** master-detail at the fold, each pane with the web app's own header (menu, title, Org, "…", Add Widget):
+  report on the leading half, the selected widget's Scope on the trailing half (the "Start here" Org Score Scope while nothing is
+  picked — shown, not opened). The panes scroll inside themselves, so their top follows the bar (64 → 40).
+- **Safari · Dashboard (after the Weather app):** no report card; the web app's small header (sidebar toggle; Org, +, "…"), a
+  centred hero ("ORG REPORT · ORG", the title, "57 | Struggling" in the band colour) over a soft wash of the status's bg colour,
+  then the widgets straight on the background in **two 2-column grids, one each side of the fold, meeting 24pt from it** (a 48pt
+  gutter, wider than the 27pt band), split by area so both halves weigh the same. **A tapped widget no longer opens a centred
+  sheet** (user: it felt like an iPad): the page (header, hero, widgets) gathers into the leading half on 2 columns, every widget
+  gliding to its new place, and the Scope slides in from the trailing edge into the trailing half (under Safari's bar; past the
+  fold band when half-folded). Closing it spreads the widgets back out. The outer display keeps the bottom sheet. The
+  page itself is the scroller here, so its top padding stays fixed while the bar shrinks — moving it caused a scroll feedback loop.
+- **Safari · Desktop:** the desktop report inside Safari. Under Safari's bar, the report's own `ReportTopBar` (title | Org … round,
+  Filter, "…") across the whole width, then the column with `ReportSubBar` ("Org Report ›" + Add Widget) and the report card on
+  **4 columns**: two either side of the fold with a **32pt gutter at the middle** (wider than the 27pt band), and a 2×2 only starts on
+  the 1st or 3rd column so nothing straddles the fold. Picking a widget gathers the report into the leading half on **2 columns** (card
+  34pt from the edge, as the phone rule gives at 475.5) and the Scope (the desktop `ScopePanel`, no expand) slides in from the trailing
+  edge into the trailing half, **tucked 8pt under the top bar** as on desktop. It stays two-pane while other widgets are picked; closing
+  the Scope spreads the report back to 4 columns. Closed, it uses the phone layout.
+- **Widgets glide, they don't snap** (Dashboard and Desktop): `pack()` places them by hand (a dense packer, `pairs` for the fold rule) and
+  each one springs to its x/y with a small stagger (`Glide`), the card's width and height spring with it. Not motion's `layout`: the
+  device preview is scaled to fit and measured layout animation drifts under a scaled parent. `TrailingScope` is the shared right pane.
+  `ScopePanel` now hides its expand button when no `onToggleExpand` is passed.
+- No device switch auto-opens a Scope any more (it covered the Dashboard); the split layouts show the "Start here" Scope in their
+  detail pane instead.
+- Verified in-browser: the bar shrinks on scroll down and returns on scroll up in both Safari variants with the scroll position kept,
+  the Dashboard hero and fold split, the half-folded sheet at 501–939pt (band ends at 489), closed Dashboard with the minimised side
+  bar, Explorers layer inside the Dashboard; no console errors.
+
 ## Status
 
 Chat-first architecture rebuild complete and verified end-to-end (landing → canvas with inline

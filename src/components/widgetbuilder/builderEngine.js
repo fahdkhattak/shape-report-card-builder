@@ -46,7 +46,8 @@ const vizLabel = (id) => formById(id)?.name || VIZ_OPTIONS.find((o) => o.id === 
 const sizeChip = (spec) => {
   const def = spec.vizType === "form" ? formById(spec.form) : null;
   if (!def) return null;
-  return spec.size === "1x1" && def.sizes.includes("2x2") ? "Make it bigger" : spec.size === "2x2" && def.sizes.includes("1x1") ? "Make it smaller" : null;
+  const sizes = spec.sizes || def.sizes;
+  return spec.size === "1x1" && sizes.includes("2x2") ? "Make it bigger" : spec.size === "2x2" && sizes.includes("1x1") ? "Make it smaller" : null;
 };
 /* Suggestions that fit what was just built — a few of the other cases, so it's clear what is possible. */
 function openingChips(built, subject) {
@@ -195,6 +196,8 @@ export function refine(text, built) {
     if (!isForm) return { reply: { text: "This widget type only comes in one size. Pick another widget type above for a 1×1 or 2×2." } };
     const def = formById(built.spec.form);
     if (!def.sizes.includes(asksSize)) return { reply: { text: `${def.name} only comes as ${def.sizes.join(" / ")}.` } };
+    // The form has the size, but this data doesn't fit it (the Graph / Chart rules in lib/insightRules.js).
+    if (built.spec.sizes && !built.spec.sizes.includes(asksSize)) return { reply: { text: `There's too much here to read at ${asksSize.replace("x", "×")}, so it stays ${built.spec.size.replace("x", "×")}.` } };
     if (built.spec.size === asksSize) return { reply: { text: `It's already ${asksSize}.` } };
     return { built: { ...built, spec: rebuildFormSpec(built.spec, subject, { size: asksSize }) }, reply: { text: `Made it ${asksSize}.` } };
   }

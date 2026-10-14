@@ -1,6 +1,7 @@
 import { LATEST, ROUNDS, ROUND_LABELS, EMPLOYEE_COUNT, participationRate } from "./dataset.js";
 import { LAST, ALL_AXES, groupRows, groupGaps, focusGroups, statusCountSeries, scoreSpread, statusOf, findGroups, groupSnapshot, groupPartMeans, GROUPS_BY_AXIS, pairLink, responseCoverage } from "./scopeData.js";
 import { FLOURISHING_AT, STRIVING_AT, nextLine, countByStatus } from "./bands.js";
+import { graphFit, chartSizes } from "./insightRules.js";
 
 /* ================================================================== */
 /* SUBJECT FORMS — the widget forms the Widget Builder can make for any  */
@@ -19,6 +20,10 @@ import { FLOURISHING_AT, STRIVING_AT, nextLine, countByStatus } from "./bands.js
 /*   blocked(subject)  a plain reason this subject can't support the form  */
 /*   sizes             the cards it can be drawn on                        */
 /*   options           what the person can tune (group axis, target)       */
+/*   fitSizes(payload) optional: the sizes this payload may be drawn at,   */
+/*                     per the Graph / Chart rules (lib/insightRules.js) —   */
+/*                     e.g. a composition of 8 groups can't be a 1x1. The    */
+/*                     spec carries the result as `sizes`.                  */
 /* ================================================================== */
 const r0 = Math.round;
 
@@ -53,7 +58,8 @@ function groupData(s, axisKey) {
   const richest = [...GROUP_AXES].sort((a, b) => visibleCount(b) - visibleCount(a))[0];
   const axis = GROUP_AXES.find((a) => a.key === axisKey) || richest;
   const all = groupRows(axis.key, LAST, s.scoreOf);
-  const rows = all.filter((g) => !g.hidden).sort((a, b) => b.score - a.score).slice(0, 6).map((g) => [g.group, g.score]);
+  // All groups big enough to show; the bars show up to 13 on a 2x2 and say how many more (chart rules).
+  const rows = all.filter((g) => !g.hidden).sort((a, b) => b.score - a.score).map((g) => [g.group, g.score]);
   return { axis: axis.key, axisLabel: axis.label, rows, hidden: all.filter((g) => g.hidden).length };
 }
 
@@ -119,6 +125,8 @@ export const FORMS = [
   {
     id: "history", name: "History", sizes: ["1x1", "2x2"], blocked: () => (ROUNDS.length < 2 ? "Needs at least two rounds" : null),
     title: (s) => `${nm(s)} History`,
+    // Graph rules: a 1x1 holds 2 to 3 points; more rounds than that must be a 2x2.
+    fitSizes: (p) => (graphFit(p.points.length) === "1x1" ? ["1x1", "2x2"] : ["2x2"]),
     why: "The score across every survey round, so a change over time is easy to see.",
     build: (s) => ({ ...base(s), points: s.series.slice(), labels: ROUND_LABELS }),
   },
@@ -155,6 +163,8 @@ export const FORMS = [
   {
     id: "composition", name: "Composition", sizes: ["1x1", "2x2"], blocked: () => null, options: ["axis"],
     title: (s, o) => `${compositionName(axisOf(o))} Composition`,
+    // Chart rules: a 1x1 holds up to 7 groups (tiles up to 4, a ring with the Largest Group line up to 7).
+    fitSizes: (p) => chartSizes("donut", p.rows.length),
     why: "Who is in the organisation: how people split across one way of grouping them, and which group is biggest. It describes the people, not the topic's score.",
     build: (s, o) => {
       const axis = axisOf(o);
@@ -178,7 +188,8 @@ export const FORMS = [
     },
   },
   {
-    id: "spread", name: "Spread", sizes: ["1x1", "2x2"], blocked: needsScores,
+    // Ten bands of ten points: past the vertical-bar 1x1 limit (4), so 2x2 only.
+    id: "spread", name: "Spread", sizes: ["2x2"], blocked: needsScores,
     title: (s) => `${nm(s)} Spread`,
     why: "How many people sit at each score, not just the average — the same average can hide two very different groups.",
     build: (s) => ({ ...base(s), ...scoreSpread(s.scoreOf) }),
@@ -400,11 +411,14 @@ export const axisFromText = (t) => Object.entries(AXIS_WORDS).find(([, re]) => r
 /* ---- building a spec ------------------------------------------------------ */
 export function buildFormSpec(formId, subject, { size, options } = {}) {
   const def = formById(formId);
-  const sz = def.sizes.includes(size) ? size : def.sizes.includes(def.defaultSize?.(subject)) ? def.defaultSize(subject) : def.sizes[0];
   const opts = { ...(options || {}) };
   const payload = def.build(subject, opts);
+  // The sizes this data may be drawn at (the rules can rule out a 1x1); a size that no longer fits grows to the next one.
+  const sizes = def.fitSizes ? def.sizes.filter((x) => def.fitSizes(payload).includes(x)) : def.sizes;
+  const pick = (x) => (sizes.includes(x) ? x : null);
+  const sz = pick(size) || (size === "1x1" && pick("2x2")) || pick(def.defaultSize?.(subject)) || sizes[0];
   const title = def.title(subject, opts);
-  return { vizType: "form", form: formId, size: sz, title, autoTitle: title, options: opts, payload, explanation: def.why, real: true };
+  return { vizType: "form", form: formId, size: sz, sizes, title, autoTitle: title, options: opts, payload, explanation: def.why, real: true };
 }
 
 /* Re-make a spec after a change of form / size / option, keeping a title the person typed. */
@@ -412,6 +426,7 @@ export function rebuildFormSpec(prev, subject, change) {
   const form = change.form || prev.form;
   const def = formById(form);
   const carriedSize = change.size || prev.size;
+  // buildFormSpec checks the carried size against what this data allows and grows it if needed.
   const size = def.sizes.includes(carriedSize) ? carriedSize : def.sizes[def.sizes.length - 1];
   // Options carry across forms (the group you picked for a Team widget is still the group for a Versus one).
   const options = { ...(prev.options || {}), ...(change.options || {}) };

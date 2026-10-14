@@ -1,3 +1,4 @@
+import { useRef, useState, useLayoutEffect } from "react";
 import { Users } from "lucide-react";
 import { ds } from "../../lib/ds.js";
 import { T, font, band, rand } from "../../lib/tokens.js";
@@ -26,12 +27,46 @@ import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../lib/bands.js";
    scores). Never text, never a color/urgency cue — just enough for anyone
    who looks closely to notice and hover; nothing that reads as "broken"
    or "wrong" for what's otherwise a perfectly normal-looking widget. */
+/* Title rule (product direction): never more than two lines, at any size. And the content comes first — if a
+   second line would push the widget's content past the bottom of its card, the title drops to one line (with an
+   ellipsis; the full title is on hover). The header measures its own card (its parent): the lowest point of
+   everything else in it against the card's inner bottom edge. It returns to two lines only when there's clearly a
+   line's worth of room, so it can't flicker between the two. */
+const TITLE_LINE = 14;
 export function Header({ title, estimated }) {
+  const ref = useRef(null);
+  const [lines, setLines] = useState(2);
+  useLayoutEffect(() => {
+    const head = ref.current, card = head?.parentElement;
+    if (!card) return undefined;
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const cs = getComputedStyle(card);
+        const inner = card.getBoundingClientRect().bottom - parseFloat(cs.paddingBottom || 0) - parseFloat(cs.borderBottomWidth || 0);
+        let lowest = -Infinity;
+        for (const el of card.querySelectorAll("*")) {
+          if (head.contains(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width && r.height) lowest = Math.max(lowest, r.bottom);
+        }
+        if (lowest === -Infinity) return;
+        const over = lowest - inner;
+        const text = head.firstChild;
+        const wantsTwo = text && text.scrollHeight > TITLE_LINE + 2; // the title would actually use a second line
+        setLines((l) => (l === 2 && over > 1 ? 1 : l === 1 && wantsTwo && over < -(TITLE_LINE + 2) ? 2 : l));
+      });
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(card);
+    [...card.children].forEach((c) => c !== head && ro.observe(c));
+    return () => { ro.disconnect(); cancelAnimationFrame(frame); };
+  }, [title]);
   return (
-    <div style={{ display: "flex", alignItems: "center", minHeight: 13, gap: 5 }}>
-      {/* Wraps (not ellipsis) — the design lets a long header such as
-          "Physical Health Score" run to a second line in a 1x1. */}
-      <span style={{ fontSize: 11, fontWeight: 500, lineHeight: "14px", letterSpacing: "0.11px", textTransform: "uppercase", color: T.gray200 }}>
+    <div ref={ref} data-part="widget-header" data-lines={lines} style={{ display: "flex", alignItems: "center", minHeight: 13, gap: 5, flexShrink: 0 }}>
+      <span title={typeof title === "string" ? title : undefined} style={{ fontSize: 11, fontWeight: 500, lineHeight: `${TITLE_LINE}px`, letterSpacing: "0.11px", textTransform: "uppercase", color: T.gray200, display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
         {title}
       </span>
       {estimated && (

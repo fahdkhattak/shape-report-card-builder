@@ -20,11 +20,12 @@ export default function WidgetOptions({ built, subject, onChange }) {
   const apply = (change) => onChange(changeSpec(built, subject, change));
   const rows = [];
 
-  if (def.sizes.length > 1) {
+  const sizes = spec.sizes || def.sizes; // what this data allows (lib/insightRules.js), not just what the form has
+  if (sizes.length > 1) {
     rows.push(
       <div key="size" style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ ...label, width: 64 }}>Size</span>
-        <SegmentedControl options={def.sizes.map((s) => ({ id: s, label: s.replace("x", "×") }))} value={spec.size} onChange={(size) => apply({ size })} />
+        <SegmentedControl options={sizes.map((s) => ({ id: s, label: s.replace("x", "×") }))} value={spec.size} onChange={(size) => apply({ size })} />
       </div>
     );
   }

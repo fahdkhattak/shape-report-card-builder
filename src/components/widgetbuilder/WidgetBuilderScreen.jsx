@@ -27,7 +27,7 @@ export default function WidgetBuilderScreen(props) {
     try { localStorage.setItem(VERSION_KEY, v); } catch { /* storage unavailable */ }
   };
   // How the Scope's Stories are drawn: "classic" (the original cards) or "refined" (the redesign).
-  // Only this screen provides it, so the report's own Scope pane is never affected.
+  // The report's Scope pane reads and writes the same stored preference (ScopePanel.jsx).
   const [storyStyle, setStoryStyle] = useState(() => {
     try { return localStorage.getItem(STYLE_KEY) || "classic"; } catch { return "classic"; }
   });

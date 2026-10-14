@@ -95,3 +95,9 @@ body {
 
 /* Actions layer: Driver nav rows tint on hover (the open row keeps its own fill). */
 .driver-nav-item:not([aria-current]):hover { background: var(--ds-color-button-brand-ghost-bg-hover) !important; }
+
+/* ---- Minimal overlay scrollbar (components/ui/MinimalScroll.jsx) ----
+   The native scrollbar is hidden (it took ~15px of layout width — enough to push the report under its 536px floor
+   and scroll it sideways); a 4px thumb drawn on top shows while scrolling or hovering and fades away after. */
+.scroll-minimal { scrollbar-width: none; -ms-overflow-style: none; }
+.scroll-minimal::-webkit-scrollbar { display: none; width: 0; height: 0; }

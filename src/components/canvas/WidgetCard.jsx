@@ -1,21 +1,37 @@
 import { useState } from "react";
-import { MoreHorizontal, Shuffle, Edit3, Sparkles, Trash2, ArrowDown } from "lucide-react";
+import { motion } from "motion/react";
+import { ArrowDown } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
+import { dsShadow } from "../../lib/ds.js";
 import { familyById, formTitle, cardSurface, nextFormIndex } from "../../lib/families.js";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
 import { Header } from "../widgets/primitives.jsx";
 import { sizeToSpan, pxForSpan } from "./gridLayout.js";
-import MenuRow from "./MenuRow.jsx";
+import { DotsButton, WidgetMenu } from "./WidgetMenu.jsx";
 
 /* ================================================================== */
 /* WIDGET CARD (canvas instance) — handles both kinds:                 */
 /* library-sourced (fixed family/form) and generated (chat spec).      */
+/*                                                                      */
+/* Hover (Figma "Hovers" 15266:24599): the card lifts — the md shadow    */
+/* and a 2px rise — and the three-dot button fades in at its top-right   */
+/* corner; the menu opens beside the card (WidgetMenu.jsx).               */
+/* Press: a quick squash (0.97) on pointer-down, released on a slightly   */
+/* bouncy spring, so the card feels like it gives and springs back before */
+/* its Scope opens. Reduced motion is honoured globally (MotionConfig).   */
+/* Two layers: the outer cell owns the grid placement and native HTML5     */
+/* drag-and-drop (motion would take over onDrag* handlers on its own       */
+/* elements); the inner motion layer is the card you see.                 */
 /* ================================================================== */
+const LIFT = { type: "spring", bounce: 0.3, duration: 0.35 };
+const PRESS = { type: "spring", bounce: 0.45, duration: 0.4 };
+
 export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onRename, dragProps, onOpenModal, selected = false, startHere = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [hover, setHover] = useState(false);
+  const [cardEl, setCardEl] = useState(null);
   const isLib = widget.kind === "library";
   const family = isLib ? familyById(widget.familyId) : null;
   const size = isLib ? family.forms[widget.formIndex].size : widget.spec.size;
@@ -23,37 +39,45 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
   const defaultTitle = isLib ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title;
   const surface = isLib ? cardSurface(widget.familyId, widget.formIndex) : {};
   const title = widget.customTitle || defaultTitle;
+  const canChange = isLib && nextFormIndex(widget.familyId, widget.formIndex) !== widget.formIndex;
+  const raised = hover || menuOpen || selected;
 
   return (
     <div
       {...dragProps}
-      onClick={() => onOpenModal(widget)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        gridColumn: `span ${span.col}`,
-        gridRow: `span ${span.row}`,
-        width: pxForSpan(span.col),
-        height: pxForSpan(span.row),
-        background: surface.background || T.white,
-        border: `1px solid ${selected ? T.gray500 : surface.borderColor || T.gray100}`,
-        boxShadow: selected ? "0 1px 2px rgba(0,0,0,0.14), 0 3px 3px rgba(0,0,0,0.07), 0 6px 4px rgba(0,0,0,0.05)" : "none",
-        borderRadius: radius.widget,
-        padding: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        position: "relative",
-        cursor: "pointer",
-        boxSizing: "border-box",
-      }}
+      style={{ gridColumn: `span ${span.col}`, gridRow: `span ${span.row}`, width: pxForSpan(span.col), height: pxForSpan(span.row), position: "relative", zIndex: menuOpen ? 5 : undefined }}
     >
-      {startHere && (
-        <span style={{ position: "absolute", top: -11, left: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 4, background: T.gray900, color: T.white, fontSize: 11, lineHeight: "16px", padding: "2px 8px 2px 6px", borderRadius: radius.sm, pointerEvents: "none" }}>
-          <ArrowDown size={11} />Start here
-        </span>
-      )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <motion.div
+        ref={setCardEl}
+        onClick={() => !renaming && onOpenModal(widget)}
+        onHoverStart={() => setHover(true)}
+        onHoverEnd={() => setHover(false)}
+        initial={false}
+        animate={{ y: raised && !selected ? -2 : 0 }}
+        whileTap={renaming ? undefined : { scale: 0.97, y: 0, transition: { duration: 0.08 } }}
+        transition={PRESS}
+        style={{
+          width: "100%", height: "100%",
+          background: surface.background || T.white,
+          border: `1px solid ${selected ? T.gray500 : surface.borderColor || T.gray100}`,
+          boxShadow: raised ? dsShadow("md") : "0 0 0 rgba(0,0,0,0)",
+          transition: "box-shadow 200ms ease, border-color 200ms ease",
+          borderRadius: radius.widget,
+          padding: 16,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          position: "relative",
+          cursor: "pointer",
+          boxSizing: "border-box",
+        }}
+      >
+        {startHere && (
+          <span style={{ position: "absolute", top: -11, left: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 4, background: T.gray900, color: T.white, fontSize: 11, lineHeight: "16px", padding: "2px 8px 2px 6px", borderRadius: radius.sm, pointerEvents: "none" }}>
+            <ArrowDown size={11} />Start here
+          </span>
+        )}
+        {/* The header is a direct child of the card, so it can measure the card (two lines only when the content has room). */}
         {renaming ? (
           <input
             autoFocus
@@ -61,34 +85,26 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
             onClick={(e) => e.stopPropagation()}
             onBlur={(e) => { onRename(widget.id, e.target.value.trim() || title); setRenaming(false); }}
             onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
-            style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.11px", textTransform: "uppercase", color: T.gray700, border: `1px solid ${T.accent}`, borderRadius: 4, padding: "1px 4px", width: "100%", fontFamily: font }}
+            style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.11px", textTransform: "uppercase", color: T.gray700, border: `1px solid ${T.accent}`, borderRadius: 4, padding: "1px 4px", width: "100%", boxSizing: "border-box", fontFamily: font }}
           />
         ) : (
           <Header title={title} estimated={!isLib && widget.spec.real === false} />
         )}
-        {(hover || menuOpen) && (
-          <button onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 2, borderRadius: 6, color: T.gray500, flexShrink: 0 }}>
-            <MoreHorizontal size={14} />
-          </button>
-        )}
-      </div>
 
-      {isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
+        {isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
 
-      {(hover || menuOpen) && (
-        <div style={{ position: "absolute", inset: 0, background: T.gray800, opacity: 0.03, borderRadius: radius.widget, pointerEvents: "none" }} />
-      )}
-
-      {menuOpen && (
-        <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 34, right: 10, background: T.white, border: `1px solid ${T.gray75}`, borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", padding: 6, zIndex: 20, width: 190 }}>
-          {isLib && nextFormIndex(widget.familyId, widget.formIndex) !== widget.formIndex && (
-            <MenuRow icon={<Shuffle size={13} />} label="Change widget" onClick={() => { onChangeForm(widget.id); setMenuOpen(false); }} />
-          )}
-          <MenuRow icon={<Edit3 size={13} />} label="Rename" onClick={() => { setRenaming(true); setMenuOpen(false); }} />
-          <MenuRow icon={<Sparkles size={13} />} label="Edit with AI" onClick={() => { onEdit(widget.id); setMenuOpen(false); }} />
-          <MenuRow icon={<Trash2 size={13} />} label="Remove" danger onClick={() => { onRemove(widget.id); setMenuOpen(false); }} />
-        </div>
-      )}
+        <DotsButton open={menuOpen} visible={hover} onToggle={() => setMenuOpen((v) => !v)} />
+      </motion.div>
+      <WidgetMenu
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        anchor={cardEl}
+        onChange={canChange ? () => onChangeForm(widget.id) : null}
+        onAbout={() => onOpenModal(widget)}
+        onRename={() => setRenaming(true)}
+        onEdit={() => onEdit(widget.id)}
+        onRemove={() => onRemove(widget.id)}
+      />
     </div>
   );
 }

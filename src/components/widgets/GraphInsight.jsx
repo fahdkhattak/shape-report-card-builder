@@ -3,6 +3,8 @@ import { font } from "../../lib/tokens.js";
 import { ds, dsText, dsSpace } from "../../lib/ds.js";
 import { TrendPill } from "./primitives.jsx";
 import { useElementWidth } from "../scope/stories/storyWidth.js";
+import { GRAPH_LIMITS } from "../../lib/insightRules.js";
+import { useChartTip } from "./ChartTip.jsx";
 
 /* ================================================================== */
 /* GRAPH INSIGHT WIDGET — change over time (specification board         */
@@ -22,14 +24,8 @@ import { useElementWidth } from "../scope/stories/storyWidth.js";
 /* Tick labels 11px Regular text/quaternary 6px off the line; x labels    */
 /* 11px Medium text/quaternary, 10px under the graph.                     */
 /* ================================================================== */
-export const GRAPH_LIMITS = { "1x1": { points: 3, lines: 1 }, "2x2": { points: 7, lines: 3 } };
-
-/* Which size a graph with this many points and lines must be: "1x1", "2x2", or "detail" (the modal). */
-export function graphFit(points, lines = 1, wanted = "1x1") {
-  if (points > GRAPH_LIMITS["2x2"].points || lines > GRAPH_LIMITS["2x2"].lines) return "detail";
-  if (wanted === "2x2" || points > GRAPH_LIMITS["1x1"].points || lines > GRAPH_LIMITS["1x1"].lines) return "2x2";
-  return "1x1";
-}
+/* Limits (points and lines per size) live in lib/insightRules.js, shared with the Widget Builder's sizing. */
+export { GRAPH_LIMITS, graphFit } from "../../lib/insightRules.js";
 
 const INTERVAL = 28;
 const PAD_TOP = 8, X_LABEL_GAP = 10, X_LABEL_H = 14, EDGE = 8, TICK_W = 24;
@@ -51,6 +47,10 @@ export function GraphLine({ series, labels, size = "1x1", benchmark }) {
   const x = (i) => (n === 1 ? plotW / 2 : EDGE + (i * (plotW - 2 * EDGE)) / (n - 1));
   const y = (v) => PAD_TOP + (1 - Math.max(0, Math.min(100, v)) / 100) * plotH;
   const H = PAD_TOP + plotH + X_LABEL_GAP + X_LABEL_H;
+  // Hover a round's column (the whole height, not just the 8px marker): that round's score for each line and its
+  // change since the round before; the hovered markers grow and a hairline marks the round.
+  const tip = useChartTip();
+  const on = tip.active?.i;
   const bColour = benchmark ? (benchmark.positive === false ? ds.status.error.graph : ds.status.success.graph) : null;
   return (
     <div ref={ref} data-part="graph" style={{ display: "flex", width: "100%", fontFamily: font }}>
@@ -70,12 +70,18 @@ export function GraphLine({ series, labels, size = "1x1", benchmark }) {
           return (
             <g key={li}>
               <polyline points={l.points.map((p, i) => `${x(i)},${y(p)}`).join(" ")} fill="none" stroke={c} strokeWidth="1" strokeLinejoin="miter" strokeLinecap="round" />
-              {l.points.map((p, i) => <circle key={i} cx={x(i)} cy={y(p)} r="4" fill={c} stroke="#fff" strokeWidth="1"><title>{`${l.label ? `${l.label}, ` : ""}${xs[i]}: ${p}`}</title></circle>)}
+              {l.points.map((p, i) => <circle key={i} cx={x(i)} cy={y(p)} r={on === i ? 5 : 4} fill={c} stroke="#fff" strokeWidth="1" />)}
             </g>
           );
         })}
+        {on != null && <line x1={x(on)} x2={x(on)} y1={PAD_TOP} y2={PAD_TOP + plotH} stroke={ds.border.strong} strokeWidth="1" strokeDasharray="2 2" pointerEvents="none" />}
+        {xs.map((_, i) => {
+          const left = i === 0 ? 0 : (x(i - 1) + x(i)) / 2, right = i === n - 1 ? plotW : (x(i) + x(i + 1)) / 2;
+          return <rect key={`hit-${i}`} x={left} y="0" width={Math.max(0, right - left)} height={PAD_TOP + plotH + X_LABEL_GAP} fill="transparent" {...tip.bind({ i, head: xs[i], rows: lines.map((l, li) => ({ label: l.label || "Score", value: l.points[i], delta: i > 0 ? l.points[i] - l.points[i - 1] : null, color: LINE_COLOURS[li], score: true })) })} />;
+        })}
         {xs.map((l, i) => <text key={i} x={x(i)} y={PAD_TOP + plotH + X_LABEL_GAP + 11} textAnchor="middle" fontSize="11" fontWeight="500" fontFamily={font} fill={ds.text.quaternary}>{l}</text>)}
       </svg>
+      {tip.node}
     </div>
   );
 }
@@ -85,9 +91,18 @@ export default function GraphInsight({ series, labels, size = "1x1", delta, benc
   const big = size === "2x2";
   const several = series.length > 1;
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: big ? dsSpace[12] : dsSpace[8], minHeight: 0 }}>
-      {delta != null && <div style={{ display: "flex", justifyContent: big ? "center" : "flex-end" }}><TrendPill delta={delta} compact={!big} /></div>}
-      <GraphLine series={series} labels={labels} size={size} benchmark={big ? benchmark : null} />
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: big ? dsSpace[12] : dsSpace[8], minHeight: 0, justifyContent: big ? "flex-start" : "flex-end" }}>
+      {big && delta != null && <div style={{ display: "flex", justifyContent: "center" }}><TrendPill delta={delta} /></div>}
+      {/* 1x1: the graph's height is fixed by the rules and a two-line title leaves no room for a pill row, so the caret
+          pill sits inside the plot's right corner, above the latest point — at the bottom instead when that point is
+          high (70+, the pill covers the band above about 78), so it never covers the line. */}
+      <div style={{ position: "relative" }}>
+        <GraphLine series={series} labels={labels} size={size} benchmark={big ? benchmark : null} />
+        {!big && delta != null && (() => {
+          const last = series[0].points[series[0].points.length - 1];
+          return <div style={{ position: "absolute", right: 0, ...(last >= 70 ? { bottom: 30 } : { top: 0 }) }}><TrendPill delta={delta} compact /></div>;
+        })()}
+      </div>
       {big && several && (
         <div style={{ display: "flex", gap: dsSpace[12], flexWrap: "wrap" }}>
           {series.slice(0, 3).map((s, i) => (

@@ -3,14 +3,14 @@ import {
   BigNumber,
   TrendPill,
   DriverGroupedList,
-  MiniBarChart,
-  Sparkline,
   StatusRing,
   ScatterMini,
   RadarChart,
   Gauge,
 } from "./primitives.jsx";
 import SubjectBody from "./SubjectBody.jsx";
+import GraphInsight from "./GraphInsight.jsx";
+import { HBars } from "./ChartInsight.jsx";
 
 /* ================================================================== */
 /* GENERATED WIDGET BODY RENDERER (chat-generated)                     */
@@ -18,6 +18,7 @@ import SubjectBody from "./SubjectBody.jsx";
 /* ================================================================== */
 export default function GeneratedBody({ spec }) {
   const { vizType, payload } = spec;
+  const size = spec.size === "1x1" ? "1x1" : "2x2";
   switch (vizType) {
     // Forms made by the Widget Builder (lib/subjectForms.js) — built from the Library's own parts.
     case "form":
@@ -33,19 +34,18 @@ export default function GeneratedBody({ spec }) {
         </div>
       );
     }
-    case "trend":
-      return (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
-          <TrendPill delta={payload.points[payload.points.length - 1] - payload.points[payload.points.length - 2]} />
-          <Sparkline points={payload.points} xLabels={payload.points.map((_, i) => `R${i + 1}`)} />
-        </div>
-      );
+    case "trend": {
+      // Graph rules: fixed 0–100 scale, change pill, 1x1 shows the last 3 rounds, 2x2 up to 7.
+      const pts = payload.points, d = pts[pts.length - 1] - pts[pts.length - 2];
+      return <GraphInsight series={[{ points: pts }]} labels={pts.map((_, i) => `R${i + 1}`)} size={size} delta={d} />;
+    }
     case "bar":
       return (
         <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
           {/* Topics compared on one 0–100 score scale: colour = the score's own status band
               (the same 60/80 thresholds as everywhere else), never a different hue per bar. */}
-          <MiniBarChart rows={payload.rows} colors={payload.byStatus ? payload.rows.map((r) => band(r[1]).c) : [T.teamBlue, T.hotPink, T.goldenYellow, T.lavender, T.turquoise]} />
+          {/* Chart rules, horizontal bars: 0–100 scale, 1x1 2 to 5 categories, 2x2 up to 13. */}
+          <HBars size={size} values={size === "2x2"} rows={payload.rows.map((r, i) => ({ label: r[0], value: r[1], color: payload.byStatus ? band(r[1]).c : [T.teamBlue, T.hotPink, T.goldenYellow, T.lavender, T.turquoise][i % 5] }))} />
         </div>
       );
     case "ranking":

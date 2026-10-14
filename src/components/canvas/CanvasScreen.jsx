@@ -17,6 +17,8 @@ import { LATEST, DIMENSIONS, dimensionValue } from "../../lib/dataset.js";
 import Button from "../ui/Button.jsx";
 import mascotAvatar from "../../assets/mascot-avatar.svg";
 import { CELL, GAP, colsForWidth } from "./gridLayout.js";
+import { ScrollThumb } from "../ui/MinimalScroll.jsx";
+import DevicePreview from "./DevicePreview.jsx";
 
 // Placeholder shapes shown in the grid while a report is generating —
 // ported from the retired GeneratingScreen.jsx (see CLAUDE.md for why that
@@ -81,6 +83,8 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   const areaRef = useRef(null);
   const [areaW, setAreaW] = useState(1200); // everything right of the nav rail
   const [chatExpanded, setChatExpanded] = useState(false);
+  // Report only: preview the report on a phone or an iPhone Duo (DevicePreview.jsx). Desktop is the real layout.
+  const [device, setDevice] = useState("desktop");
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -90,7 +94,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [libCollapsed, chatOpen, scopeId, scopeExpanded, scopeCustomW, report]);
+  }, [libCollapsed, chatOpen, scopeId, scopeExpanded, scopeCustomW, report, device]); // device: the report remounts when a preview closes
 
   useEffect(() => {
     const el = mainRef.current, area = areaRef.current;
@@ -101,7 +105,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
     ro.observe(el);
     ro.observe(area);
     return () => ro.disconnect();
-  }, []);
+  }, [device]); // the main column remounts when a device preview closes
 
   useEffect(() => {
     if (!scopeId) return;
@@ -147,6 +151,12 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   // layer deeper, to the 12 Explorers (Figma 984qJvMt7fCHASYHRwgrab,
   // 14531:9772); each Explorer then opens its own Scope. Changing layer closes
   // any open Scope. The Explorer cards aren't user widgets: they're a view.
+  // Switching device keeps what's open (the Duo's split layouts show the "Start here" widget's Scope in their detail
+  // pane while nothing is picked — see DevicePreview / DuoSafari — without opening anything).
+  const chooseDevice = (d) => {
+    setDevice(d);
+    setChatOpen(false); setChatExpanded(false); setLibCollapsed(true); setScopeExpanded(false);
+  };
   const enterLayer = () => { closeScope(); setReportLayer("explorers"); };
   const exitLayer = () => { closeScope(); setReportLayer(null); };
   const openWidget = (w) => (report && w.kind === "library" && w.familyId === "explorers" ? enterLayer() : openScope(w));
@@ -191,6 +201,9 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
         return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
       })
     : widgets;
+  // The phone shows 2 columns, in the report's own 2-column order.
+  const mobileOrder = report?.layouts?.[2];
+  const mobileWidgets = mobileOrder ? [...widgets].sort((a, b) => { const ia = mobileOrder.indexOf(a.familyId), ib = mobileOrder.indexOf(b.familyId); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); }) : widgets;
   const scopeWidget = scopeId ? widgets.find((w) => w.id === scopeId) || explorerCards.find((w) => w.id === scopeId) || null : null;
   // The Scope's cards top out at 808px (+96px padding each side = 1000px), so
   // once the Scope has that much, every extra pixel goes to the report (min 536).
@@ -227,9 +240,22 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
       <div ref={areaRef} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {report && (
           <div style={{ background: T.gray50, flexShrink: 0 }}>
-            <ReportTopBar title={report.title} persona={report.persona} roundLabel={`Round ${LATEST.round}`} />
+            <ReportTopBar title={report.title} persona={report.persona} roundLabel={`Round ${LATEST.round}`} device={device} onDeviceChange={chooseDevice} />
           </div>
         )}
+        {report && device !== "desktop" ? (
+          <DevicePreview
+            device={device}
+            report={report}
+            items={reportLayer === "explorers" ? explorerCards : mobileWidgets}
+            layer={reportLayer ? { label: "Explorers", onExit: exitLayer } : null}
+            scopeWidget={scopeWidget}
+            onOpen={(w) => (w.kind === "explorer" ? openScope(w) : openWidget(w))}
+            onCloseScope={closeScope}
+            onAddWidget={() => { setDevice("desktop"); openLibrary(); }}
+            cardHandlers={{ onChangeForm: changeForm, onEdit: (id) => { setDevice("desktop"); startEdit(id); }, onRemove: removeWidget, onRename: renameWidget }}
+          />
+        ) : (
         <div style={{ flex: 1, minHeight: 0, display: "flex", background: report ? T.gray50 : T.white }}>
       <AnimatePresence mode="wait">
         {chatOpen ? (
@@ -276,17 +302,18 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
             onDragOver={(e) => { e.preventDefault(); if (dragData.current?.type === "library") setDragOverCanvas(true); }}
             onDragLeave={onCanvasDragLeave}
             onDrop={onCanvasDrop}
-            style={{ flex: 1, overflow: "auto", padding: report ? "40px 64px" : 28, background: T.gray50 }}
+            className="scroll-minimal"
+            style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: report ? "40px 64px" : 28, background: T.gray50 }}
           >
             <div style={{ background: T.white, borderRadius: radius.reportCard, padding: 32, border: `1px solid ${T.gray100}`, boxShadow: "0 22px 6px rgba(0,0,0,0.01), 0 14px 6px rgba(0,0,0,0.02), 0 8px 5px rgba(0,0,0,0.07), 0 3px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14)", width: gridWidth + 64, margin: report ? "0 auto" : undefined, boxSizing: "border-box" }}>
               <AnimatePresence mode="wait" initial={false}>
                 {generating ? (
-                  <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gap: GAP, width: gridWidth }}>
+                  <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
                     {SKELETON_LAYOUT.map((s, i) => <SkeletonWidgetCard key={i} size={s.size} variant={s.variant} />)}
                   </motion.div>
                 ) : reportLayer === "explorers" ? (
-                  <motion.div key="explorers-layer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gap: GAP, width: gridWidth }}>
-                    {explorerCards.map((w) => <ExplorerRingCard key={w.id} name={w.dimension} value={w.value} selected={w.id === scopeId} onClick={() => openScope(w)} />)}
+                  <motion.div key="explorers-layer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
+                    {explorerCards.map((w, i) => <ExplorerRingCard key={w.id} index={i} name={w.dimension} value={w.value} selected={w.id === scopeId} onClick={() => openScope(w)} />)}
                   </motion.div>
                 ) : widgets.length === 0 ? (
                   <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ width: gridWidth, height: 344, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.gray300, background: dragOverCanvas ? T.gray50 : "transparent", border: dragOverCanvas ? "none" : `2px dashed ${T.gray100}`, borderRadius: radius.widget, gap: 8, transition: "background 120ms ease" }}>
@@ -294,7 +321,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
                     <span style={{ fontSize: 12.5 }}>Drag a widget here, or ask the mascot</span>
                   </motion.div>
                 ) : (
-                  <motion.div key="widgets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gap: GAP, width: gridWidth }}>
+                  <motion.div key="widgets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
                     {displayWidgets.map((w) => (
                       <div key={w.id} onDragOver={(e) => e.preventDefault()} onDrop={() => onWidgetDrop(w.id)} style={{ display: "contents" }}>
                         <WidgetCard widget={w} onChangeForm={changeForm} onEdit={startEdit} onRemove={removeWidget} onRename={renameWidget} onOpenModal={report ? openWidget : setModalWidget} selected={w.id === scopeId} startHere={!!report && w.familyId === "org-score"} dragProps={{ draggable: true, onDragStart: () => onWidgetDragStart(w.id) }} />
@@ -312,6 +339,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
               </AnimatePresence>
             </div>
           </div>
+          <ScrollThumb target={scrollRef} />
           </div>
           </div>
           <AnimatePresence>
@@ -343,6 +371,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
         </div>
       </div>
         </div>
+        )}
       </div>
 
       {/* The mascot trigger no longer needs to shift position when chat

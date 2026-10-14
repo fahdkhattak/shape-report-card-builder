@@ -1,4 +1,4 @@
-import { T } from "../../lib/tokens.js";
+import { T, band } from "../../lib/tokens.js";
 import { ds } from "../../lib/ds.js";
 import {
   BigNumber,
@@ -8,21 +8,19 @@ import {
   DriverGroupedList,
   driverTier,
   Sparkline,
-  MiniBarChart,
-  Treemap,
   StatusRing,
   StatusRipple,
-  MoneyComposition,
 } from "./primitives.jsx";
 import {
   fmtDate, statusOf, STATUS_COLOR, TEAM_BLUE, date11, muted11,
   StatusChip, Headcount, ScoreHeadline, GroupCounts, MoreLine,
   SeverityRow, DistributionRow, SupportButton, AgeNumber, AgeScale,
-  CompareRow, CompareIcons, LockedBody, HeatTable, PopularTreemap, HistoryChart,
-  FocusRow, GroupBars,
+  CompareRow, CompareIcons, LockedBody, HeatTable, HistoryChart,
+  FocusRow,
 } from "./widgetParts.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import GraphInsight from "./GraphInsight.jsx";
+import { HBars, TileGrid, Treemap } from "./ChartInsight.jsx";
 import {
   ROUNDS, LATEST, PREVIOUS, ROUND_LABELS, DIMENSIONS, delta,
   dimensionRankedRows, driverRankedRows, dimensionValue, driverValue, driverTrend, DIMENSION_DRIVERS,
@@ -33,6 +31,7 @@ import { FLOURISHING_AT, countByStatus } from "../../lib/bands.js";
 
 const GENDER_COLORS = { Male: T.teamBlue, Female: T.hotPink, Other: T.goldenYellow, "Prefer not to respond": T.gray300 };
 const WORK_MODEL_COLORS = { Onsite: T.orgBlue, Remote: T.teamBlue, Hybrid: T.mintGreen };
+const MONEY_COLORS = { Productivity: T.personalBlue, Absenteeism: "#0074bc", Retention: "#26a69a", "Injury/Claims": T.lavender };
 
 /* ================================================================== */
 /* FIXED-FAMILY WIDGET BODY (Library-sourced)                          */
@@ -310,7 +309,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         return (
           <div style={col({ gap: 6, overflow: "hidden" })}>
             {areas.slice(0, 3).map((g) => <FocusRow key={g.axis + g.group} name={g.group} value={g.value} />)}
-            {areas.length > 3 && <MoreLine>{areas.length - 3} more Areas</MoreLine>}
+            {areas.length > 3 && <MoreLine bottom>{areas.length - 3} more Areas</MoreLine>}
           </div>
         );
       }
@@ -318,9 +317,9 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         const CATEGORIES = [["People", ["Gender"]], ["Organisation", ["Department", "Job Level"]], ["Employment", ["Tenure", "Employment Status", "Work Model"]], ["Locations", ["Location"]]];
         return (
           <div style={col({ gap: 12, overflow: "hidden" })}>
-            {CATEGORIES.map(([title, axes]) => {
+            {/* Three categories fit a 2x2; the rest are counted in "N more" at the foot. */}
+            {CATEGORIES.filter(([, axes]) => groups.some((x) => axes.includes(x.axis))).slice(0, 3).map(([title, axes]) => {
               const g = groups.find((x) => axes.includes(x.axis));
-              if (!g) return null;
               return (
                 <div key={title} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: 13, lineHeight: "16px", fontWeight: 400, color: ds.text.accent }}>{title}</span>
@@ -329,15 +328,16 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
               );
             })}
             {(() => {
-              const shown = CATEGORIES.filter(([, axes]) => groups.some((x) => axes.includes(x.axis))).length;
+              const shown = Math.min(3, CATEGORIES.filter(([, axes]) => groups.some((x) => axes.includes(x.axis))).length);
               const more = groups.filter((g) => g.value < FLOURISHING_AT).length - shown;
-              return more > 0 ? <MoreLine>{more} more Areas</MoreLine> : null;
+              return more > 0 ? <MoreLine bottom>{more} more Areas</MoreLine> : null;
             })()}
           </div>
         );
       }
-      const rows = groups.filter((g) => g.axis === "Department").map((g) => [g.group, g.value]);
-      return <GroupBars rows={rows} />;
+      // Chart rules, horizontal bars (Comparison): one 0–100 scale, 2x2 up to 13 groups, value labels in the bar's colour.
+      const rows = groups.filter((g) => g.axis === "Department").map((g) => ({ label: g.group, value: g.value, color: band(g.value).c }));
+      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="2x2" values noun="departments" /></div>;
     }
 
     case "heat-map": {
@@ -353,22 +353,25 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
 
     /* ---- Explorer Results ---- */
     case "avg-gender": {
-      const genderScores = avgScoreByGender();
-      const rows = genderScores.map(([g, v]) => [g === "Prefer not to respond" ? "Prefer.." : g, v]);
-      const colors = genderScores.map(([g]) => GENDER_COLORS[g]);
-      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><MiniBarChart rows={rows} colors={colors} /></div>;
+      // Chart rules, horizontal bars (Comparison): 1x1 holds 2 to 5 categories on a fixed 0–100 scale; labels truncate
+      // with the full name in the tooltip. No value labels at 1x1 (the 48px value area would leave a 26px plot).
+      const rows = avgScoreByGender().map(([g, v]) => ({ label: g, value: v, color: GENDER_COLORS[g] }));
+      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="1x1" values={false} noun="groups" /></div>;
     }
     case "avg-work-model": {
-      const rows = avgScoreByWorkModel();
-      const colors = rows.map(([w]) => WORK_MODEL_COLORS[w]);
-      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><MiniBarChart rows={rows} colors={colors} /></div>;
+      const rows = avgScoreByWorkModel().map(([w, v]) => ({ label: w, value: v, color: WORK_MODEL_COLORS[w] }));
+      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="1x1" values={false} noun="groups" /></div>;
     }
     case "popular-responses":
       // No free-text theme data in the generated dataset (survey's open-text
       // questions weren't modeled) — the design's own sample tiles.
-      if (formIndex === 1)
-        return <PopularTreemap tiles={[["Ergonomics", 18, T.personalBlue], ["Office Environment", 16, T.amberOrange], ["Technology", 14, T.lavender], ["Furniture", 12, T.mintGreen], ["Lighting", 5, T.goldenYellow], ["", 3, "#ff6b6b"], ["", 2, "#26a69a"]]} />;
-      return <div style={{ flex: 1 }}><Treemap tiles={[["Ergonomics", 18], ["", 16], ["", 14]]} /></div>;
+      // Chart rules, treemap (Composition): value-proportional tiles, 1x1 exactly 3, 2x2 3 to 7. The 1x1 shows the
+      // three largest of the same sample, so the two sizes agree.
+      {
+        const themes = [["Ergonomics", 18, T.personalBlue], ["Office Environment", 16, T.amberOrange], ["Technology", 14, T.lavender], ["Furniture", 12, T.mintGreen], ["Lighting", 5, T.goldenYellow], ["", 3, "#ff6b6b"], ["", 2, "#26a69a"]]
+          .map(([label, value, color]) => ({ label, value, color }));
+        return formIndex === 1 ? <Treemap rows={themes} size="2x2" /> : <Treemap rows={themes.slice(0, 3)} size="1x1" />;
+      }
 
     /* ---- Score over time ---- */
     case "score-history": {
@@ -498,7 +501,8 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       // No monetary figures exist in the generated dataset (the survey doesn't
       // model cost), so — like Popular Responses — this shows the Figma
       // mockup's own sample values rather than invented ones.
-      return <MoneyComposition items={[["Productivity", 26], ["Absenteeism", 4], ["Retention", 13], ["Injury/Claims", 22]]} />;
+      // Chart rules, compact grid (Composition): `$26K` tiles over a proportion bar; 1x1 holds up to 4.
+      return <TileGrid size="1x1" format={(v) => `$${v}K`} rows={[["Productivity", 26], ["Absenteeism", 4], ["Retention", 13], ["Injury/Claims", 22]].map(([label, value]) => ({ label, value, color: MONEY_COLORS[label] }))} />;
 
     /* ---- Support ---- */
     case "support-nudge":

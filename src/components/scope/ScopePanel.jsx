@@ -14,6 +14,14 @@ import ScopeRecipe, { hasRecipe, ExplorerScope } from "./scopeRecipes.jsx";
 import BuiltScope from "../widgetbuilder/BuiltScope.jsx";
 import { ScopeNavContext } from "./scopeNav.js";
 import { useLayerStack, LayerBody, Breadcrumb } from "./layers.jsx";
+import { StoryStyleContext } from "./stories/storyStyle.js";
+import { ScrollThumb } from "../ui/MinimalScroll.jsx";
+import { StoryStyleToggle } from "../widgetbuilder/StoryStyleToggle.jsx";
+
+/* The Story style ("Current" cards or the "Refined" redesign) is one preference shared with the Widget Builder:
+   the same storage key, so choosing it in either place carries over. */
+const STYLE_KEY = "widget-builder-story-style";
+const readStyle = () => { try { return localStorage.getItem(STYLE_KEY) || "classic"; } catch { return "classic"; } };
 
 const ZOOMS = [50, 75, 100, 125];
 const DEFAULT_ZOOM = 75;
@@ -95,11 +103,16 @@ export function scopeTitle(widget) {
   return widget.customTitle || (widget.kind === "library" ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title);
 }
 
-export default function ScopePanel({ widget, width, expanded, onToggleExpand, onClose }) {
+/* `sheet`: the phone layout (Figma "Mobile Behavior Scope" 14679:86632) — the Scope rises as a sheet over the dimmed
+   report: top corners rounded, Stories 16px from the edges, no expand (it's already full width). */
+// `hideClose`: the iPhone Duo keeps Close in its vertical bar (outer display) or has none (the inner display's detail pane).
+export default function ScopePanel({ widget, width, expanded, onToggleExpand, onClose, sheet = false, hideClose = false }) {
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [storyStyle, setStoryStyle] = useState(readStyle);
+  const chooseStyle = (v) => { setStoryStyle(v); try { localStorage.setItem(STYLE_KEY, v); } catch { /* storage unavailable */ } };
   // Stories shrink to 344px (24px side padding) before anything else; once they hit
   // their 808px cap the padding grows instead, up to 96px at the 1000px maximum.
-  const padX = width <= 856 ? 24 : Math.min(96, (width - 808) / 2);
+  const padX = sheet ? 16 : width <= 856 ? 24 : Math.min(96, (width - 808) / 2);
 
   // Layers: a Story can open a deeper layer (Actions) — see layers.jsx. Opening
   // one scrolls to the top; coming back restores where you were. Esc steps back
@@ -116,17 +129,18 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
   }, [layers.depth]);
 
   return (
-    <div style={{ width: "100%", height: "100%", background: T.white, borderTopLeftRadius: radius.widget, borderBottomLeftRadius: radius.widget, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: font }}>
-      <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 32px", background: T.white }}>
+    <div style={{ width: "100%", height: "100%", background: T.white, borderTopLeftRadius: radius.widget, borderBottomLeftRadius: sheet ? 0 : radius.widget, borderTopRightRadius: sheet ? radius.widget : 0, display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: font }}>
+      <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: sheet ? "0 12px 0 20px" : "0 12px 0 32px", background: T.white }}>
         {layers.layer ? (
           <Breadcrumb rootTitle={scopeTitle(widget)} layer={layers.layer} onBack={layers.pop} onRoot={layers.reset} />
         ) : (
-          <span style={{ fontSize: 14, fontWeight: 700, color: T.gray700, lineHeight: "20px" }}>{scopeTitle(widget)}</span>
+          <span title={scopeTitle(widget)} style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: T.gray700, lineHeight: "20px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{scopeTitle(widget)}</span>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginLeft: 12 }}>
+          {!sheet && <StoryStyleToggle value={storyStyle} onChange={chooseStyle} compact={width < 560} />}
           <ZoomMenu zoom={zoom} onChange={setZoom} />
-          <Button theme="brand" variation="ghost" size="xs" iconLeft={expanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />} onClick={onToggleExpand} title={expanded ? "Back to report" : "Expand"} style={{ width: 28, height: 28, padding: 0 }} />
-          <Button theme="brand" variation="ghost" size="xs" iconLeft={<X size={20} />} onClick={onClose} title="Close" style={{ width: 28, height: 28, padding: 0 }} />
+          {!sheet && onToggleExpand && <Button theme="brand" variation="ghost" size="xs" iconLeft={expanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />} onClick={onToggleExpand} title={expanded ? "Back to report" : "Expand"} style={{ width: 28, height: 28, padding: 0 }} />}
+          {!hideClose && <Button theme="brand" variation="ghost" size="xs" iconLeft={<X size={20} />} onClick={onClose} title="Close" style={{ width: 28, height: 28, padding: 0 }} />}
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
@@ -137,16 +151,19 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
         aria-hidden
         style={{ position: "absolute", top: 0, left: 0, right: 0, height: 40, zIndex: 3, pointerEvents: "none", background: `linear-gradient(${T.white}, ${T.white}00)` }}
       />
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: `48px ${padX}px` }}>
+      <div ref={scrollRef} className="scroll-minimal" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: sheet ? `24px ${padX}px 48px` : `48px ${padX}px` }}>
         <ScopeNavContext.Provider value={nav}>
-        <div style={{ zoom: zoom / DEFAULT_ZOOM, display: "flex", flexDirection: "column", gap: 16, maxWidth: 808, margin: "0 auto" }}>
+        <StoryStyleContext.Provider value={storyStyle}>
+        <div style={{ zoom: zoom / DEFAULT_ZOOM, display: "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16, maxWidth: 808, margin: "0 auto" }}>
           {layers.layer && <LayerBody layer={layers.layer} />}
           <div style={{ display: layers.depth ? "none" : "contents" }}>
           {widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
           </div>
         </div>
+        </StoryStyleContext.Provider>
         </ScopeNavContext.Provider>
       </div>
+      <ScrollThumb target={scrollRef} />
       </div>
     </div>
   );

@@ -112,7 +112,9 @@ export default function App() {
         // Figma nodes 11070:9301 and 14463:13793 (keyed by familyId).
         layouts: {
           6: ["org-score", "org-status", "explorers", "enps", "score-history", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition"],
+          5: ["org-score", "org-status", "explorers", "score-history", "enps", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition"],
           4: ["org-score", "explorers", "org-status", "score-history", "enps", "time-impact", "areas-focus", "money-composition", "popular-responses", "avg-gender", "avg-work-model"],
+          3: ["org-score", "org-status", "score-history", "explorers", "enps", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition"],
           2: ["org-score", "org-status", "score-history", "time-impact", "enps", "money-composition", "areas-focus", "explorers", "avg-work-model", "popular-responses", "avg-gender"],
         },
       },

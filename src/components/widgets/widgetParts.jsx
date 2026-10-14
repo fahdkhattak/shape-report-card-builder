@@ -118,8 +118,15 @@ function MiniPeople({ color }) {
   return <Users size={12} color={color} strokeWidth={2.2} />;
 }
 
-export function MoreLine({ children }) {
-  return <span style={{ fontSize: 11, color: ds.text.tertiary, borderLeft: `2px solid ${ds.border.strong}`, padding: "0 6px", lineHeight: "12px" }}>{children}</span>;
+export function MoreLine({ children, bottom = true }) {
+  // Pinned to the foot of the widget by default (as in Parts), never stacked straight under a short list.
+  return <span style={{ fontSize: 11, color: ds.text.tertiary, borderLeft: `2px solid ${ds.border.strong}`, padding: "0 6px", lineHeight: "12px", ...(bottom ? { marginTop: "auto", alignSelf: "flex-start" } : {}) }}>{children}</span>;
+}
+
+/* The small explanatory note at the foot of a widget ("Plain arithmetic…", "Groups under 5 people aren't shown.").
+   One style everywhere (the What if widget's): 10.5px, text/tertiary grey, 15px lines, pinned to the bottom. */
+export function Footnote({ children }) {
+  return <span style={{ fontSize: 10.5, color: T.gray500, lineHeight: "15px", marginTop: "auto" }}>{children}</span>;
 }
 
 /* ---- Mental well-being ---------------------------------------------- */
@@ -245,11 +252,12 @@ export function HeatTable({ rows }) {
           <div key={dept} style={{ display: "flex", borderBottom: `1px solid ${T.gray75}` }}>
             <span style={{ width: 40, flexShrink: 0, fontSize: 10, lineHeight: "20px", color: T.gray700, padding: "0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: `1px solid ${T.gray75}` }}>{dept}</span>
             <span style={{ ...cell, color: band(overall).cs, border: "none" }}>{overall}</span>
-            {vals.map((v, i) => <span key={i} style={{ ...cell, background: HEAT(v).bg, color: HEAT(v).c }}>{v}</span>)}
+            {/* A 1x1 is 132px wide: the 40px name and the overall column leave room for two 30px cells. */}
+            {vals.slice(0, 2).map((v, i) => <span key={i} style={{ ...cell, background: HEAT(v).bg, color: HEAT(v).c }}>{v}</span>)}
           </div>
         ))}
       </div>
-      <MoreLine>More</MoreLine>
+      <MoreLine bottom>More</MoreLine>
     </div>
   );
 }

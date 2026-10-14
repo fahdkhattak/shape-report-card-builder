@@ -4,11 +4,12 @@ import {
   TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, StatusRing, StatusRipple, RadarChart, polar, ScoreDial,
 } from "./primitives.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
-import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, GroupBars, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
+import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, Footnote, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
 import { FLOURISHING_AT, STRIVING_AT, statusName, nextLine } from "../../lib/bands.js";
 import { ds } from "../../lib/ds.js";
 import GraphInsight from "./GraphInsight.jsx";
-import DonutChart, { segmentColor } from "../scope/stories/DonutChart.jsx";
+import { segmentColor } from "../scope/stories/DonutChart.jsx";
+import { HBars, VBars, TileGrid, DonutInsight } from "./ChartInsight.jsx";
 
 /* ================================================================== */
 /* SUBJECT BODY — draws the widget forms in lib/subjectForms.js.         */
@@ -216,62 +217,29 @@ function PeopleForm({ p, size }) {
 }
 
 /* ---- Groups ---------------------------------------------------------------- */
+/* Chart rules, horizontal bars (Comparison): one 0–100 scale, 2x2 up to 13 groups ("N more" past that), value labels
+   in the bar's colour. Bars are coloured by the score's status band, the same as every other score in the product. */
 function GroupsForm({ p }) {
+  const rows = p.rows.map(([label, value]) => ({ label, value, color: band(value).c }));
   return (
     <div style={col({ gap: 8, justifyContent: "space-between" })}>
-      <div style={{ display: "flex", flexDirection: "column", height: Math.min(236, p.rows.length * 34 + 22) }}><GroupBars rows={p.rows} /></div>
-      <span style={{ ...muted11, fontSize: 10 }}>{p.axisLabel}{p.hidden ? ` · ${p.hidden} group${p.hidden === 1 ? "" : "s"} under 5 people not shown` : ""}</span>
+      <HBars rows={rows} size="2x2" values noun="groups" />
+      <Footnote>Average score by {p.axisLabel.toLowerCase()}.{p.hidden ? ` ${p.hidden} group${p.hidden === 1 ? "" : "s"} under 5 people aren't shown.` : ""}</Footnote>
     </div>
   );
 }
 
-/* ---- Composition (Figma 11318:27838 and the 1x1s beside it) ----------------------- */
-/* Who is in the organisation: a ring of one grouping with the axis icon and name inside and "Largest Group …" under it
-   (2x2); a few groups on a 1x1 are headcount tiles over a proportion bar, many groups a small ring and the same line. */
-const largestText = (p) => (p.largest ? `${p.largest.group} (${p.largest.pct}%)` : "No one to show");
-const quiet12 = { fontSize: 11, lineHeight: "12px", color: ds.text.quaternary };
+/* ---- Composition (Figma 11318:27838; chart rules: compact grid / donut) ---------------------------------------------
+   Who is in the organisation, as parts of a whole. 1x1: up to 4 groups are headcount tiles over a proportion bar; 5 to 7
+   a bare ring with the Largest Group callout; more than 7 can't be a 1x1 (the builder grows it, see subjectForms.js).
+   2x2: the ring with the axis icon and name inside, the callout, and a three-column legend while it stays readable. */
 function CompositionForm({ p, size }) {
   const rows = p.rows;
   if (!rows.length) return <span style={muted11}>No one to show yet.</span>;
-  if (size === "2x2") {
-    return (
-      <div style={col({ alignItems: "center", gap: 6 })}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
-          <DonutChart axisKey={p.axis} label={p.axisLabel} rows={rows} size={180} />
-        </div>
-        <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
-          <span style={quiet12}>Largest Group</span>
-          <span style={quiet12}>{largestText(p)}</span>
-        </div>
-      </div>
-    );
+  if (size === "1x1" && rows.length <= 4) {
+    return <TileGrid size="1x1" rows={rows.map((r, i) => ({ label: r.group, value: r.n, color: segmentColor(p.axis, i) }))} />;
   }
-  if (rows.length <= 4) {
-    return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-          {rows.map((r, i) => (
-            <div key={r.group} title={`${r.group}: ${r.n} people (${r.pct}%)`} style={{ minWidth: 0, borderLeft: `2px solid ${segmentColor(p.axis, i)}`, padding: "2px 0 2px 6px", display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ fontSize: 11, lineHeight: "12px", color: ds.text.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.group}</span>
-              <span style={{ fontSize: 16, lineHeight: "20px", fontWeight: 700, color: ds.text.primary, fontVariantNumeric: "tabular-nums" }}>{r.n}</span>
-            </div>
-          ))}
-        </div>
-        <div role="img" aria-label={rows.map((r) => `${r.group} ${r.pct}%`).join(", ")} style={{ display: "flex", gap: 1, height: 8, borderRadius: 9999, overflow: "hidden" }}>
-          {rows.map((r, i) => <span key={r.group} style={{ flex: r.n, background: segmentColor(p.axis, i) }} />)}
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div style={col({ alignItems: "center", gap: 6 })}>
-      <DonutChart axisKey={p.axis} label={p.name} rows={rows} size={75} bare />
-      <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
-        <span style={quiet12}>Largest Group</span>
-        <span style={{ ...quiet12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{largestText(p)}</span>
-      </div>
-    </div>
-  );
+  return <DonutInsight axisKey={p.axis} label={size === "1x1" ? p.name : p.axisLabel} rows={rows} size={size === "1x1" ? "1x1" : "2x2"} legend={size !== "1x1"} />;
 }
 
 /* ---- Focus ----------------------------------------------------------------- */
@@ -294,9 +262,10 @@ function FocusForm({ p, size }) {
     );
   }
   return (
-    <div style={col({ gap: 14, justifyContent: "space-between" })}>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>The lowest-scoring group on each way of splitting people. Groups under 5 people are never shown.</span>
+    <div style={col({ gap: 12 })}>
+      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>The lowest-scoring groups across your organisation.</span>
       {rows.map((g) => <FocusRow key={`${g.axis}-${g.group}`} name={g.group} value={g.score} tag={g.axis} delta={g.change ?? undefined} sub={`${g.struggling} of ${g.n} people are struggling`} />)}
+      <Footnote>Groups under 5 people are never shown.</Footnote>
     </div>
   );
 }
@@ -328,42 +297,18 @@ function MoversForm({ p, size }) {
     <div style={col({ gap: 18 })}>
       {list("Biggest gains", T.greenStrong, gains, "Nothing has risen.")}
       {list("Biggest drops", T.redStrong, drops, "Nothing has dropped.")}
-      <span style={{ ...muted11, fontSize: 10, marginTop: "auto" }}>Change in score since the last round, by {p.noun.toLowerCase()}.</span>
+      <Footnote>Change in score since the last round, by {p.noun.toLowerCase()}.</Footnote>
     </div>
   );
 }
 
 /* ---- Spread ---------------------------------------------------------------- */
-function Bars({ bins, h }) {
-  const max = Math.max(...bins.map((b) => b.n), 1);
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: h }}>
-      {bins.map((b) => <div key={b.from} title={`${b.from}–${b.to}: ${b.n}`} style={{ flex: 1, height: Math.max(b.n ? 3 : 0, (b.n / max) * h), borderRadius: "2px 2px 0 0", background: band(b.from + 5).c }} />)}
-    </div>
-  );
-}
-function SpreadForm({ p, size }) {
-  if (size === "1x1") {
-    return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <Bars bins={p.bins} h={54} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 22, fontWeight: 700, lineHeight: 1, color: band(p.median).cs }}>{p.median}</span>
-          <span style={{ ...muted11, fontSize: 10 }}>middle score</span>
-        </div>
-      </div>
-    );
-  }
+function SpreadForm({ p }) {
+  const rows = p.bins.map((b) => ({ label: String(b.from), tipLabel: `Scored ${b.from}–${b.to}`, value: b.n, text: `${b.n} ${b.n === 1 ? "person" : "people"}`, color: band(b.from + 5).c }));
   return (
     <div style={col({ justifyContent: "space-between" })}>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>Where each of the <B>{p.total}</B> people landed, ten points per bar.</span>
-      <div>
-        <Bars bins={p.bins} h={150} />
-        <div style={{ height: 1, background: T.gray100 }} />
-        <div style={{ position: "relative", height: 14, marginTop: 4, fontSize: 9, color: T.gray300 }}>
-          {[[0, "0"], [STRIVING_AT, String(STRIVING_AT)], [FLOURISHING_AT, String(FLOURISHING_AT)], [100, "100"]].map(([at, t], i, a) => <span key={t} style={{ position: "absolute", left: `${at}%`, transform: i === 0 ? "none" : i === a.length - 1 ? "translateX(-100%)" : "translateX(-50%)" }}>{t}</span>)}
-        </div>
-      </div>
+      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>How many of the <B>{p.total}</B> people scored in each band of ten points.</span>
+      <VBars rows={rows} size="2x2" />
       <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>Half of people score between <B>{p.p25}</B> and <B>{p.p75}</B>. The middle score is <B c={band(p.median).cs}>{p.median}</B>.</span>
     </div>
   );
@@ -661,7 +606,7 @@ function WhatIfForm({ p }) {
           ))}
         </div>
       )}
-      <span style={{ fontSize: 10.5, color: T.gray500, lineHeight: "15px" }}>Plain arithmetic: the score is the average of its {p.n} {p.noun.toLowerCase()}s. It shows what lifting them would add up to — not a prediction that it will happen.</span>
+      <Footnote>Plain arithmetic: the score is the average of its {p.n} {p.noun.toLowerCase()}s. It shows what lifting them would add up to — not a prediction that it will happen.</Footnote>
     </div>
   );
 }
@@ -689,7 +634,7 @@ function HeatForm({ p }) {
           ))}
         </div>
       ))}
-      {capped && <MoreLine>{all.length - rows.length} more {p.noun}s</MoreLine>}
+      {capped && <MoreLine bottom>{all.length - rows.length} more {p.noun}s</MoreLine>}
     </div>
   );
 }

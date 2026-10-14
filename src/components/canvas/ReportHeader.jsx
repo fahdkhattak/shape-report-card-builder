@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronLeft, ChevronRight, ChevronDown, Calendar, SlidersHorizontal, MoreHorizontal, BarChart3, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Calendar, SlidersHorizontal, MoreHorizontal, BarChart3, Plus, Monitor, Smartphone, Columns2 } from "lucide-react";
 import { useFloating, offset, flip, shift, autoUpdate, FloatingPortal, useDismiss, useInteractions } from "@floating-ui/react";
 import { T, font, radius } from "../../lib/tokens.js";
 import Button from "../ui/Button.jsx";
@@ -20,7 +20,7 @@ const PERSONAS = ["Personal", "Team", "Org"];
 /* round, there's no per-round data threading yet); Filter and "..." are  */
 /* inert — no filter model or report-actions exist anywhere in this app.  */
 /* ================================================================== */
-function GhostBtn({ children, icon, iconRight, disabled, style, ...rest }) {
+export function GhostBtn({ children, icon, iconRight, disabled, style, ...rest }) {
   return (
     <Button theme="brand" variation="ghost" size="xs" iconLeft={icon} iconRight={iconRight} disabled={disabled} style={{ height: 36, padding: children ? "8px 16px" : 8, ...style }} {...rest}>
       {children}
@@ -28,7 +28,7 @@ function GhostBtn({ children, icon, iconRight, disabled, style, ...rest }) {
   );
 }
 
-function PersonaMenu({ persona }) {
+export function PersonaMenu({ persona }) {
   const [open, setOpen] = useState(false);
   const { refs, floatingStyles, context } = useFloating({ open, onOpenChange: setOpen, placement: "bottom-start", middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 })], whileElementsMounted: autoUpdate });
   const dismiss = useDismiss(context, { outsidePressEvent: "mousedown" });
@@ -71,7 +71,7 @@ function PersonaMenu({ persona }) {
   );
 }
 
-export function ReportTopBar({ title, persona, roundLabel }) {
+export function ReportTopBar({ title, persona, roundLabel, device, onDeviceChange }) {
   return (
     <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 32px", background: T.white, flexShrink: 0, fontFamily: font }}>
       <div style={{ display: "flex", alignItems: "center", gap: 17 }}>
@@ -85,10 +85,62 @@ export function ReportTopBar({ title, persona, roundLabel }) {
           <GhostBtn icon={<Calendar size={20} />} disabled style={{ opacity: 1, color: "#3a3737" }}>{roundLabel}</GhostBtn>
           <GhostBtn icon={<ChevronRight size={20} />} disabled title="Only the latest round is available" />
         </div>
+        {onDeviceChange && <DeviceMenu device={device} onChange={onDeviceChange} />}
         <GhostBtn icon={<SlidersHorizontal size={20} />}>Filter</GhostBtn>
         <GhostBtn icon={<MoreHorizontal size={20} />} />
       </div>
     </div>
+  );
+}
+
+/* Device preview (prototype tool): view the report as it lays out on a desktop, a phone, or an iPhone Duo — see
+   DevicePreview.jsx for the rules. Same menu shell as the persona menu. */
+export const DEVICES = [
+  { id: "desktop", label: "Desktop", icon: Monitor },
+  { id: "phone", label: "Phone", icon: Smartphone },
+  { id: "duo", label: "iPhone Duo", icon: Columns2 },
+];
+export function DeviceMenu({ device, onChange }) {
+  const [open, setOpen] = useState(false);
+  const { refs, floatingStyles, context } = useFloating({ open, onOpenChange: setOpen, placement: "bottom-end", middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 })], whileElementsMounted: autoUpdate });
+  const dismiss = useDismiss(context, { outsidePressEvent: "mousedown" });
+  const { getFloatingProps } = useInteractions([dismiss]);
+  const cur = DEVICES.find((d) => d.id === device) || DEVICES[0];
+  const Icon = cur.icon;
+  return (
+    <>
+      <span ref={refs.setReference} style={{ display: "inline-flex" }}>
+        <GhostBtn icon={<Icon size={20} />} iconRight={<ChevronDown size={16} />} onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} title="Preview the report on a device">{cur.label}</GhostBtn>
+      </span>
+      <FloatingPortal>
+        <AnimatePresence>
+          {open && (
+            <div ref={refs.setFloating} {...getFloatingProps()} style={{ ...floatingStyles, zIndex: 100 }}>
+              <motion.div
+                role="menu"
+                initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} transition={POP_SPRING}
+                style={{ transformOrigin: "top right", width: 180, background: T.gray25, borderRadius: radius.lg, padding: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.14), 0 4px 4px rgba(0,0,0,0.1), 0 10px 6px rgba(0,0,0,0.06)", fontFamily: font, boxSizing: "border-box" }}
+              >
+                {DEVICES.map((d) => {
+                  const I = d.icon;
+                  return (
+                    <button
+                      key={d.id} role="menuitemradio" aria-checked={d.id === device}
+                      onClick={() => { onChange(d.id); setOpen(false); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", padding: "8px 12px", borderRadius: radius.sm, fontSize: 14, fontFamily: font, color: T.gray900, fontWeight: d.id === device ? 700 : 400 }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = T.gray75; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <I size={18} color={T.gray700} />{d.label}
+                    </button>
+                  );
+                })}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </FloatingPortal>
+    </>
   );
 }
 

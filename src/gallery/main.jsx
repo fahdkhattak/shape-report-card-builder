@@ -7,8 +7,10 @@ import { FORMS, buildFormSpec } from "../lib/subjectForms.js";
 import { overallSubject, dimensionSubject } from "../lib/scopeSubject.js";
 import { T, radius } from "../lib/tokens.js";
 import "../lib/ds.js";
+import ScopeRecipe from "../components/scope/scopeRecipes.jsx";
+import { StoryStyleContext } from "../components/scope/stories/storyStyle.js";
 
-/* Scratch: ?family=a,b (library forms) or ?forms&only=a,b&subject=dim|overall (builder forms). */
+/* Scratch: ?scopes=a,b&style=refined (report Scopes) · ?family=a,b (library forms) or ?forms&only=a,b&subject=dim|overall&axes=gender,tenure (builder forms; axes repeats each form per grouping). */
 const params = new URLSearchParams(location.search);
 const PX = { "1x1": 164, "2x2": 344, "3x3": 524 };
 const Card = ({ id, size, surface = {}, title, children }) => (
@@ -20,13 +22,22 @@ const Card = ({ id, size, surface = {}, title, children }) => (
   </div>
 );
 let cells;
-if (params.has("forms")) {
+if (params.has("scopes")) {
+  // ?scopes=enps,explorers&style=refined — each family's report Scope, as the Scope pane draws it.
+  cells = params.get("scopes").split(",").map((id) => (
+    <div key={id} data-scope={id} style={{ width: 808, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ fontSize: 12, color: "#888" }}>{id}</div>
+      <StoryStyleContext.Provider value={params.get("style") || "classic"}><ScopeRecipe familyId={id} /></StoryStyleContext.Provider>
+    </div>
+  ));
+} else if (params.has("forms")) {
   const subject = params.get("subject") === "dim" ? dimensionSubject("Corporate Culture") : overallSubject();
   const only = params.get("only")?.split(",");
-  cells = FORMS.filter((f) => (!only || only.includes(f.id)) && !f.blocked(subject)).flatMap((f) => f.sizes.map((size) => {
-    const spec = buildFormSpec(f.id, subject, { size });
-    return <Card key={f.id + size} id={`${f.id}:${size}`} size={spec.size} title={spec.title}><GeneratedBody spec={spec} /></Card>;
-  }));
+  const axes = params.get("axes")?.split(",") || [undefined];
+  cells = FORMS.filter((f) => (!only || only.includes(f.id)) && !f.blocked(subject)).flatMap((f) => axes.flatMap((axis) => f.sizes.map((size) => {
+    const spec = buildFormSpec(f.id, subject, { size, options: axis ? { axis } : {} });
+    return <Card key={f.id + size + axis} id={`${f.id}:${size}${axis ? `:${axis}` : ""}`} size={spec.size} title={spec.title}><GeneratedBody spec={spec} /></Card>;
+  })));
 } else {
   const q = params.get("family");
   cells = FAMILIES.filter((f) => !q || q.split(",").includes(f.id)).flatMap((f) => f.forms.map((form, i) => (
