@@ -116,7 +116,3 @@ body {
 .sh-row { transition: background 120ms ease; }
 .sh-row:hover { background: var(--ds-color-interactive-ghost-hover); }
 .sh-row:focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: 1px; }
-/* Round strip tiles (HistoryCards.jsx). */
-.round-tile { transition: background 140ms ease, box-shadow 140ms ease; }
-.round-tile:not([aria-selected="true"]):hover { background: var(--ds-color-interactive-ghost-hover); }
-.round-tile:focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: 1px; }

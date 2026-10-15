@@ -657,12 +657,26 @@ very bottom) and Explorers by Status was "a big chunk of RAG" (three tinted bloc
   with the ticks once on top and soft gridlines, a hollow dot for before and a solid status-coloured dot for now; no tooltip, no
   chevron column (the numbers are on every row; the whole row tints on hover, `.sh-row`). Phone: track under the name line, a
   single hairline instead of gridlines, five rows then Show all. Desktop shows 12 before Show all (45 Drivers on Factors).
-  **A New | Previous switch** (pill tabs in the Story's controls, chart view only, remembered in `score-history-style`, default
-  New) brings back the layout from before this pass: `ScoreHistoryClassic.jsx` (`ClassicHistoryCards` + `ClassicChanges`), i.e.
-  the separate round cards and the 0–100 dumbbell with right-aligned names, change pills, hover tooltip, and its phone layout.
-  Selection and the expanded row are shared; switching closes an open row.
+  **Then, per direction, the card mixes the two:** the top half is the earlier design again (the round cards in `HistoryCards.jsx`,
+  restored, a snapping strip on a phone; the "Explorer Changes" heading and date line, `ChangesHead`), the changes list under it
+  is the tidied one. The New | Previous switch and `ScoreHistoryClassic.jsx` are gone. The segmented round strip was dropped.
 - **"Add a story" is always visible** in the Widget Builder's side panel (Workbench left panel, Original's wide rail): the outline's
   list scrolls on its own and the button is pinned under it (`ScopeOutline.jsx`). Inline (narrow) it still follows the list.
+
+### Report Scopes are Current only; line-chart hover; Health Age and Priority Map on a phone
+
+- **The report's Scope pane always draws the Current Story style** (`ScopePanel.jsx`); its Current | Refined switch is gone.
+  The switch stays where design is still explored: the Widget Builder and the Developer pages.
+- **Line chart hover** (`ScoreLine` in `TrendCharts.jsx`, so every Trend line and the Score History row that opens into a line):
+  each round has a full-height hover column; hovering rings its dot in the status colour, draws a dashed guide and opens the
+  shared chart tooltip (`useChartTip`: round, value with its change, "Feb 2025: 55" for the round before).
+- **What's Shaping Your Health Age, compact** (`EffectBreakdown.jsx`): the bars weren't drawing at all on a phone (the track had
+  `flex: 1` inside a column and collapsed). Now: "← Younger | Older →" at the ends, then per driver its name and pill, and a
+  full-width 6px track with a centre marker and the bar growing from it.
+- **Priority Map, compact** (`PriorityGroups` in `FamilyStories.jsx`): the map in miniature, four quadrant tiles where they sit
+  on the full map (Fix first, Protect / Watch, Maintain) with counts and their rule; tap one to list its parts below, each with a
+  small link meter (not "link 0.94") and its score. Empty quadrants stay in place, quiet and disabled. Replaces the tinted blocks.
+- Gallery: `?effect&w=360` (Health Age sample), `&all` with `?stories` includes Stories the builder blocks.
 
 ## Breakdown — which form, and how many parts (rules)
 

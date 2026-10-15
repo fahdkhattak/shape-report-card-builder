@@ -68,29 +68,29 @@ export default function EffectBreakdownStory({ title = "What's Shaping Your Heal
 
 function EffectChart({ rows, textOf, head }) {
   const { compact } = useStoryWidth();
-  const track = (r, none) => (
-    <div data-part="track" role="img" aria-label={`${r.label}: ${textOf(r.months)}`} style={{ flex: 1, minWidth: 0, position: "relative", height: dsSpace[8], borderRadius: dsSpace[8], background: ds.bg.quaternary }}>
-      {!none && <span data-part="effect" style={{ position: "absolute", top: 0, height: "100%", width: `${effectShare(r.months) / 2}%`, ...(r.months > 0 ? { left: "50%", background: ds.status.error.textIndicator } : { right: "50%", background: ds.status.success.graph }) }} />}
-      <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "50%", width: 1, height: 20, transform: "translate(-50%, -50%)", background: ds.border.primary }} />
-    </div>
-  );
   if (compact) {
-    // Compact: the driver name and its pill share a line, the track runs the full width under them.
+    // Compact: an axis line ("← Younger" | "Older →") over the same full-width tracks, then one block per driver: its
+    // name and pill on a line, the track under it (6px, rounded) with the bar growing from the centre marker. The track
+    // takes the full width as a block (it had `flex: 1` in a column, which collapsed it to nothing).
+    const centre = <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: -4, bottom: -4, width: 1, transform: "translateX(-50%)", background: ds.border.secondary }} />;
     return (
       <EvidenceSection gap={dsSpace[16]}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontFamily: font, ...head }}>
-          <span style={{ textAlign: "right", paddingRight: dsSpace[8] }}>Younger</span>
-          <span style={{ textAlign: "left", paddingLeft: dsSpace[8] }}>Older</span>
+        <div aria-hidden="true" style={{ display: "flex", justifyContent: "space-between", fontFamily: font, ...dsText("Text 3xs-Header", 600), letterSpacing: "0.02em", textTransform: "uppercase", color: ds.text.quaternary }}>
+          <span>← Younger</span>
+          <span>Older →</span>
         </div>
         {rows.map((r, ri) => {
           const none = r.months == null || r.months === 0;
           return (
             <div key={`${ri}-${r.label}`} data-part="row" style={{ display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: dsSpace[12] }}>
-                <span data-part="label" style={{ minWidth: 0, ...dsText("Text sm"), color: ds.text.secondary }}>{r.label}</span>
+                <span data-part="label" style={{ minWidth: 0, ...dsText("Text sm", 500), color: ds.text.secondary }}>{r.label}</span>
                 <EffectPill months={r.months} fit />
               </div>
-              {track(r, none)}
+              <div data-part="track" role="img" aria-label={`${r.label}: ${textOf(r.months)}`} style={{ position: "relative", width: "100%", height: 6, borderRadius: 3, background: ds.bg.quaternary }}>
+                {!none && <span data-part="effect" style={{ position: "absolute", top: 0, height: "100%", width: `${effectShare(r.months) / 2}%`, ...(r.months > 0 ? { left: "50%", borderRadius: "0 3px 3px 0", background: ds.status.error.textIndicator } : { right: "50%", borderRadius: "3px 0 0 3px", background: ds.status.success.graph }) }} />}
+                {centre}
+              </div>
             </div>
           );
         })}

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsSpace, dsRadius, dsShadow, dsBorder } from "../../../lib/ds.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
+import { useChartTip } from "../../widgets/ChartTip.jsx";
 import { StoryCard, EvidenceSection, noteText } from "./StoryCard.jsx";
 import { PillTabs, ViewSwitch, CopyTable } from "./controls.jsx";
 import { DataTable, tableText } from "./DataTable.jsx";
@@ -127,23 +128,45 @@ export function ScoreOverTime({ title = "Score Over Time", line, rounds, values,
    `ticks` run top to bottom. It draws at the width it is given (11 to 12px text, no sideways scroll). */
 export function ScoreLine({ rounds, values, domain = [0, 100], ticks = [100, 80, 60, 40, 20, 0], axis = "Score", banded = true, reference, referenceLabel = "Actual age", unit = "" }) {
   const [hover, setHover] = useState(null);
+  const tip = useChartTip();
   const n = values.length, cx = spreadCentre(n);
   const [lo, hi] = domain;
   const y = (v) => (1 - (v - lo) / (hi - lo)) * PLOT_H;
+  // Hover (or tap) anywhere in a round's column, not just on its 6px dot: the dot is ringed, a dashed guide marks the
+  // round, and the shared chart tooltip gives the value, the change and what it was the round before.
+  const tipFor = (i) => ({
+    head: rounds[i].label,
+    rows: [
+      { label: axis === "Score" ? "Score" : axis, value: values[i], text: `${values[i]}${unit}`, delta: i > 0 ? values[i] - values[i - 1] : null, score: banded },
+      ...(reference ? [{ label: referenceLabel, value: reference[i], text: `${reference[i]}${unit}`, color: DOT }] : []),
+    ],
+    note: i > 0 ? `${rounds[i - 1].label}: ${values[i - 1]}${unit}` : "First round",
+  });
   return (
     <Frame title={axis} titleTone={banded ? "secondary" : "tertiary"} ticks={ticks} gridAt={evenGrid(ticks.length)} rounds={rounds} centre={cx}>
       <svg width="100%" height={PLOT_H} viewBox={`0 0 1000 ${PLOT_H}`} preserveAspectRatio="none" style={{ position: "absolute", inset: 0, overflow: "visible" }} aria-hidden="true">
+        {hover != null && <line x1={cx(hover) * 1000} x2={cx(hover) * 1000} y1="0" y2={PLOT_H} stroke={DOT} strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />}
         {reference && <polyline points={reference.map((v, i) => `${cx(i) * 1000},${y(v)}`).join(" ")} fill="none" stroke={DOT} strokeWidth="1" strokeDasharray="4 3" vectorEffect="non-scaling-stroke" />}
         <polyline data-part="line" points={values.map((v, i) => `${cx(i) * 1000},${y(v)}`).join(" ")} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" style={{ stroke: LINE }} />
       </svg>
       {values.map((v, i) => (
-        <div key={i} role="img" aria-label={`${rounds[i].label}: ${v}${unit}`} onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}
-          style={{ position: "absolute", left: `${cx(i) * 100}%`, top: y(v), transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", cursor: "default" }}>
-          {banded && <span data-part="point-value" style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[4], ...dsText("Text 2xs", 600), lineHeight: 1, color: dsBand(v).cs }}>{v}{unit}</span>}
-          <span data-part="dot" style={{ width: banded ? 6 : 8, height: banded ? 6 : 8, borderRadius: "50%", background: DOT, boxShadow: hover === i ? `0 0 0 3px ${ds.surface.general.card}, 0 0 0 4px ${DOT}` : "none" }} />
-          {hover === i && !banded && <span style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[8], ...dsText("Text 2xs", 600), color: ds.text.primary, background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, boxShadow: dsShadow("sm"), whiteSpace: "nowrap" }}>{v}{unit}{reference ? ` · ${referenceLabel.toLowerCase()} ${reference[i]}${unit}` : ""}</span>}
+        <div key={i} role="img" aria-label={`${rounds[i].label}: ${v}${unit}`}
+          style={{ position: "absolute", left: `${cx(i) * 100}%`, top: y(v), transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
+          {banded && <span data-part="point-value" style={{ position: "absolute", bottom: "100%", marginBottom: dsSpace[4], ...dsText("Text 2xs", 600), lineHeight: 1, color: dsBand(v).cs, transition: "transform 120ms ease", transform: hover === i ? "translateY(-2px)" : "none" }}>{v}{unit}</span>}
+          <span data-part="dot" style={{ width: hover === i ? 8 : banded ? 6 : 8, height: hover === i ? 8 : banded ? 6 : 8, borderRadius: "50%", background: hover === i && banded ? dsBand(v).c : DOT, boxShadow: hover === i ? `0 0 0 3px ${ds.surface.general.card}, 0 0 0 4px ${banded ? dsBand(v).c : DOT}` : "none", transition: "all 120ms ease" }} />
         </div>
       ))}
+      {values.map((_, i) => {
+        const left = i === 0 ? 0 : ((cx(i - 1) + cx(i)) / 2) * 100;
+        const right = i === n - 1 ? 100 : ((cx(i) + cx(i + 1)) / 2) * 100;
+        const b = tip.bind(tipFor(i));
+        return (
+          <div key={`hit-${i}`} aria-hidden="true"
+            onMouseEnter={(e) => { setHover(i); b.onMouseEnter(e); }} onMouseMove={b.onMouseMove} onMouseLeave={() => { setHover(null); b.onMouseLeave(); }}
+            style={{ position: "absolute", top: -8, bottom: 0, left: `${left}%`, width: `${right - left}%`, cursor: "default" }} />
+        );
+      })}
+      {tip.node}
     </Frame>
   );
 }

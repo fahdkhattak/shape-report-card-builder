@@ -4,12 +4,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { T, font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsSpace, dsRadius } from "../../../lib/ds.js";
 import { ROUNDS } from "../../../lib/dataset.js";
-import { LAST, fmtMonth } from "../../../lib/scopeData.js";
+import { LAST, fmtMonth, fmtDate } from "../../../lib/scopeData.js";
 import { StoryCard } from "./StoryCard.jsx";
-import { ViewSwitch, CopyTable, PillTabs } from "./controls.jsx";
-import { ClassicHistoryCards, ClassicChanges } from "./ScoreHistoryClassic.jsx";
-import { DataTable, ScoreCell, tableText } from "./DataTable.jsx";
+import { ViewSwitch, CopyTable } from "./controls.jsx";
 import { HistoryCards } from "./HistoryCards.jsx";
+import { DataTable, ScoreCell, tableText } from "./DataTable.jsx";
 import HistoryLineChart from "./HistoryLineChart.jsx";
 import { useStoryWidth } from "./storyWidth.js";
 import { ShowAll } from "./BreakdownStory.jsx";
@@ -29,7 +28,6 @@ import { ShowAll } from "./BreakdownStory.jsx";
 /* Story is already about change over rounds.                              */
 /* ================================================================== */
 const spring = { type: "spring", bounce: 0, duration: 0.35 };
-const LOOK_KEY = "score-history-style";
 const refinedEyebrow = { fontSize: 13, fontWeight: 600, color: T.gray600, fontFamily: font };
 
 export default function ScoreHistoryStory({ title = "Your Score History", line = "Explore your past performance and trends in this detailed score history.", overall, items, noun = "Explorer" }) {
@@ -38,12 +36,8 @@ export default function ScoreHistoryStory({ title = "Your Score History", line =
   const [sel, setSel] = useState(LAST);
   const [open, setOpen] = useState(null); // label of the expanded row
   const [, setHoverRow] = useState(null);
-  // New | Previous: the tidied layout or the one before it (ScoreHistoryClassic.jsx). Remembered across Scopes.
-  const [look, setLook] = useState(() => { try { return localStorage.getItem(LOOK_KEY) === "previous" ? "previous" : "new"; } catch { return "new"; } });
-  const chooseLook = (v) => { setLook(v); setOpen(null); try { localStorage.setItem(LOOK_KEY, v); } catch { /* storage unavailable */ } };
 
   const rows = items.map((it) => ({ label: it.label, values: it.values, prev: sel > 0 ? it.values[sel - 1] : null, cur: it.values[sel] }));
-  const counts = rows.reduce((c, r) => { if (r.prev == null) return c; const d = r.cur - r.prev; c[d > 0 ? "up" : d < 0 ? "down" : "same"] += 1; return c; }, { up: 0, down: 0, same: 0 });
 
   // Table view: the series × rounds matrix (overall first), as on every Trend Story.
   const matrix = [{ label: "Overall Score", values: overall }, ...items];
@@ -51,40 +45,20 @@ export default function ScoreHistoryStory({ title = "Your Score History", line =
     { key: "label", label: noun },
     ...ROUNDS.map((r, i) => ({ key: `r${i}`, label: fmtMonth(r.date), align: "right", render: (row) => <ScoreCell v={row.values[i]} />, text: (row) => row.values[i] ?? "" })),
   ];
-  const controls = [
-    view === "chart" && <PillTabs key="l" label="Layout" tone="default" tabs={["New", "Previous"]} value={look === "new" ? "New" : "Previous"} onChange={(t) => chooseLook(t === "New" ? "new" : "previous")} />,
-    <ViewSwitch key="v" view={view} onChange={setView} />,
-    view === "table" && <CopyTable key="c" getText={() => tableText(cols, matrix)} />,
-  ];
+  const controls = [<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(cols, matrix)} />];
 
   return (
     <StoryCard title={title} controls={controls} line={line}>
       {view === "table" ? (
         <DataTable columns={cols} rows={matrix} />
       ) : (
-        look === "previous" ? (
-          <>
-            <ClassicHistoryCards values={overall} sel={sel} onSelect={setSel} />
-            <ClassicChanges rows={rows} sel={sel} noun={noun} open={open} onToggle={(l) => setOpen((o) => (o === l ? null : l))} />
-          </>
-        ) : (
         <>
-          <HistoryCards values={overall} sel={sel} onSelect={(i) => { setSel(i); }} />
-          <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[4], fontFamily: font, paddingTop: dsSpace[4] }}>
-            <span style={{ ...dsText("Text md", 600), color: ds.text.primary }}>{noun} changes</span>
-            <span style={{ ...dsText("Text xs"), color: ds.text.tertiary, display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: dsSpace[12], rowGap: dsSpace[4] }}>
-              {sel > 0 ? (<>
-                <span>{counts.up} rose · {counts.down} fell · {counts.same} held, {fmtMonth(ROUNDS[sel].date)} against {fmtMonth(ROUNDS[sel - 1].date)}</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[6], color: ds.text.quaternary }}>
-                  <span aria-hidden="true" style={{ width: 8, height: 8, boxSizing: "border-box", borderRadius: "50%", border: `1.5px solid ${ds.border.strong}` }} />{fmtMonth(ROUNDS[sel - 1].date)}
-                  <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: ds.text.tertiary, marginLeft: dsSpace[6] }} />{fmtMonth(ROUNDS[sel].date)}
-                </span>
-              </>) : <span>{fmtMonth(ROUNDS[sel].date)} is the first round, so there's nothing earlier to compare with.</span>}
-            </span>
-          </div>
+          {/* Top half: the round cards and the "Explorer Changes" heading as designed; the changes list under it is the
+              tidied one (redesign pass). */}
+          <HistoryCards values={overall} sel={sel} onSelect={setSel} />
+          <ChangesHead sel={sel} noun={noun} />
           <Dumbbell rows={rows} noun={noun} onHover={setHoverRow} open={open} onToggle={(l) => setOpen((o) => (o === l ? null : l))} />
         </>
-        )
       )}
     </StoryCard>
   );
@@ -182,6 +156,15 @@ function Dumbbell({ rows, onHover, open, onToggle, noun }) {
       </div>
       {cut && <div style={{ paddingTop: 10 }}><ShowAll open={showAll} total={ordered.length} onToggle={() => setShowAll((v) => !v)} /></div>}
       {!rows.length && <p style={{ margin: 0, ...dsText("Text sm"), color: ds.text.tertiary }}>There are no {noun.toLowerCase()}s to compare yet.</p>}
+    </div>
+  );
+}
+
+function ChangesHead({ sel, noun }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: font }}>
+      <span style={{ fontSize: 14, fontWeight: 700, color: T.gray900, paddingBottom: 6, borderBottom: `1px solid ${T.gray300}` }}>{noun} Changes</span>
+      <span style={{ fontSize: 13, color: T.gray500 }}>{sel > 0 ? `${fmtDate(ROUNDS[sel].date)} against ${fmtDate(ROUNDS[sel - 1].date)}.` : `${fmtDate(ROUNDS[sel].date)} is the first round, so there is nothing earlier to compare with.`} Pick {noun === "Explorer" ? "an" : "a"} {noun} to see its history.</span>
     </div>
   );
 }

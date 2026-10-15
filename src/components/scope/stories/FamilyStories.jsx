@@ -264,28 +264,54 @@ function PriorityChart({ rows, medianLink, noun }) {
     </div>
   );
 }
-/* Compact: the four groups of the map as tinted lists, so no label has to fit around a plot. */
-function PriorityGroups({ rows }) {
+/* Compact: the map in miniature. Four quadrant tiles laid out where they sit on the full map (Fix first top-left,
+   Protect top-right, Watch bottom-left, Maintain bottom-right), each with its count and its rule; tap one to list its
+   parts under it. The list shows each part's link to the overall score as a small meter (not a raw 0.94) and its score.
+   Empty quadrants stay in place, quiet and not tappable, so the map's shape still reads. */
+const QUAD_GRID = [["fix", "protect"], ["watch", "maintain"]];
+const QUAD_SHORT = { fix: `Below ${FLOURISHING_AT} · strong link`, protect: `${FLOURISHING_AT}+ · strong link`, watch: `Below ${FLOURISHING_AT} · weaker link`, maintain: `${FLOURISHING_AT}+ · weaker link` };
+function PriorityGroups({ rows, noun }) {
+  const counts = Object.fromEntries(QUAD_ORDER.map((q) => [q, rows.filter((r) => r.quad === q).length]));
+  const [pick, setPick] = useState(() => QUAD_ORDER.find((q) => counts[q]) || "fix");
+  const list = rows.filter((r) => r.quad === pick).sort((a, b) => b.link - a.link);
+  const plural = (n) => `${n} ${n === 1 ? noun : `${noun}s`}`;
   return (
-    <div data-part="priority-groups" style={{ display: "flex", flexDirection: "column", gap: dsSpace[12], fontFamily: font }}>
-      {QUAD_ORDER.map((q) => {
-        const list = rows.filter((r) => r.quad === q);
-        if (!list.length) return null;
-        return (
-          <section key={q} aria-label={QUAD[q].name} style={{ background: QUAD[q].tone == null ? ds.bg.primary : dsBand(QUAD[q].tone).bg, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[12]}px ${dsSpace[4]}px` }}>
-            <div style={{ ...dsText("Text xs", 700), color: quadColor(q) }}>{QUAD[q].name}</div>
-            <div style={{ ...dsText("Text 2xs"), color: ds.text.tertiary, marginTop: 2 }}>{QUAD[q].note}</div>
-            {list.map((r, i) => (
-              <div key={`${i}-${r.label}`} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], minHeight: 40 }}>
-                <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: dsBand(r.score).c, flexShrink: 0 }} />
-                <span style={{ flex: 1, minWidth: 0, ...dsText("Text sm"), color: ds.text.secondary }}>{r.label}</span>
-                <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>link {r.link.toFixed(2)}</span>
-                <ScoreNumber value={r.score} style={{ minWidth: 24 }} />
-              </div>
-            ))}
-          </section>
-        );
-      })}
+    <div data-part="priority-groups" style={{ display: "flex", flexDirection: "column", gap: dsSpace[16], fontFamily: font }}>
+      <div role="tablist" aria-label="Priority groups" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: dsSpace[6] }}>
+        {QUAD_GRID.flat().map((q) => {
+          const on = pick === q, n = counts[q];
+          return (
+            <button
+              key={q} type="button" role="tab" aria-selected={on} disabled={!n} onClick={() => setPick(q)}
+              style={{ textAlign: "left", fontFamily: font, cursor: n ? "pointer" : "default", padding: `${dsSpace[8]}px ${dsSpace[12]}px ${dsSpace[12]}px`, borderRadius: dsRadius.lg, boxSizing: "border-box",
+                border: `${dsBorder.sm}px solid ${on ? ds.border.strong : ds.border.tertiary}`, background: on ? ds.surface.general.card : n ? ds.surface.general.cardWithinCard : "transparent", boxShadow: on ? dsShadow("sm") : "none",
+                display: "flex", flexDirection: "column", gap: 2, opacity: n ? 1 : 0.55, transition: "background 140ms ease, border-color 140ms ease, box-shadow 140ms ease" }}
+            >
+              <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: dsSpace[8] }}>
+                <span style={{ ...dsText("Text xs", 700), color: n ? quadColor(q) : ds.text.tertiary }}>{QUAD[q].name}</span>
+                <span style={{ ...dsText("Text lg", 700), color: n ? ds.text.primary : ds.text.quaternary, fontVariantNumeric: "tabular-nums" }}>{n}</span>
+              </span>
+              <span style={{ ...dsText("Text 3xs"), fontSize: 10, color: ds.text.tertiary }}>{QUAD_SHORT[q]}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div role="tabpanel" aria-label={QUAD[pick].name}>
+        <div style={{ ...dsText("Text sm", 600), color: ds.text.primary }}>{QUAD[pick].name} <span style={{ ...dsText("Text xs"), color: ds.text.tertiary }}>· {plural(list.length)}</span></div>
+        <div style={{ ...dsText("Text xs"), color: ds.text.tertiary, marginTop: 2 }}>{QUAD[pick].note}.</div>
+        <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 56px 28px", gap: dsSpace[12], marginTop: dsSpace[12], paddingBottom: dsSpace[6], borderBottom: `${dsBorder.sm}px solid ${ds.border.tertiary}`, ...dsText("Text 3xs-Header", 600), textTransform: "uppercase", letterSpacing: "0.02em", color: ds.text.quaternary }}>
+          <span>{noun}</span><span>Link</span><span style={{ textAlign: "right" }}>Score</span>
+        </div>
+        {list.map((r, i) => (
+          <div key={`${i}-${r.label}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 56px 28px", gap: dsSpace[12], alignItems: "center", minHeight: 40, borderBottom: `${dsBorder.sm}px solid ${ds.border.tertiary}` }}>
+            <span style={{ ...dsText("Text sm"), color: ds.text.secondary, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+            <span role="img" aria-label={`Link to overall ${r.link.toFixed(2)}`} title={`Link to overall: ${r.link.toFixed(2)}`} style={{ position: "relative", height: 4, borderRadius: 2, background: ds.bg.quaternary }}>
+              <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max(0, Math.min(1, r.link)) * 100}%`, borderRadius: 2, background: ds.text.tertiary }} />
+            </span>
+            <ScoreNumber value={r.score} style={{ textAlign: "right" }} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -307,9 +333,9 @@ function PriorityClassic({ items, noun = "Driver" }) {
       {view === "table" ? <DataTable columns={cols} rows={rows} /> : (
         <>
           <EvidenceSection>
-            <WithWidth>{({ compact }) => (compact ? <PriorityGroups rows={rows} /> : <PriorityChart rows={rows} medianLink={medianLink} noun={noun} />)}</WithWidth>
+            <WithWidth>{({ compact }) => (compact ? <PriorityGroups rows={rows} noun={noun} /> : <PriorityChart rows={rows} medianLink={medianLink} noun={noun} />)}</WithWidth>
           </EvidenceSection>
-          <p style={noteText}>Dashed lines split the map at a score of {FLOURISHING_AT} and at the middle link. {QUAD.fix.name}: {QUAD.fix.note.toLowerCase()}. Link comes from how the same people answered, so it points to where effort is likely to matter, not a guaranteed result.</p>
+          <WithWidth>{({ compact }) => <p style={noteText}>{compact ? `Tap a group to see its ${noun}s. The split is at a score of ${FLOURISHING_AT} and at the middle link. ` : `Dashed lines split the map at a score of ${FLOURISHING_AT} and at the middle link. ${QUAD.fix.name}: ${QUAD.fix.note.toLowerCase()}. `}Link comes from how the same people answered, so it points to where effort is likely to matter, not a guaranteed result.</p>}</WithWidth>
         </>
       )}
     </StoryCard>

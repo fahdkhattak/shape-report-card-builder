@@ -12,6 +12,7 @@ import { StoryStyleContext } from "../components/scope/stories/storyStyle.js";
 import { STORIES } from "../components/widgetbuilder/storyCatalog.jsx";
 import { SAMPLE_SUBJECTS } from "../components/developer/sampleSubjects.js";
 import { ScopeNavContext } from "../components/scope/scopeNav.js";
+import EffectBreakdownStory from "../components/scope/stories/EffectBreakdown.jsx";
 
 /* Scratch: ?scopes=a,b&style=refined (report Scopes) · ?family=a,b (library forms) or ?forms&only=a,b&subject=dim|overall&axes=gender,tenure (builder forms; axes repeats each form per grouping). */
 const params = new URLSearchParams(location.search);
@@ -25,11 +26,15 @@ const Card = ({ id, size, surface = {}, title, children }) => (
   </div>
 );
 let cells;
-if (params.has("stories")) {
+if (params.has("effect")) {
+  // ?effect&w=360 — the Health Age drivers Story with the design's sample rows.
+  const HEALTH = [{ label: "BMI", months: 6 }, { label: "Stress", months: 5 }, { label: "Sleep", months: 3 }, { label: "Vaping", months: null }, { label: "Nutrition", months: -4 }, { label: "Alcohol", months: -6 }, { label: "Exercise", months: -11 }, { label: "Smoking", months: -20 }];
+  cells = [<div key="e" data-catalog="effect" style={{ width: Number(params.get("w")) || 808 }}><EffectBreakdownStory rows={HEALTH} sample /></div>];
+} else if (params.has("stories")) {
   // ?stories[=id,id]&subject=0..4&w=360 — catalogue Stories for one sample subject (Story sweep's subjects).
   const only = params.get("stories") ? params.get("stories").split(",") : null;
   const subject = SAMPLE_SUBJECTS[Number(params.get("subject")) || 0].subject;
-  cells = STORIES.filter((d) => (!only || only.includes(d.id)) && !d.blocked?.(subject)).map((d) => (
+  cells = STORIES.filter((d) => (!only || only.includes(d.id)) && (params.has("all") || !d.blocked?.(subject))).map((d) => (
     <div key={d.id} data-catalog={d.id} style={{ width: Number(params.get("w")) || 808, display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ fontSize: 12, color: "#888" }}>{d.id}</div>
       <StoryStyleContext.Provider value={params.get("style") || "classic"}><ScopeNavContext.Provider value={{ depth: 0, open: () => {} }}>{d.render(subject, { stories: [d.id] })}</ScopeNavContext.Provider></StoryStyleContext.Provider>
