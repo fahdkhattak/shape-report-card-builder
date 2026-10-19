@@ -16,6 +16,7 @@ import { dimensionSubject, overallSubject } from "../../lib/scopeSubject.js";
 import { PARTS, TIME_PARTS, MONEY_PARTS, impactSeries, samplePerson, fmtMoney } from "../../lib/impactModel.js";
 import { ImpactSplitStory, GainLadderStory, GainByGroupStory, ImpactMethodStory } from "./stories/ImpactStories.jsx";
 import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
+import { groupHistory, keepFor, groupingLabel } from "../../lib/heatMap.js";
 
 /* ================================================================== */
 /* SCOPE RECIPES — which Stories fill each widget's Scope, in order.    */
@@ -353,4 +354,55 @@ export const hasRecipe = (familyId) => familyId in RECIPES;
 export default function ScopeRecipe({ familyId }) {
   const Recipe = RECIPES[familyId];
   return Recipe ? <Recipe /> : null;
+}
+
+/* ---- A group of people, opened from the Heat Map (Figma flow 15299:47644) ------------------------------------------------
+   A group is a subset of the organisation, so its Scope is the Org Score's, shorter: summary, meaning, the 12 Explorers as a
+   radar, what stands out, its history, and actions for its weakest Drivers. Every number is the group's own (its people
+   only); a round where fewer than 5 of them answered is left out. `row` is a heat-map row ({ label, axis, group, parent? }). */
+const GROUP_HEADLINE = {
+  Flourishing: (g) => `${g} is flourishing.`,
+  Striving: (g) => `${g} is doing well, with some areas asking more of it.`,
+  Struggling: (g) => `${g} is struggling.`,
+};
+export function GroupScope({ row }) {
+  const hist = groupHistory(keepFor(row));
+  const now = hist[LAST];
+  if (!now) return <InsightSummaryStory headline="Too few people to show."><SummaryP>This group has fewer than 5 people, so its scores are never shown.</SummaryP></InsightSummaryStory>;
+  const name = row.parent ? `${row.parent.label} · ${row.label}` : row.label;
+  const label = row.axis ? `The ${name} group` : "The organisation";
+  const score = now.overall, status = statusOf(score);
+  const orgScore = r0(LATEST.avgOverall), diff = score - orgScore;
+  const series = (pick) => hist.map((h) => (h ? pick(h) : null));
+  const items = DIMENSIONS.map((d) => ({ label: d, values: series((h) => h.dims[d]), blurb: blurbFor(d, now.dims[d]) }));
+  const rows = [...DIMENSIONS].map((d) => [d, now.dims[d]]).sort((a, b) => b[1] - a[1]);
+  const great = rows.filter((r) => r[1] >= FLOURISHING_AT).length, avg = rows.filter((r) => r[1] >= STRIVING_AT && r[1] < FLOURISHING_AT).length, poor = rows.length - great - avg;
+  const weakDrivers = Object.entries(now.drivers).sort((a, b) => a[1] - b[1]).slice(0, 3).map(([k]) => k);
+  const where = row.parent ? `${groupingLabel(row.parent.axis)} and ${groupingLabel(row.axis)}` : row.axis ? groupingLabel(row.axis) : "";
+  return (
+    <>
+      <InsightSummaryStory headline={GROUP_HEADLINE[status](label)} bar={<BandBar values={rows} />}>
+        <SummaryP>
+          {row.axis ? <>These are the <b>{now.n} people</b> in {name}{where ? ` (${where})` : ""}. </> : null}
+          Their score of <Strong c={statusText(score)}>{score}</Strong> is {diff === 0 ? "the same as" : <><b>{Math.abs(diff)} {Math.abs(diff) === 1 ? "point" : "points"} {diff > 0 ? "above" : "below"}</b></>} the organisation's {orgScore}.
+        </SummaryP>
+        <SummaryP>
+          Across the <b>{rows.length}</b> Explorers, <Strong c={STATUS_TEXT.success}>{great}</Strong> {is(great)} Flourishing, <Strong c={STATUS_TEXT.warning}>{avg}</Strong> {is(avg)} Striving, and <Strong c={STATUS_TEXT.error}>{poor}</Strong> {is(poor)} Struggling
+        </SummaryP>
+      </InsightSummaryStory>
+      <MeaningStory title="What This Score Is Telling You" value={score} unit="/100" values={series((h) => h.overall)} headline={<>This group's score of <span style={{ color: band(score).cs }}>{score}</span>/100 places it in {status}.</>} text={ORG_MEANING[status]} />
+      <BreakdownStory title="What's Behind This Score" variant="radar" items={items} line={`How this group's results compare across the ${rows.length} Explorers.`} hint="Hover over the chart to see each Explorer's score for this group." />
+      <StrongestWeakestStory {...bestWorst(rows)} />
+      <SplitBreakdownStory
+        title="Who Is in Each Status" line="How many of this group's people fall into each status, round by round."
+        parts={[
+          { label: "Flourishing", color: T.green, counts: hist.map((h) => h?.status.f ?? 0) },
+          { label: "Striving", color: T.amber, counts: hist.map((h) => h?.status.s ?? 0) },
+          { label: "Struggling", color: T.red, counts: hist.map((h) => h?.status.t ?? 0) },
+        ]}
+      />
+      <ScoreHistoryStory title="This Group's Score History" line="How this group's score and each Explorer have moved, round by round." overall={series((h) => h.overall)} items={items} />
+      <ActionsStoryBar drivers={weakDrivers} />
+    </>
+  );
 }

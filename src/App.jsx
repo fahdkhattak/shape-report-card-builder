@@ -28,7 +28,7 @@ import SearchOverlay from "./components/shell/SearchOverlay.jsx";
 // What the Org report starts with, in the design's own order (Figma 11070:9301).
 const DEFAULT_ORG_WIDGETS = [
   ["org-score", 0], ["org-status", 0], ["explorers", 0], ["enps", 0], ["score-history", 1], ["popular-responses", 0],
-  ["areas-focus", 0], ["avg-gender", 0], ["avg-work-model", 0], ["time-impact", 0], ["money-composition", 0],
+  ["areas-focus", 0], ["avg-gender", 0], ["avg-work-model", 0], ["time-impact", 0], ["money-composition", 0], ["heat-map", 0],
 ].map(([familyId, formIndex]) => ({ familyId, formIndex }));
 
 export default function App() {
@@ -111,11 +111,11 @@ export default function App() {
         // Per-column-count widget order, read off the 6-/3-/2-column frames of
         // Figma nodes 11070:9301 and 14463:13793 (keyed by familyId).
         layouts: {
-          6: ["org-score", "org-status", "explorers", "enps", "score-history", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition"],
-          5: ["org-score", "org-status", "explorers", "score-history", "enps", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition"],
-          4: ["org-score", "explorers", "org-status", "score-history", "enps", "time-impact", "areas-focus", "money-composition", "popular-responses", "avg-gender", "avg-work-model"],
-          3: ["org-score", "org-status", "score-history", "explorers", "enps", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition"],
-          2: ["org-score", "org-status", "score-history", "time-impact", "enps", "money-composition", "areas-focus", "explorers", "avg-work-model", "popular-responses", "avg-gender"],
+          6: ["org-score", "org-status", "explorers", "enps", "score-history", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition", "heat-map"],
+          5: ["org-score", "org-status", "explorers", "score-history", "enps", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition", "heat-map"],
+          4: ["org-score", "explorers", "org-status", "score-history", "enps", "time-impact", "areas-focus", "money-composition", "popular-responses", "avg-gender", "avg-work-model", "heat-map"],
+          3: ["org-score", "org-status", "score-history", "explorers", "enps", "popular-responses", "areas-focus", "avg-gender", "avg-work-model", "time-impact", "money-composition", "heat-map"],
+          2: ["org-score", "org-status", "score-history", "time-impact", "enps", "money-composition", "areas-focus", "explorers", "avg-work-model", "popular-responses", "avg-gender", "heat-map"],
         },
       },
     });

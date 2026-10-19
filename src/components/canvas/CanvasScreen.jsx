@@ -12,6 +12,7 @@ import WidgetCard from "./WidgetCard.jsx";
 import SkeletonWidgetCard from "./SkeletonWidgetCard.jsx";
 import { ReportTopBar, ReportSubBar } from "./ReportHeader.jsx";
 import ScopePanel from "../scope/ScopePanel.jsx";
+import { isFullScope } from "../scope/full/fullScope.js";
 import ExplorerRingCard from "./ExplorerRingCard.jsx";
 import { LATEST, DIMENSIONS, dimensionValue } from "../../lib/dataset.js";
 import Button from "../ui/Button.jsx";
@@ -142,6 +143,8 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
     if (w.id === scopeId) { closeScope(); return; }
     if (!canCoexist) setChatOpen(false);
     setChatExpanded(false); setLibCollapsed(true); setScopeId(w.id);
+    // A full-view Scope (Heat Map, Response Analysis) only exists expanded; every other Scope opens beside the report.
+    setScopeExpanded(isFullScope(w));
     // Once the report has settled into its new columns, bring the picked widget into view if the reflow moved it out.
     setTimeout(() => {
       const el = scrollRef.current?.querySelector(`[data-widget-id="${CSS.escape(String(w.id))}"]`);

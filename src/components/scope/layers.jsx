@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
 import { ActionsLayer } from "./stories/ActionStories.jsx";
+import { GroupScope } from "./scopeRecipes.jsx";
 
 /* ================================================================== */
 /* SCOPE LAYERS — a Scope can go one layer DEEPER (Figma Roughwork node  */
@@ -29,6 +30,8 @@ export function useLayerStack(resetKey) {
 /* Renders whichever layer is on top. */
 export function LayerBody({ layer }) {
   if (layer.kind === "actions") return <ActionsLayer key={`${layer.drivers.join("|")}`} drivers={layer.drivers} selected={layer.selected} />;
+  // A group opened from the Heat Map: that group's own Scope, in the regular Story sizes.
+  if (layer.kind === "group") return <GroupScope key={layer.row.id} row={layer.row} />;
   return null;
 }
 

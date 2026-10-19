@@ -16,6 +16,9 @@ import { ScopeNavContext } from "./scopeNav.js";
 import { useLayerStack, LayerBody, Breadcrumb } from "./layers.jsx";
 import { StoryStyleContext } from "./stories/storyStyle.js";
 import { ScrollThumb } from "../ui/MinimalScroll.jsx";
+import { FullScopeContext, FULL_SCOPE_FAMILIES, isFullScope } from "./full/fullScope.js";
+import HeatMapScope from "./full/HeatMapScope.jsx";
+import ResponseAnalysisScope from "./full/ResponseAnalysisScope.jsx";
 
 /* The report's Scopes always draw the Current Story style (product decision). The Current | Refined switch stays only
    where design is still being explored: the Widget Builder and the Developer pages. */
@@ -96,6 +99,7 @@ function GenericScope({ widget }) {
 
 export function scopeTitle(widget) {
   if (widget.kind === "explorer") return widget.dimension;
+  if (isFullScope(widget)) return FULL_SCOPE_FAMILIES[widget.familyId];
   if (widget.familyId === "org-score") return "Your Headline Score";
   return widget.customTitle || (widget.kind === "library" ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title);
 }
@@ -121,6 +125,14 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
   const savedScroll = useRef(0);
   const nav = { depth: layers.depth, open: (l) => { savedScroll.current = scrollRef.current?.scrollTop || 0; layers.push(l); } };
   useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = layers.depth ? 0 : savedScroll.current; }, [layers.depth]);
+  // Full-view Scopes (Heat Map, Response Analysis) only exist expanded: while one is showing (no layer open) the pane asks
+  // to be expanded and hides the collapse button. A group opened from the Heat Map is a regular Scope, so it can collapse
+  // to sit beside the report; going back to the map expands again (Figma flow 15299:47644).
+  const full = isFullScope(widget);
+  const fullRoot = full && layers.depth === 0;
+  const [toolsEl, setToolsEl] = useState(null);
+  useEffect(() => { if (fullRoot && !expanded && onToggleExpand && !sheet) onToggleExpand(); }, [fullRoot, expanded]);
+  const fullCtx = { toolsEl, openGroup: (row) => nav.open({ kind: "group", label: row.parent ? `${row.parent.label} · ${row.label}` : row.label, row }) };
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape" && layers.depth > 0) { e.stopImmediatePropagation(); layers.pop(); } };
     window.addEventListener("keydown", onKey, true);
@@ -136,12 +148,23 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
           <span title={scopeTitle(widget)} style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: T.gray700, lineHeight: "20px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{scopeTitle(widget)}</span>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0, marginLeft: 12 }}>
+          {full && <div ref={setToolsEl} style={{ display: fullRoot ? "flex" : "none", alignItems: "center", gap: 12 }} />}
           <ZoomMenu zoom={zoom} onChange={setZoom} />
-          {!sheet && onToggleExpand && <Button theme="brand" variation="ghost" size="xs" iconLeft={expanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />} onClick={onToggleExpand} title={expanded ? "Back to report" : "Expand"} style={{ width: 28, height: 28, padding: 0 }} />}
+          {!sheet && onToggleExpand && !fullRoot && <Button theme="brand" variation="ghost" size="xs" iconLeft={expanded ? <Minimize2 size={20} /> : <Maximize2 size={20} />} onClick={onToggleExpand} title={expanded ? "Back to report" : "Expand"} style={{ width: 28, height: 28, padding: 0 }} />}
           {!hideClose && <Button theme="brand" variation="ghost" size="xs" iconLeft={<X size={20} />} onClick={onClose} title="Close" style={{ width: 28, height: 28, padding: 0 }} />}
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+      {/* A full-view Scope fills the body, zoomed as a whole (drawn at 1/zoom of the space, then zoomed up), and stays
+          mounted while a group layer is open so its grouping, filters and opened columns are still there on the way back. */}
+      {full && (
+        <div style={{ position: "absolute", inset: 0, display: fullRoot ? "block" : "none", overflow: "hidden" }}>
+          <div style={{ position: "relative", width: `${(100 * DEFAULT_ZOOM) / zoom}%`, height: `${(100 * DEFAULT_ZOOM) / zoom}%`, zoom: zoom / DEFAULT_ZOOM }}>
+            <FullScopeContext.Provider value={fullCtx}>{widget.familyId === "heat-map" ? <HeatMapScope /> : <ResponseAnalysisScope />}</FullScopeContext.Provider>
+          </div>
+        </div>
+      )}
+      {!fullRoot && <>
       {/* Scroll-edge fade, the same treatment as the chat panel's: a plain
           white-to-transparent gradient, so content dissolves under the header
           instead of being cut off (or blurred into a block). */}
@@ -156,14 +179,15 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
           {layers.layer && <LayerBody layer={layers.layer} />}
           {/* Switching to another widget's Scope: the new content settles in (a short fade and a 6px rise) from the top
               of the pane. The first open has no fade; the sheet's own slide carries that. */}
-          <motion.div key={widget.id} initial={firstWidget.current === widget.id ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: layers.depth ? "none" : "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16 }}>
-          {widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
+          <motion.div key={widget.id} initial={firstWidget.current === widget.id ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: layers.depth || full ? "none" : "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16 }}>
+          {full ? null : widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
           </motion.div>
         </div>
         </StoryStyleContext.Provider>
         </ScopeNavContext.Provider>
       </div>
       <ScrollThumb target={scrollRef} />
+      </>}
       </div>
     </div>
   );

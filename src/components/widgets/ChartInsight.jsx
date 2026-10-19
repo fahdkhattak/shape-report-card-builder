@@ -215,7 +215,7 @@ export function DonutInsight({ axisKey, label, rows, size = "1x1", legend = true
    the same data always gives the same layout and no position implies a rank. 4px between tiles. Each tile: the name in
    upper case top-left on one line (an ellipsis, never a broken word), the value bold bottom-left; a tile too small for its name keeps its value, one too small for that
    keeps only its colour (both stay in the tooltip). 1x1: exactly 3 tiles, 2x2: 3 to 7. */
-function splitTiles(items, x, y, w, h, out) {
+export function splitTiles(items, x, y, w, h, out) {
   if (!items.length) return;
   if (items.length === 1) { out.push({ ...items[0], x, y, w, h }); return; }
   const total = items.reduce((a, r) => a + r.value, 0) || 1;

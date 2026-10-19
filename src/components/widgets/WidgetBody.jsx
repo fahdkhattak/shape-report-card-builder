@@ -1,4 +1,5 @@
 import { T, band } from "../../lib/tokens.js";
+import { themeTotals } from "../../lib/responseSample.js";
 import { ds } from "../../lib/ds.js";
 import {
   BigNumber,
@@ -364,13 +365,13 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="1x1" values={false} noun="groups" /></div>;
     }
     case "popular-responses":
-      // No free-text theme data in the generated dataset (survey's open-text
-      // questions weren't modeled) — the design's own sample tiles.
+      // No free-text theme data in the generated dataset (the survey's open-text
+      // questions weren't modelled), so these are sample themes.
       // Chart rules, treemap (Composition): value-proportional tiles, 1x1 exactly 3, 2x2 3 to 7. The 1x1 shows the
       // three largest of the same sample, so the two sizes agree.
       {
-        const themes = [["Ergonomics", 18, T.personalBlue], ["Office Environment", 16, T.amberOrange], ["Technology", 14, T.lavender], ["Furniture", 12, T.mintGreen], ["Lighting", 5, T.goldenYellow], ["", 3, "#ff6b6b"], ["", 2, "#26a69a"]]
-          .map(([label, value, color]) => ({ label, value, color }));
+        // Same sample themes as the Response Analysis Scope it opens (lib/responseSample.js), so the two agree.
+        const themes = themeTotals().map((t) => ({ label: t.label, value: t.value, color: t.color }));
         return formIndex === 1 ? <Treemap rows={themes} size="2x2" /> : <Treemap rows={themes.slice(0, 3)} size="1x1" />;
       }
 

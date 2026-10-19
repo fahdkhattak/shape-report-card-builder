@@ -3033,6 +3033,48 @@ Scope was uncovered left to right like a wipe while fading in. Now (`CanvasScree
 - Verified by sampling every 40–50ms: columns switch once, card / Scope / widgets move continuously on the same curve, no
   console errors. Reduced Motion is respected by the app-wide `MotionConfig`.
 
+### Full-view Scopes: Heat Map and Response Analysis, and a group's own Scope (Figma 15299:43366 / 41715 / 19603 / 45659 / 47644)
+
+- **Expanding a Scope** (15299:43366) fills the area and the Stories keep their 808px column; that was already how expand
+  worked, checked again (cards 808 wide, report hidden).
+- **Two widgets open full-view Scopes that only exist expanded**: Heat Map → Heat Map, Popular Responses → Response Analysis
+  (`components/scope/full/`; `fullScope.js` lists them, `isFullScope()`). `CanvasScreen.openScope` opens them expanded; the Scope
+  pane gives them its whole body (no 808 column, no padding), a slot in its header for their own tools (search, Filter, via
+  `FullScopeContext.toolsEl` + a portal), hides the collapse button while they show, and asks to re-expand when you come back to
+  them. Zoom (50–125%) scales them as a whole. The Heat Map widget is now on the Org report (end of every column layout).
+- **Heat Map** (`HeatMapScope.jsx`, data `lib/heatMap.js`): groups down the side, Overall Score (band colour, ▲/▼ vs the round
+  before, people) and the 12 Explorers across, every tile the group's real mean in the design system's ten heat colours
+  (`utility/Heat Map`, light text under 40 and from 95). Sticky header and first two columns, scrolls both ways.
+  - **Columns are narrow and equal:** every Explorer is 88 to 112px (names wrap to two or three lines, as in the design), an opened
+    Explorer and its Drivers 72 to 88px, the name column 251 to 320px; spare width past those caps stays empty on the right. (It
+    used to size each column to its one-line name, about 150px.) The score column's sticky offset follows the name column's measured width.
+  - The corner picks the grouping (`HEAT_GROUPINGS`): **Standouts** (default: the eight 5+ groups furthest from the org's 57,
+    any way of grouping, labelled with where they come from), Organisation, Site Codes, Departments, Gender, Employment Status,
+    Employment Duration, Job Level, Work Model; **Age and Country stay in the menu, disabled ("No data")**.
+  - Hover an Explorer header → » "Expand Area" opens its Drivers in place under a spanning label (subgrid), « collapses. A Driver
+    header's card says where it sits and how it's scored (the survey's question text isn't in the data, so it isn't quoted).
+  - A row's chevron splits it by a second way of grouping: Site first as designed, but with 100 people most Site splits fall
+    under 5, so `subRows` takes whichever way leaves the most groups to show (grey sub-rows, a note counts the hidden ones).
+  - Tiles lift on hover with a darker edge (`.hm-tile`) and a tooltip (score, against the org). **A group's name or any of its
+    tiles opens that group's Scope.**
+  - Search (group names). Filter (15298:19603): Demographic (= the grouping), Area (Explorer checklist, Select all / Clear),
+    Score Range (two-handle slider, `.range-dual`; tiles outside go blank), Clear; the button shows how many filters are on.
+  - Narrow (< 640px, the phone sheet): 148 / 52px sticky columns, search in the body, Filter as an icon.
+- **A group's own Scope** (flow 15299:47644): a layer (`kind: "group"`, `LayerBody` → `GroupScope` in `scopeRecipes.jsx`), breadcrumb
+  "Heat Map › IT". The Org Score's Stories, shorter, every number the group's own (`groupHistory()`): summary ("The IT group is
+  struggling.", n people, points above / below the org), Meaning, the 12 Explorers as a radar, What Stands Out, Who Is in Each
+  Status, the group's Score History, Actions for its three weakest Drivers. It's a regular Scope, so it **can collapse to sit
+  beside the report**; the breadcrumb back to the Heat Map expands again, with the grouping, filters and opened columns kept
+  (the map stays mounted, hidden).
+- **Response Analysis** (`ResponseAnalysisScope.jsx`, data `lib/responseSample.js`): questions on the left (filter by Explorer,
+  pick some or all), tabs Executive Summary (AI chip, totals, iridescent box, real text download) / Verbatims (numbered, theme and
+  Explorer under each, CSV download) / Response Map (themes as value-sized tiles via the widget treemap's `splitTiles`, graph
+  colours; a tile opens its Verbatims filtered to that theme). Search covers questions and responses; Filter is a theme checklist.
+  **All sample** (no open-text answers in the dataset): every tab carries a Sample data tag and the verbatims say so; the content
+  is written for the prototype (the design's own verbatims named a real company and were not reused). The Popular Responses widget
+  now draws the same themes, so widget and Scope agree. Narrow (< 720px): questions as a chip row, short tab labels.
+- The 1×1 Heat Map widget now uses the same design-system heat colours.
+
 ### Report: protected width, minimal scrollbars, 2–6 columns, device preview (phone 14679:86632 + iPhone Duo)
 
 - **The report's 536px (344 grid + 2 × 32 card padding + 2 × 64 margin) is never compromised.** The sideways scroll when a

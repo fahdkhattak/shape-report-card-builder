@@ -1,4 +1,5 @@
 import { Lock, Heart, Building2, User, Users } from "lucide-react";
+import { HEAT_STEPS, heatStep } from "../../lib/heatMap.js";
 import { T, font, band } from "../../lib/tokens.js";
 import { ds, dsBand } from "../../lib/ds.js";
 import { StatusFaceIcon, TrendPill, polar, describeArc } from "./primitives.jsx";
@@ -240,7 +241,8 @@ export function LockedBody({ date, text }) {
 }
 
 /* ---- Heat map ---------------------------------------------------------- */
-const HEAT = (v) => (v >= 90 ? { bg: "#4fba85", c: "#0b5a33" } : v >= 80 ? { bg: "#9fe3c3", c: "#0b703f" } : v >= 70 ? { bg: "#d4f5e6", c: "#0b703f" } : v >= 40 ? { bg: "#ffe3b8", c: T.amberStrong } : { bg: "#fbd0d7", c: T.redStrong });
+// The design system's heat scale (utility/Heat Map), the same tiles as the Heat Map Scope it opens (lib/heatMap.js).
+const HEAT = (v) => ({ bg: ds.utility.heatMap[HEAT_STEPS[heatStep(v)][1]], c: v < 40 || v >= 95 ? ds.text.inverse : ds.text.primary });
 /* The design lets the table run past the card edge — "95 | 97 | 9" is cut
    off on purpose, hinting there are more Explorers across. */
 export function HeatTable({ rows }) {
