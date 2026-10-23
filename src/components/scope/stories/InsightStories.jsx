@@ -3,7 +3,7 @@ import { User } from "lucide-react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsText, dsSpace, dsRadius, dsShadow } from "../../../lib/ds.js";
 import { StoryCard, EvidenceSection, noteText } from "./StoryCard.jsx";
-import { PillTabs, ViewSwitch, CopyTable } from "./controls.jsx";
+import { ViewSwitch, CopyTable } from "./controls.jsx";
 import { DataTable, tableText } from "./DataTable.jsx";
 import { useOwnWidth } from "./storyWidth.js";
 import Dropdown from "../../ui/Dropdown.jsx";
@@ -26,10 +26,8 @@ const zoneNumber = (z) => (z === ZONE.mixed ? z.textStrong : z.textIndicator); /
 const signed = (n) => (n > 0 ? `+${n}` : `${n}`);
 const tab = { fontVariantNumeric: "tabular-nums" };
 const isMouse = (e) => e.pointerType === "mouse";
-/* Long tab labels don't fit a phone-width card: there the choice becomes a dropdown. */
-const Choice = ({ compact, label, tabs, value, onChange }) => (compact
-  ? <Dropdown ariaLabel={label} value={value} options={tabs.map((t) => ({ value: t, label: t }))} onChange={onChange} />
-  : <PillTabs label={label} tone="default" tabs={tabs} value={value} onChange={onChange} />);
+/* Which pair / which outcome: always a dropdown, never tabs, because a survey can offer many and a row of tabs doesn't scale. */
+const Choice = ({ label, tabs, value, onChange }) => <Dropdown ariaLabel={label} value={value} options={tabs.map((t) => ({ value: t, label: t }))} onChange={onChange} />;
 /* The line under a chart that says what the hovered or picked thing is. */
 const DetailLine = ({ children }) => (
   <div role="status" style={{ alignSelf: "stretch", ...dsText("Text xs"), color: ds.text.secondary, background: ds.surface.general.cardWithinCard, borderRadius: dsRadius.md, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, minHeight: 20 }}>{children}</div>
@@ -58,9 +56,23 @@ function packPoints(points, cut) {
   });
   return out;
 }
+/* The zones form: each zone's people as one cluster in the middle of its quarter, every dot one person and the same size in every
+   zone, so a cluster's size is its headcount. Only counts are needed, so any survey's banded data can draw it. */
+function clusterZones(cells) {
+  const most = Math.max(1, ...cells.map((c) => c.n));
+  const step = Math.min(3.2, 17 / Math.sqrt(most)); // the biggest cluster stays within ~17 units of its centre
+  const centre = { "0,1": [27, 73], "1,1": [73, 73], "0,0": [27, 27], "1,0": [73, 27] }; // nudged towards the middle, away from the label chips
+  const out = [];
+  cells.forEach((c) => {
+    const [cx, cy] = centre[c.key];
+    for (let i = 0; i < c.n; i++) { const r = step * Math.sqrt(i + 0.5), a = i * 2.39996; out.push({ id: `${c.key}-${i}`, k: c.key, px: cx + r * Math.cos(a), py: cy + r * Math.sin(a), r: step * 0.42 }); }
+  });
+  return out;
+}
 const OUTER_CORNER = { "0,1": "borderTopLeftRadius", "1,1": "borderTopRightRadius", "0,0": "borderBottomLeftRadius", "1,0": "borderBottomRightRadius" };
 const QUAD = { "0,1": ["top", "left"], "1,1": ["top", "right"], "0,0": ["bottom", "left"], "1,0": ["bottom", "right"] };
-export function QuadrantStory({ title = "Where People Sit", line, pairs }) {
+export function QuadrantStory({ title = "Where People Sit", line, pairs, form = "scatter" }) {
+  const zones = form === "zones";
   const [ref, { compact }] = useOwnWidth();
   const [pairKey, setPairKey] = useState(pairs[0].key);
   const [view, setView] = useState("chart");
@@ -73,22 +85,21 @@ export function QuadrantStory({ title = "Where People Sit", line, pairs }) {
   const columns = [{ key: "name", label: "Zone" }, { key: "where", label: "Where" }, { key: "n", label: "People", align: "right" }, { key: "pct", label: "Share", align: "right", render: (r) => `${r.pct}%`, text: (r) => `${r.pct}%` }, ...(q.cells[0].change != null ? [{ key: "change", label: "Change", short: "Change", align: "right", render: (r) => `${signed(r.change)} pts`, text: (r) => `${signed(r.change)} pts` }] : [])];
   const where = plainName;
   const rows = order.map((k) => ({ ...cell(k), where: where(k) }));
-  const best = cell("1,1"), worst = cell("0,0");
   const active = hover || picked;
   const pick = active ? cell(active) : null;
   const [lo, hi] = q.scale || [0, 100]; // the survey's own range; everything is drawn in % of it
   const u = (v) => ((v - lo) / (hi - lo)) * 100;
-  const c = u(q.cut);
+  const c = zones ? 50 : u(q.cut); // the zones form draws four equal quarters
   const box = { "0,1": { left: 0, top: 0, width: c, height: 100 - c }, "1,1": { left: c, top: 0, width: 100 - c, height: 100 - c }, "0,0": { left: 0, top: 100 - c, width: c, height: c }, "1,0": { left: c, top: 100 - c, width: 100 - c, height: c } };
   const pc = (v) => `${v}%`;
-  const placed = packPoints((q.points || []).map((p) => ({ ...p, x: u(p.x), y: u(p.y) })), c);
+  const placed = zones ? clusterZones(q.cells) : packPoints((q.points || []).map((p) => ({ ...p, x: u(p.x), y: u(p.y) })), c);
   const tickStyle = { position: "absolute", ...dsText("Text 3xs"), color: ds.text.quaternary, ...tab, lineHeight: 1 };
   const vertical = { writingMode: "vertical-rl", transform: "rotate(180deg)" };
   return (
     <div ref={ref}>
       <StoryCard title={title} data-story="insight-quadrant"
-        line={line ?? `${best.pct}% of people are ${best.name.toLowerCase()} and ${worst.pct}% ${worst.name.toLowerCase()}. ${q.n} people, cut at ${q.cut} on each measure.`}
-        controls={[pairs.length > 1 && <Choice key="p" compact={compact} label="Measures" tabs={pairs.map((p) => p.label)} value={q.label} onChange={(l) => { setPairKey(pairs.find((p) => p.label === l).key); setPicked(null); setHover(null); }} />, <ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows)} />]}>
+        line={line ?? `Where people sit on two measures at once, and how many are in each zone.`}
+        controls={[pairs.length > 1 && <Choice key="p" label="Measures" tabs={pairs.map((p) => p.label)} value={q.label} onChange={(l) => { setPairKey(pairs.find((p) => p.label === l).key); setPicked(null); setHover(null); }} />, <ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows)} />]}>
         <EvidenceSection style={{ padding: dsSpace[16] }}>
           {view === "table" ? <DataTable columns={columns} rows={rows} /> : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: dsSpace[12] }}>
@@ -100,7 +111,7 @@ export function QuadrantStory({ title = "Where People Sit", line, pairs }) {
                   <span style={vertical}>{q.y.low}</span>
                 </div>
                 <div style={{ position: "relative" }} aria-hidden="true">
-                  {[[100, hi], [c, q.cut], [0, lo]].map(([v, l]) => <span key={v} style={{ ...tickStyle, right: 0, top: pc(100 - v), transform: `translateY(${v === 100 ? 0 : v === 0 ? -100 : -50}%)` }}>{l}</span>)}
+                  {!zones && [[100, hi], [c, q.cut], [0, lo]].map(([v, l]) => <span key={v} style={{ ...tickStyle, right: 0, top: pc(100 - v), transform: `translateY(${v === 100 ? 0 : v === 0 ? -100 : -50}%)` }}>{l}</span>)}
                 </div>
                 <div role="group" aria-label={`${q.y.label} against ${q.x.label}, ${q.n} people`} onPointerLeave={() => setHover(null)}
                   style={{ position: "relative", aspectRatio: "1 / 1", borderRadius: dsRadius.lg, overflow: "hidden", background: ds.surface.general.card }}>
@@ -119,18 +130,18 @@ export function QuadrantStory({ title = "Where People Sit", line, pairs }) {
                   })}
                   {/* the people and the cut lines, over the tints and under the label chips */}
                   <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }}>
-                    <line x1={c} x2={c} y1={0} y2={100} vectorEffect="non-scaling-stroke" style={{ stroke: ds.border.strong, strokeWidth: 1, strokeDasharray: "3 3" }} />
-                    <line x1={0} x2={100} y1={100 - c} y2={100 - c} vectorEffect="non-scaling-stroke" style={{ stroke: ds.border.strong, strokeWidth: 1, strokeDasharray: "3 3" }} />
+                    {!zones && <line x1={c} x2={c} y1={0} y2={100} vectorEffect="non-scaling-stroke" style={{ stroke: ds.border.strong, strokeWidth: 1, strokeDasharray: "3 3" }} />}
+                    {!zones && <line x1={0} x2={100} y1={100 - c} y2={100 - c} vectorEffect="non-scaling-stroke" style={{ stroke: ds.border.strong, strokeWidth: 1, strokeDasharray: "3 3" }} />}
                     {placed.map((p) => {
                       const dim = active && active !== p.k;
-                      return <circle key={p.id} r={compact ? 1.1 : 0.9} cx={0} cy={0} style={{ transform: `translate(${p.px}px, ${100 - p.py}px)`, transition: "transform 520ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease", fill: zoneOf(p.k).graph, stroke: ds.surface.general.card, strokeWidth: 0.3, opacity: dim ? 0.15 : 0.95 }} />;
+                      return <circle key={p.id} r={p.r ?? (compact ? 1.1 : 0.9)} cx={0} cy={0} style={{ transform: `translate(${p.px}px, ${100 - p.py}px)`, transition: "transform 520ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease", fill: zoneOf(p.k).graph, stroke: ds.surface.general.card, strokeWidth: 0.3, opacity: dim ? 0.15 : 0.95 }} />;
                     })}
                   </svg>
                 </div>
                 {/* x axis: the ticks, then its title with the two ends (bad on the left) */}
                 <span /><span />
                 <div style={{ position: "relative", height: 16 }} aria-hidden="true">
-                  {[[0, lo], [c, q.cut], [100, hi]].map(([v, l]) => <span key={v} style={{ ...tickStyle, top: 5, left: pc(v), transform: `translateX(${v === 0 ? 0 : v === 100 ? -100 : -50}%)` }}>{l}</span>)}
+                  {!zones && [[0, lo], [c, q.cut], [100, hi]].map(([v, l]) => <span key={v} style={{ ...tickStyle, top: 5, left: pc(v), transform: `translateX(${v === 0 ? 0 : v === 100 ? -100 : -50}%)` }}>{l}</span>)}
                 </div>
                 <span /><span />
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: dsSpace[8], ...dsText("Text 3xs"), color: ds.text.tertiary }}>
@@ -142,9 +153,9 @@ export function QuadrantStory({ title = "Where People Sit", line, pairs }) {
               <DetailLine>
                 {pick
                   ? <><b style={{ color: ds.text.primary }}>{pick.name}</b> · {pick.n} {pick.n === 1 ? "person" : "people"} ({pick.pct}%){pick.change != null && <> · {signed(pick.change)} pts since the round before</>}. {pick.about}</>
-                  : "Each dot is one person. Hover or tap a zone to see who is in it."}
+                  : zones ? "Each dot is one person. Hover or tap a zone to read it." : "Each dot is one person, placed by their two scores. Hover or tap a zone to read it."}
               </DetailLine>
-              <p style={{ ...noteText, alignSelf: "stretch" }}>High and low are split at {q.cut} on each measure (the dashed lines), so the zones are drawn to scale, not as equal quarters. People with the same two scores are grouped around that point. {q.x.label}: {q.x.note}. {q.y.label}: {q.y.note}. A link, not proof that one causes the other.</p>
+              <p style={{ ...noteText, alignSelf: "stretch" }}>{zones ? `High and low are split at ${q.cut} on each measure; the zones are drawn the same size.` : `High and low are split at ${q.cut} on each measure (the dashed lines).`} {q.x.label}: {q.x.note}. {q.y.label}: {q.y.note}. A link, not a cause.</p>
             </div>
           )}
         </EvidenceSection>
@@ -162,22 +173,21 @@ export function QuadrantStory({ title = "Where People Sit", line, pairs }) {
 const fmtP = (p) => (p < 0.001 ? "p < 0.001" : `p = ${p.toFixed(p < 0.1 ? 3 : 2)}`); // three places near the 0.05 line, so 0.049 never reads as 0.05
 const OFFER_COLOURS = [ds.graph.mintGreen, ds.graph.personalBlue, ds.graph.goldenYellow, ds.graph.lavenderViolet, ds.graph.turquoise, ds.graph.hotPink];
 const shown = (i) => i.with.pct != null && i.without.pct != null;
-export function WithWithoutStory({ title = "What Makes the Difference", line, data, outcomes, splits, onChange }) {
+export function WithWithoutStory({ title = "What Makes the Difference", line, data }) {
   const [ref, { compact, tight }] = useOwnWidth();
   const [view, setView] = useState("chart");
   const [picked, setPicked] = useState(null);
   const [hover, setHover] = useState(null);
-  const { outcome, split, items } = data;
+  const { outcome, items } = data;
   const columns = [{ key: "offer", label: "People with…" }, { key: "w", label: "With", align: "right", render: (r) => cellText(r.with), text: (r) => cellText(r.with) }, { key: "wo", label: "Without", align: "right", render: (r) => cellText(r.without), text: (r) => cellText(r.without) }, { key: "p", label: "Test", align: "right", render: (r) => testText(r), text: (r) => testText(r) }];
-  const strongest = [...items].filter(shown).sort((a, b) => (b.with.pct - b.without.pct) - (a.with.pct - a.without.pct))[0];
   const maxPct = Math.max(1, ...items.flatMap((i) => [i.with.pct, i.without.pct]).filter((v) => v != null));
   const R = tight ? 26 : compact ? 34 : 46; // radius of the largest share in the Story
   const active = items.find((i) => i.key === (hover || picked));
   return (
     <div ref={ref}>
       <StoryCard title={title} data-story="insight-withwithout"
-        line={line ?? (strongest ? `People with ${strongest.offer} are more likely to ${outcome.phrase}: ${strongest.with.pct}% against ${strongest.without.pct}% without it.` : `How likely people are to ${outcome.phrase}, with and without each of these.`)}
-        controls={[outcomes && <PillTabs key="o" label="Outcome" tone="default" tabs={outcomes.map((o) => o.label)} value={outcome.label} onChange={(l) => onChange?.({ outcome: outcomes.find((o) => o.label === l).key })} />, splits && <PillTabs key="s" label="People" tone="default" tabs={splits.map((s) => s.label)} value={split.label} onChange={(l) => onChange?.({ split: splits.find((s) => s.label === l).key })} />, <ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, items)} />]}>
+        line={line ?? `How likely people are to ${outcome.phrase} when they have each of these, and when they don't.`}
+        controls={[<ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, items)} />]}>
         <EvidenceSection style={{ padding: dsSpace[16] }}>
           {view === "table" ? <DataTable columns={columns} rows={items} /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[16] }}>
@@ -190,10 +200,10 @@ export function WithWithoutStory({ title = "What Makes the Difference", line, da
               </div>
               <DetailLine>
                 {active
-                  ? <><b style={{ color: ds.text.primary }}>“{active.question}”</b> {cellSentence(active.with, "agree")}; {cellSentence(active.without, "disagree")}. {active.p == null ? "Too few to test." : `${fmtP(active.p)}.`}</>
-                  : "Hover or tap a card for the question and the counts."}
+                  ? <><span style={{ color: ds.text.primary }}>{readOffer(active, outcome)}</span> <span style={{ color: ds.text.tertiary }}>{countsOf(active)}</span></>
+                  : "Hover or tap a card to read it."}
               </DetailLine>
-              <p style={noteText}>{split.key === "all" ? `${data.n} people.` : `${data.n} people who work ${split.label.toLowerCase() === "home" ? "from home" : split.label === "Office" ? "in the office" : "hybrid"}.`} With = agree, without = disagree. Fisher's exact test. A link, not a cause.</p>
+              <p style={noteText}>{data.n} people. With = agree, without = disagree. p is Fisher's exact test. A link, not a cause.</p>
             </div>
           )}
         </EvidenceSection>
@@ -203,11 +213,18 @@ export function WithWithoutStory({ title = "What Makes the Difference", line, da
 }
 const cellText = (g) => (g.pct == null ? `${g.n} (too few)` : `${g.pct}% of ${g.n}`);
 const testText = (r) => (r.p == null ? "Too few to test" : `${fmtP(r.p)} · ${r.evidence}`);
-const cellSentence = (g, verb) => (g.pct == null ? `${g.n} ${verb}, too few to show` : `${g.k} of the ${g.n} who ${verb} (${g.pct}%)`);
+/* The card, said in a sentence: what the hover line reads out. */
+const readOffer = (it, outcome) => {
+  const Offer = `People with ${it.offer}`;
+  if (it.with.pct == null) return `Too few people have ${it.offer} to compare.`;
+  if (it.without.pct == null) return `Too few people lack ${it.offer} to compare.`;
+  if (it.with.pct === it.without.pct) return `${Offer} are as likely to ${outcome.phrase} as people without it: ${it.with.pct}%.`;
+  return `${Offer} are ${it.with.pct > it.without.pct ? "more" : "less"} likely to ${outcome.phrase}: ${it.with.pct}% against ${it.without.pct}% without it.`;
+};
+const countsOf = (it) => `${it.with.k} of ${it.with.n} with it, ${it.without.k} of ${it.without.n} without${it.p == null ? "" : `, ${fmtP(it.p)}`}.`;
 function OfferCard({ it, colour, R, maxPct, on, pressed, onPick, onHover }) {
   const W = 4 * R + 16, H = 2 * R + 18, base = 2 * R + 2;
   const rOf = (pct) => (pct ? Math.max(4, R * Math.sqrt(pct / maxPct)) : 0);
-  const ratio = shown(it) && it.without.pct ? Math.round((it.with.pct / it.without.pct) * 10) / 10 : null;
   const strong = it.p != null && it.p < 0.05;
   const circle = (g, cx, filled) => {
     const r = rOf(g.pct), inside = r >= 20, empty = !r;
@@ -233,14 +250,7 @@ function OfferCard({ it, colour, R, maxPct, on, pressed, onPick, onHover }) {
         {circle(it.with, R, true)}
         {circle(it.without, 3 * R + 16, false)}
       </svg>
-      <span style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: dsSpace[6], flexWrap: "wrap" }}>
-        {shown(it)
-          ? <>
-              <span style={{ ...dsText("Text md", 700), color: ds.text.primary, ...tab }}>{ratio ? `${ratio}×` : `+${it.with.pct} pts`}</span>
-              <span style={{ ...dsText("Text 3xs", strong ? 700 : 400), color: strong ? ds.text.secondary : ds.text.quaternary, whiteSpace: "nowrap" }}>{it.evidence}</span>
-            </>
-          : <span style={{ ...dsText("Text 2xs"), color: ds.text.quaternary }}>Too few to compare</span>}
-      </span>
+      <span style={{ ...dsText("Text 2xs", strong ? 500 : 400), color: strong ? ds.text.secondary : ds.text.quaternary, ...tab }}>{it.p == null ? "Too few to test" : fmtP(it.p)}</span>
     </button>
   );
 }
@@ -263,15 +273,14 @@ export function StatusOutcomeStory({ title, line, statuses, groups, outcomes, fo
   const [key, setKey] = useState(outcomes[0].key);
   const [view, setView] = useState("chart");
   const o = outcomes.find((x) => x.key === key) || outcomes[0];
-  const top = rows_[0], low = rows_[rows_.length - 1];
+  const top = rows_[0];
   const fmt = (v) => (v == null ? "–" : o.kind === "share" ? `${v}%` : `${v}`);
   const columns = [{ key: "status", label: "Group" }, { key: "n", label: "People", align: "right" }, ...outcomes.map((x) => ({ key: x.key, label: x.label, short: x.label.split(" ").slice(0, 2).join(" "), align: "right", render: (r) => (r.values[x.key] == null ? "–" : x.kind === "share" ? `${r.values[x.key]}%` : r.values[x.key]), text: (r) => String(r.values[x.key] ?? "") }))];
-  const sentence = (g) => (g.values[o.key] == null ? "no answer" : o.sentence(g.values[o.key]));
   return (
     <div ref={ref}>
       <StoryCard title={title ?? `Why ${top.status.replace(/\b\w/g, (ch) => ch.toUpperCase())} Matters`} data-story="insight-status-outcome" data-form={form}
-        line={line ?? `${top.status} people: ${sentence(top)}. ${low.status} people: ${sentence(low)}.`}
-        controls={[outcomes.length > 1 && <Choice key="o" compact={compact} label="Outcome" tabs={outcomes.map((x) => x.label)} value={o.label} onChange={(l) => setKey(outcomes.find((x) => x.label === l).key)} />, <ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows_)} />]}>
+        line={line ?? `How an outcome differs from one group to the next.`}
+        controls={[outcomes.length > 1 && <Choice key="o" label="Outcome" tabs={outcomes.map((x) => x.label)} value={o.label} onChange={(l) => setKey(outcomes.find((x) => x.label === l).key)} />, <ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows_)} />]}>
         <EvidenceSection style={{ padding: dsSpace[16] }}>
           {view === "table" ? <DataTable columns={columns} rows={rows_} /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[16] }}>

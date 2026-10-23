@@ -5,9 +5,8 @@ import BreakdownStory from "../scope/stories/BreakdownStory.jsx";
 import { SplitBreakdownStory, ChangesStory, WithinReachStory } from "../scope/stories/FamilyStories.jsx";
 import { ScoreOverTime, ScoreOverTimeRows, ENPSOverTime, StatusOverTime, FlowOverTime } from "../scope/stories/TrendCharts.jsx";
 import { wellbeingFlows } from "../../lib/survey/wellbeingFlows.js";
-import { useState } from "react";
 import { QuadrantStory, WithWithoutStory, StatusOutcomeStory } from "../scope/stories/InsightStories.jsx";
-import { PAIRS, quadrant, withWithout, OUTCOMES, SPLITS, outcomeByStatus } from "../../lib/survey/insightData.js";
+import { PAIRS, quadrant, withWithout, outcomeByStatus } from "../../lib/survey/insightData.js";
 import { StrongestWeakestStory, AreasToFocusStory } from "../scope/stories/DiagnosticStory.jsx";
 import ScoreHistoryStory from "../scope/stories/ScoreHistoryStory.jsx";
 import SeverityBreakdownStory from "../scope/stories/SeverityBreakdown.jsx";
@@ -293,9 +292,8 @@ function FlowStory() {
   return <FlowOverTime rounds={f.rounds} measures={f.measures} cohort={f.cohort} line={`The ${f.cohort} people who answered all ${f.rounds.length} rounds (of ${f.total}), by level. Bands show where each level's people were at the next round.`} />;
 }
 
-/* What Makes the Difference: owns the outcome and the people split, and recomputes from the dataset when they change. */
+/* What Makes the Difference: everyone in the latest round, against Flourishing. */
 const MEASURE_LABEL = { stress: "Stress", resilience: "Resilience", workload: "Workload", balance: "Balance", engagement: "Engagement", commitment: "Commitment" };
 function DifferenceStory() {
-  const [opt, setOpt] = useState({ outcome: "flourishing", split: "all" });
-  return <WithWithoutStory data={withWithout(opt)} outcomes={Object.entries(OUTCOMES).map(([key, o]) => ({ key, label: o.label }))} splits={SPLITS} onChange={(patch) => setOpt((o) => ({ ...o, ...patch }))} />;
+  return <WithWithoutStory data={withWithout()} />;
 }

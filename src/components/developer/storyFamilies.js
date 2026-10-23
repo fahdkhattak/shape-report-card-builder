@@ -53,7 +53,7 @@ export const FAMILY_FORMS = {
       { id: "form-reach", label: "Within Reach" },
       { id: "form-rank", label: "How It Ranks" },
       /* SHAPE report only (new dataset), documented on their own page. */
-      { id: "form-quadrant", label: "Where People Sit", doc: "relationships", note: "SHAPE report" },
+      { id: "form-quadrant", label: "Where People Sit", doc: "relationships", note: "SHAPE report · Scatter, Zones" },
       { id: "form-difference", label: "What Makes the Difference", doc: "relationships", note: "SHAPE report" },
       { id: "form-status-outcome", label: "Why Flourishing Matters", doc: "relationships", note: "SHAPE report · Waffle, People" },
     ],

@@ -3649,3 +3649,23 @@ Same props, data, controls and Table Views; only the charts changed (`InsightSto
   segmentation), the outcome questions it treats as outcomes, and which pairs of measures are worth putting on a quadrant.
 - **Hover ring fixed**: each zone button now has the plot's radius on its outer corner, so the 2px ring follows the rounded
   corner instead of being clipped by it.
+
+### Relationship Stories, round 3 (product direction)
+
+- **A Story's explanatory line describes what the Story does, never the data.** No numbers, no "49% of people are…". The data
+  reading belongs in the content (and, for these Stories, in the hover line). Applied to all three: "Where people sit on two
+  measures at once, and how many are in each zone." / "How likely people are to be Flourishing when they have each of these, and
+  when they don't." / "How an outcome differs from one group to the next."
+- **What Makes the Difference**: no Outcome or People tabs, no "2.6×" / "+29 pts", no evidence words. Each card is the offer,
+  the two circles and the p-value under them. Hover or tap reads the card as a sentence ("People with work flexible enough for
+  their needs are more likely to be Flourishing: 29% against 0% without it.") then the counts and p in grey. `withWithout()`
+  takes no outcome or split now; one `OUTCOME` (Flourishing). `OUTCOMES` / `SPLITS` are gone.
+- **"Would recommend" is removed everywhere in these Stories** (the Difference outcome and Why Flourishing Matters, which now
+  offers Look forward to work and self-rated performance).
+- **Where People Sit has a second form, `form="zones"`**: four equal quarters, no ticks or cut lines, each zone's people as one
+  cluster of same-size dots (`clusterZones`), so cluster size is headcount. It needs only the four counts, not each person's
+  scores. Scatter stays the default (and the report's).
+- The "Another survey" examples were removed from the Developer page (the user only wanted the components to take any data,
+  not a variant). The props that make that possible stay: `groups` + `tone`, `pair.scale`, optional zone names.
+- **Choices inside these Stories are a dropdown, never tabs** (product direction: a survey can offer many pairs or outcomes, and a
+  row of tabs doesn't scale). `Choice` in `InsightStories.jsx` is always `ui/Dropdown.jsx`; it disappears when there's only one.

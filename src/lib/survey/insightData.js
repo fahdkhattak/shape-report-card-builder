@@ -70,16 +70,8 @@ export const OFFERS = [
   { key: "training", qid: "EE1.4", offer: "access to training and development", question: "I have access to training and development opportunities if required" },
   { key: "safe", qid: "EC2", offer: "safety from harm, bullying and harassment", question: "At work, do you feel safe from physical and/or psychological harm, bullying, and harassment?" },
 ];
-export const OUTCOMES = {
-  flourishing: { label: "Flourishing", phrase: "be Flourishing", test: (s) => s.status === "Flourishing" },
-  recommend: { label: "Would recommend", phrase: "recommend working here", test: (s) => s.enps?.group === "Promoter" },
-};
-export const SPLITS = [
-  { key: "all", label: "Everyone", keep: () => true },
-  { key: "Office", label: "Office", keep: (p) => p.profile.workModel === "Office" },
-  { key: "Hybrid", label: "Hybrid", keep: (p) => p.profile.workModel === "Hybrid" },
-  { key: "Home", label: "Home", keep: (p) => p.profile.workModel === "Home" },
-];
+/* The outcome the offers are tested against. One outcome, the survey's best band; another survey would name its own. */
+export const OUTCOME = { label: "Flourishing", phrase: "be Flourishing", test: (s) => s.status === "Flourishing" };
 
 /* Fisher's exact test, two-sided: the chance of a split at least this uneven if having the offer made no difference. Exact,
    so it stays honest on the small groups a 150-person survey gives. */
@@ -95,9 +87,9 @@ export function fisher(a, b, c, d) {
 /* Plain words for a p-value. */
 export const evidence = (p) => (p == null ? null : p < 0.01 ? "Strong evidence" : p < 0.05 ? "Some evidence" : "Could be chance");
 
-export function withWithout({ outcome = "flourishing", split = "all", round = LATEST_ROUND, minGroup = 5 } = {}) {
-  const O = OUTCOMES[outcome], S = SPLITS.find((x) => x.key === split) || SPLITS[0];
-  const rows = scoresOf(round, S.keep);
+export function withWithout({ round = LATEST_ROUND, minGroup = 5 } = {}) {
+  const O = OUTCOME;
+  const rows = scoresOf(round);
   const items = OFFERS.map((o) => {
     const w = rows.filter(({ s }) => s.questions[o.qid] != null && s.questions[o.qid] >= 75);
     const wo = rows.filter(({ s }) => s.questions[o.qid] != null && s.questions[o.qid] <= 25);
@@ -112,12 +104,11 @@ export function withWithout({ outcome = "flourishing", split = "all", round = LA
       neutral, p, evidence: evidence(p), enough,
     };
   });
-  return { outcome: O, split: S, n: rows.length, items };
+  return { outcome: O, n: rows.length, items };
 }
 
 /* ---- Why Flourishing Matters ---------------------------------------------------------------------------------- */
 export const STATUS_OUTCOMES = [
-  { key: "recommend", label: "Would recommend working here", kind: "share", get: (s) => s.enps?.group === "Promoter", sentence: (v) => `${v}% would recommend working here`, caption: "would recommend working here" },
   { key: "lookforward", label: "Look forward to coming to work", kind: "share", get: (s) => (s.questions["EC1.6"] == null ? null : s.questions["EC1.6"] >= 75), sentence: (v) => `${v}% look forward to coming to work`, caption: "look forward to coming to work" },
   { key: "performance", label: "Rate their own performance", kind: "score", get: (s) => s.hpq?.absolute ?? null, sentence: (v) => `rate their own performance ${v} out of 100`, caption: "self-rated performance, out of 100" },
 ];
