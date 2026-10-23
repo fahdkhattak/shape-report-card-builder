@@ -1,4 +1,4 @@
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, fmtMonth } from "../../../lib/scopeData.js";
 import { ScoreLine } from "./TrendCharts.jsx";
 
@@ -12,8 +12,7 @@ import { ScoreLine } from "./TrendCharts.jsx";
 /* (It used to be its own 776px picture scaled down, which made its text   */
 /* tiny on a phone and didn't match the other charts.)                     */
 /* ================================================================== */
-const ROUND_LABELS = ROUNDS.map((r, i) => ({ label: fmtMonth(r.date), latest: i === LAST }));
-
 export default function HistoryLineChart({ values, banded = true, domain = [0, 100], ticks = [0, 20, 40, 60, 80, 100], unit = "" }) {
+  const ROUND_LABELS = useRounds().map((r, i) => ({ label: fmtMonth(r.date), latest: i === LAST }));
   return <ScoreLine rounds={ROUND_LABELS} values={values} domain={domain} ticks={[...ticks].sort((a, b) => b - a)} banded={banded} unit={unit} />;
 }

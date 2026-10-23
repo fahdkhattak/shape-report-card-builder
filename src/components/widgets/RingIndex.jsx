@@ -34,7 +34,7 @@ import { DIMENSIONS, DIMENSION_DRIVERS, PREVIOUS, dimensionValue, driverValue } 
 const G = { hole: 55.6, in: 58, out: 137, r2Out: 171 };
 const MIN_CHILD_DEG = 12;
 const MAX_CHILD_LABELS = 25;
-const LEVEL2 = { success: "#D3F2E3", warning: "#FFF1CF", error: "#FCD7DD" }; // secondary tints from the board (not in the DS file)
+const LEVEL2 = { success: ds.utility.likert.vGoodSubtle, warning: ds.utility.likert.neutralSubtle, error: ds.utility.likert.veryBadSubtle }; // the board's secondary tints = the Likert Subtle colours
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
 /* Text width in px, measured with the real font (canvas measureText), so a label is only truncated when it really
@@ -170,7 +170,7 @@ function Ring({ wedges: all, center, size, title }) {
     const smallKids = kids.length > 0 && childDeg < MIN_CHILD_DEG;
     return (
       <g key={pid} opacity={active(pid, pid) ? 1 : 0.55} style={{ transition: "opacity 120ms ease" }}>
-        <path d={describeArc(cx, cy, G.in, G.out, a0, a1)} fill={tint(w.value, 1)} stroke="#fff" strokeWidth="1" style={{ cursor: "pointer" }} {...on(pid)} />
+        <path d={describeArc(cx, cy, G.in, G.out, a0, a1)} fill={tint(w.value, 1)} stroke={ds.surface.general.card} strokeWidth="1" style={{ cursor: "pointer" }} {...on(pid)} />
         {labelText && <Txt x={nameAt.x} y={nameAt.y} w={nameAt.w}>{labelText}</Txt>}
         <Txt x={valAt.x} y={valAt.y} w={30} h={16} size={12} weight={700} color={dsBand(w.value).cs}>{Math.round(w.value)}</Txt>
         {kids.map((c, j) => {
@@ -181,7 +181,7 @@ function Ring({ wedges: all, center, size, title }) {
           rim.push({ a0: s0, a1: s1, v: c.value });
           return (
             <g key={cid} opacity={!hover || hover.id === cid || hover.group === pid ? 1 : 0.55} style={{ transition: "opacity 120ms ease" }}>
-              <path d={describeArc(cx, cy, G.out, G.r2Out, s0, s1)} fill={tint(c.value, 2)} stroke="#fff" strokeWidth="1" style={{ cursor: "pointer" }} {...on(smallKids ? `g${i}` : cid, smallKids ? { group: pid } : { parent: i })} />
+              <path d={describeArc(cx, cy, G.out, G.r2Out, s0, s1)} fill={tint(c.value, 2)} stroke={ds.surface.general.card} strokeWidth="1" style={{ cursor: "pointer" }} {...on(smallKids ? `g${i}` : cid, smallKids ? { group: pid } : { parent: i })} />
               {fits && <Txt x={at.x} y={at.y} w={24} h={12} weight={700} color={dsBand(c.value).cs}>{Math.round(c.value)}</Txt>}
             </g>
           );
@@ -215,14 +215,14 @@ function Ring({ wedges: all, center, size, title }) {
   // With no labels outside the rim the ring has the whole box: crop the view to the ring so it is as big as it can be.
   const crop = hasSub && !outsideOk;
   const vb = crop ? { x: cx - (rimOut + 8), y: cy - (rimOut + 8), w: 2 * (rimOut + 8), h: 2 * (rimOut + 8) } : { x: 0, y: 0, w: W, h: H };
-  const big = center >= 100 ? 52 : 64;
+  const big = center >= 100 ? 48 : 64;
   return (
     <div style={{ flex: 1, alignSelf: "stretch", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "visible", minWidth: 0, minHeight: 0 }}>
       <div style={{ position: "relative", width: "100%", maxWidth: crop ? 468 : W, aspectRatio: `${vb.w} / ${vb.h}` }}>
         <svg width="100%" height="100%" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} style={{ display: "block", overflow: "visible", touchAction: "pan-y" }} role="img" aria-label={`${title || "Index"}: ${center} out of 100. ${wedges.map((w) => `${w.label} ${Math.round(w.value)}`).join(", ")}`}>
           {body}
           {rimEls}
-          <circle cx={cx} cy={cy} r={G.hole} fill="#fff" />
+          <circle cx={cx} cy={cy} r={G.hole} fill={ds.surface.general.card} />
           <foreignObject x={cx - G.hole} y={cy - G.hole} width={G.hole * 2} height={G.hole * 2} style={{ pointerEvents: "none" }}>
             <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font }}>
               <span style={{ fontSize: big, fontWeight: 700, letterSpacing: -big * 0.02, lineHeight: 1, color: ds.status[dsBand(center).key].text }}>{center}</span>
@@ -236,6 +236,13 @@ function Ring({ wedges: all, center, size, title }) {
   );
 }
 
+/* ---- THE INDEX, for any score with parts (lib/scoreWidget.js) -------------------------------- */
+/* wedges: its parts [{ label, value, prev?, sub?: [...] }]; `sub` (the layer under each part) is drawn only at 3x3.
+   A score with one layer of parts is 2x2 only (indexSizes); the caller decides the size. */
+export function Index({ wedges, center, size = "2x2", title }) {
+  return <Ring wedges={wedges} center={Math.round(center)} size={size} title={title} />;
+}
+
 /* ---- the whole organisation: the Explorers, and (3×3) the Drivers inside each --------------- */
 export function IndexRing({ variant = "2x2", overall }) {
   const is3 = variant === "3x3";
@@ -243,10 +250,10 @@ export function IndexRing({ variant = "2x2", overall }) {
     label: d, value: dimensionValue(d), prev: dimensionValue(d, PREVIOUS),
     sub: is3 ? (DIMENSION_DRIVERS[d] || []).map((drv) => ({ label: drv, value: driverValue(drv), prev: driverValue(drv, PREVIOUS) })) : undefined,
   }));
-  return <Ring wedges={wedges} center={Math.round(overall)} size={variant} title="Wellbeing index" />;
+  return <Ring wedges={wedges} center={Math.round(overall)} size={variant} title="Org index" />;
 }
 
-/* ---- one Explorer: its Drivers. There is no third level in the data (a round is not a sub-group), so this is a 2×2. */
+/* ---- one Explorer: its Drivers. One layer of parts, so a 2×2 only. */
 export function DimensionIndex({ dimension }) {
   const wedges = (DIMENSION_DRIVERS[dimension] || []).map((d) => ({ label: d, value: driverValue(d), prev: driverValue(d, PREVIOUS) }));
   return <Ring wedges={wedges} center={Math.round(dimensionValue(dimension))} size="2x2" title={`${dimension} index`} />;

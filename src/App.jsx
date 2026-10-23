@@ -10,8 +10,12 @@ import LibraryScreen from "./components/library/LibraryScreen.jsx";
 import SurveyBuilderScreen from "./components/survey/SurveyBuilderScreen.jsx";
 import WidgetBuilderScreen from "./components/widgetbuilder/WidgetBuilderScreen.jsx";
 import DeveloperScreen from "./components/developer/DeveloperScreen.jsx";
+import DashboardsScreen from "./components/dashboards/DashboardsScreen.jsx";
 import { NavActionsContext } from "./lib/navActions.js";
 import SearchOverlay from "./components/shell/SearchOverlay.jsx";
+import { SHAPE_REPORT_WIDGETS } from "./components/shape/shapeWidgets.jsx";
+import PersonPicker from "./components/shape/PersonPicker.jsx";
+import { DEFAULT_PERSON, personById, ROUNDS as SURVEY_ROUNDS } from "./lib/survey/surveyData.js";
 
 /* ================================================================== */
 /* APP ROOT — chat-first flow, per the real product reference           */
@@ -92,6 +96,7 @@ export default function App() {
   // the sidebar's Library item both land here.
   const goLibrary = () => setScreen("library");
   const goDeveloper = () => setScreen("developer"); // the handoff area (components/developer/)
+  const goDashboards = () => setScreen("dashboards"); // dashboard redesign mockups (components/dashboards/)
   const addToOrgReport = (familyId, formIndex) => setOrgLibrary((l) => (l.some((w) => w.familyId === familyId && w.formIndex === formIndex) ? l : [...l, { familyId, formIndex }]));
   const removeFromOrgReport = (familyId, formIndex) => setOrgLibrary((l) => l.filter((w) => !(w.familyId === familyId && w.formIndex === formIndex)));
 
@@ -124,6 +129,28 @@ export default function App() {
 
   const openOrgReport = () => buildOrgReport();
 
+  // Sidebar "Your Reports > SHAPE > Personal | Org": the SHAPE report, on the new survey dataset
+  // (lib/survey/surveyData.js). Personal is one person's own answers (no groups); Org averages people and never shows a
+  // group under 5. The old Performance report above is untouched.
+  const openShapeReport = (persona = "org", personId = DEFAULT_PERSON) => {
+    const personal = persona === "personal";
+    const person = personal ? personById(personId) : null;
+    const answered = person ? SURVEY_ROUNDS.filter((r) => person.rounds[r.id]) : SURVEY_ROUNDS;
+    setCanvasProps({
+      initialWidgets: SHAPE_REPORT_WIDGETS[persona].map((widgetId) => ({ id: nextId(), kind: "shape", widgetId, personId: person?.id })),
+      scopeLabel: null, chatOpen: false, generating: false, libraryOpen: false,
+      report: {
+        id: personal ? `shape-personal:${person.id}` : "shape-org",
+        title: "SHAPE", service: "SHAPE", persona: personal ? "Personal" : "Org", reportType: personal ? "Personal Report" : "Org Report",
+        roundLabel: answered[answered.length - 1].label,
+        personas: [{ label: "Personal", onSelect: () => openShapeReport("personal", personId) }, { label: "Org", onSelect: () => openShapeReport("org", personId) }],
+        extra: personal ? <PersonPicker value={person.id} onChange={(id) => openShapeReport("personal", id)} /> : null,
+      },
+    });
+    setScreen("canvas");
+  };
+  const openReportById = (id) => (id === "shape-personal" ? openShapeReport("personal") : id === "shape-org" ? openShapeReport("org") : openOrgReport());
+
   // Widget Builder's "Add to Report": the Org report with the built widget
   // after the standard ones. Its Scope (spec.scope) opens in the Scope pane.
   const addBuiltToReport = ({ spec, scope }) => buildOrgReport([{ id: nextId(), kind: "generated", spec, scope }]);
@@ -151,7 +178,7 @@ export default function App() {
     // per Apple's own reduced-motion guidance: a gentler equivalent, not a
     // silent removal of all feedback. Set once here rather than per-component.
     <MotionConfig reducedMotion="user">
-    <NavActionsContext.Provider value={{ openReport: openOrgReport, openWidgetBuilder: goWidgetBuilder, openLibrary: goLibrary, openDeveloper: goDeveloper }}>
+    <NavActionsContext.Provider value={{ openReport: openReportById, openWidgetBuilder: goWidgetBuilder, openLibrary: goLibrary, openDeveloper: goDeveloper, openDashboards: goDashboards }}>
     <div style={{ width: "100%", height: "100vh", background: T.white }}>
       {screen === "landing" && (
         <ChatLanding
@@ -170,7 +197,7 @@ export default function App() {
       )}
       {screen === "canvas" && (
         <CanvasScreen
-          key={canvasProps.report ? "org-report" : "canvas"}
+          key={canvasProps.report ? canvasProps.report.id || "org-report" : "canvas"}
           initialWidgets={canvasProps.initialWidgets}
           scopeLabel={canvasProps.scopeLabel}
           initialChatOpen={canvasProps.chatOpen}
@@ -213,6 +240,15 @@ export default function App() {
       )}
       {screen === "developer" && (
         <DeveloperScreen
+          navExpanded={navExpanded}
+          onNavExpandedChange={setNavExpanded}
+          onOpenSearch={() => setSearchOpen(true)}
+          onOpenReportBuilder={goHome}
+          onOpenSurveyBuilder={goSurveyBuilder}
+        />
+      )}
+      {screen === "dashboards" && (
+        <DashboardsScreen
           navExpanded={navExpanded}
           onNavExpandedChange={setNavExpanded}
           onOpenSearch={() => setSearchOpen(true)}

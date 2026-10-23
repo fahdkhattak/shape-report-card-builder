@@ -1,5 +1,5 @@
 import { T, font, radius, band } from "../../../lib/tokens.js";
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, fmtDate, fmtMonth } from "../../../lib/scopeData.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import { useStoryStyle } from "./storyStyle.js";
@@ -13,6 +13,7 @@ import { useStoryWidth } from "./storyWidth.js";
 /* card is outlined darker and bold. The oldest round reads "First round".*/
 /* ================================================================== */
 export function HistoryCards({ values, banded = true, unit = "", sel, onSelect }) {
+  const ROUNDS = useRounds();
   const idxs = ROUNDS.map((_, i) => i).reverse();
   // On a compact card the rounds wrap into a grid (every round visible, no sideways scrolling); wide, the designed row.
   const { compact } = useStoryWidth();

@@ -9,7 +9,7 @@ import {
   Search, BookOpen, PanelLeft, ChevronRight, ChevronDown, ChevronUp,
   Plus, MoreHorizontal, ChevronsUpDown, Star, LogOut, ArrowLeftRight,
   Share2, Globe, Check, UserPlus,
-  Workflow, FileQuestion, FileText, LayoutGrid, Presentation, BadgeCheck, Code2,
+  Workflow, FileQuestion, FileText, LayoutGrid, Presentation, BadgeCheck, Code2, LayoutDashboard,
 } from "lucide-react";
 import { useNavActions } from "../../lib/navActions.js";
 import { T, font, radius } from "../../lib/tokens.js";
@@ -81,6 +81,7 @@ const NAV_ITEMS = [
   { id: "generate", label: "Create", icon: Wand2 },
   { id: "library", label: "Library", icon: BookOpen },
   { id: "developer", label: "Developer", icon: Code2 }, // the handoff area — components, states and specs (components/developer/)
+  { id: "dashboards", label: "Dashboards", icon: LayoutDashboard }, // dashboard redesign mockups (components/dashboards/), isolated
 ];
 
 // CREATE TOOLS MENU — a real Figma reference for this one
@@ -290,7 +291,7 @@ function NavItemRow({ item, active, expanded, hovered, onHover, onClick, itemRef
 function SubItemRow({ item, isMenuOpen, onOpenChange }) {
   const [hover, setHover] = useState(false);
   const { openReport } = useNavActions();
-  const hasReport = item.id === "shape-perf-org"; // the only persona version with a built report so far
+  const hasReport = ["shape-perf-org", "shape-personal", "shape-org"].includes(item.id); // the persona versions with a built report
   const { refs, floatingStyles, getFloatingProps } = useMenuFloating({ open: isMenuOpen, onClose: () => onOpenChange(false), placement: "bottom-start", gap: 4 });
   return (
     <div
@@ -561,7 +562,7 @@ function CreateToolsMenu({ floatingRef, style, floatingProps, onSelectReportBuil
 }
 
 function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch, onOpenReportBuilder, onOpenSurveyBuilder }) {
-  const { openReport, openWidgetBuilder, openLibrary, openDeveloper } = useNavActions();
+  const { openReport, openWidgetBuilder, openLibrary, openDeveloper, openDashboards } = useNavActions();
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = expanded ?? internalExpanded;
   const setExpanded = onExpandedChange ?? setInternalExpanded;
@@ -639,7 +640,7 @@ function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch, onOpen
             expanded={isExpanded}
             hovered={hoveredItem === item.id}
             onHover={(v) => setHoveredItem(v ? item.id : null)}
-            onClick={item.id === "search" ? onOpenSearch : item.id === "generate" ? () => setCreateMenuOpen((v) => !v) : item.id === "org" ? () => openReport("shape-perf-org") : item.id === "library" ? openLibrary : item.id === "developer" ? openDeveloper : undefined}
+            onClick={item.id === "search" ? onOpenSearch : item.id === "generate" ? () => setCreateMenuOpen((v) => !v) : item.id === "org" ? () => openReport("shape-perf-org") : item.id === "library" ? openLibrary : item.id === "developer" ? openDeveloper : item.id === "dashboards" ? openDashboards : undefined}
             itemRef={item.id === "generate" ? createFloating.refs.setReference : undefined}
           />
         ))}

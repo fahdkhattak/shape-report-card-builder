@@ -1,4 +1,4 @@
-import { LATEST, ROUNDS, ROUND_LABELS, EMPLOYEE_COUNT, participationRate } from "./dataset.js";
+import { LATEST, PREVIOUS, ROUNDS, ROUND_LABELS, EMPLOYEE_COUNT, participationRate, DIMENSION_DRIVERS, driverValue } from "./dataset.js";
 import { LAST, ALL_AXES, groupRows, groupGaps, focusGroups, statusCountSeries, scoreSpread, statusOf, findGroups, groupSnapshot, groupPartMeans, GROUPS_BY_AXIS, pairLink, responseCoverage } from "./scopeData.js";
 import { FLOURISHING_AT, STRIVING_AT, nextLine, countByStatus } from "./bands.js";
 import { graphFit, chartSizes } from "./insightRules.js";
@@ -233,16 +233,21 @@ export const FORMS = [
     },
   },
   {
-    id: "index", name: "Index", sizes: ["2x2", "3x3"], blocked: (s) => (s.kind === "overall" ? null : "Only for the whole organisation"),
+    // One Index for any score with parts (lib/scoreWidget.js): 2x2 = one layer deeper, 3x3 = two. Only the overall score
+    // has two layers (Explorers, then Drivers); an Explorer or a cluster has one (its Drivers); a Driver has none.
+    id: "index", name: "Index", sizes: ["2x2", "3x3"],
+    blocked: (s) => (s.children.length >= 3 ? null : s.kind === "driver" ? "A Driver has no parts to break down into" : "Needs a score with at least three parts"),
+    fitSizes: (p) => (p.layers >= 2 ? ["2x2", "3x3"] : ["2x2"]),
     title: (s) => `${nm(s)} Index`,
-    why: "The score at the centre with every Explorer around it as a ring. At 3×3 each Explorer is split into its Drivers (see the Index rules on the Developer page).",
-    build: (s) => ({ ...base(s), dimension: null }),
-  },
-  {
-    id: "dindex", name: "Explorer Index", sizes: ["2x2"], blocked: (s) => (s.kind === "dimension" ? null : "Only for one Explorer"),
-    title: (s) => `${nm(s)} Index`,
-    why: "One Explorer's score at the centre with each of its Drivers around the ring. The data has no level below Drivers, so there is no 3×3.",
-    build: (s) => ({ ...base(s), dimension: s.label }),
+    why: "The score at the centre with its parts around it as a ring. A 2x2 goes one layer deeper; a 3x3 two, so only the overall score (Explorers, then their Drivers) has one.",
+    build: (s) => {
+      const two = s.kind === "overall";
+      const wedges = s.children.map((c) => ({
+        label: c.label, value: c.values[LAST], prev: c.values[LAST - 1],
+        sub: two ? (DIMENSION_DRIVERS[c.label] || []).map((d) => ({ label: d, value: driverValue(d), prev: driverValue(d, PREVIOUS) })) : undefined,
+      }));
+      return { ...base(s), wedges, layers: two ? 2 : 1 };
+    },
   },
   {
     id: "team", name: "Group", sizes: ["1x1", "2x2"], blocked: needsScores, options: ["group"],
@@ -346,7 +351,7 @@ export const formById = (id) => FORMS.find((f) => f.id === id);
 /* ---- ranking: what is the data's job? ---------------------------------- */
 const BASE = {
   overall: { score: 9, composition: 1, story: 4, index: 5, parts: 5, history: 4, momentum: 4, check: 4, heat: 4, whatif: 3, people: 3, status: 3, gauge: 3, groups: 3, focus: 2, movers: 2, spread: 2, profile: 2, team: 2, versus: 2, goal: 1 },
-  dimension: { score: 6, composition: 1, parts: 5, profile: 4, history: 4, dindex: 3, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, status: 3, gauge: 3, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
+  dimension: { score: 6, composition: 1, parts: 5, profile: 4, history: 4, index: 3, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, status: 3, gauge: 3, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
   driver: { score: 6, composition: 1, history: 5, gauge: 4, status: 3, people: 3, momentum: 3, groups: 3, story: 2, check: 2, spread: 2, focus: 2, goal: 2, team: 1, versus: 1 },
   cluster: { score: 6, composition: 1, parts: 5, duel: 5, profile: 4, history: 4, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, gauge: 3, status: 2, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
   concept: { score: 6, composition: 1, history: 5, gauge: 4, status: 3, momentum: 3, story: 2, check: 2, goal: 1 },
@@ -367,7 +372,6 @@ const ASKS = [
   ["score", /number|score\b|single/],
   ["story", /story|full (story|picture)|tell me everything|the whole story/],
   ["index", /\bindex\b|wheel/],
-  ["dindex", /\bindex\b|wheel/],
   ["team", /\bteam\b|\bsquad\b|\bdepartment\b/],
   ["check", /health check|check-?up|checklist|red flags?|are we ok|all good|how healthy|risks?/],
   ["whatif", /what if|if we|simulat|lift|raise|bring up|what would/],

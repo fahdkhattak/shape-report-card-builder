@@ -24,12 +24,17 @@ export const SAMPLE_REPORTS = [
       { id: "shape-perf-org", name: "Org" },
     ],
   },
-  { id: "workplace-exp", name: "Workplace Experience Report", blurb: "How the day-to-day actually feels, in one place." },
-  { id: "total-brand", name: "Total Employee Brand Report", blurb: "What employees would tell a friend about working here." },
-  { id: "brain-health", name: "Brain Health Report", blurb: "Cognitive load and recovery, tracked over time." },
-  { id: "das", name: "DAS Report", blurb: "Diversity, attrition, and sentiment in one view." },
-  { id: "wfi", name: "WFI Report", blurb: "Workforce integrity signals across the org." },
-  { id: "diversity", name: "Diversity and Inclusion Report", blurb: "Representation and belonging, by the numbers." },
+  // The SHAPE report on the new survey dataset (lib/survey/surveyData.js): a personal report (one person's own answers)
+  // and an Org report. The placeholder reports that used to follow were removed.
+  {
+    id: "shape",
+    name: "SHAPE",
+    blurb: "Your SHAPE survey results, for you and for the organisation.",
+    subItems: [
+      { id: "shape-personal", name: "Personal" },
+      { id: "shape-org", name: "Org" },
+    ],
+  },
 ];
 
 // Draft conversations — same honest-sample-data status as SAMPLE_REPORTS

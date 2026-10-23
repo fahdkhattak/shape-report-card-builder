@@ -8,6 +8,7 @@ import rippleFlourishing from "../../assets/status-illustrations/flourishing.svg
 import rippleStriving from "../../assets/status-illustrations/striving.svg";
 import rippleStruggling from "../../assets/status-illustrations/struggling.svg";
 import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../lib/bands.js";
+import { HEADER_RULE } from "../../lib/widgetTypeSystem.js";
 
 /* ================================================================== */
 /* SHARED WIDGET PRIMITIVES                                            */
@@ -32,8 +33,12 @@ import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../lib/bands.js";
    ellipsis; the full title is on hover). The header measures its own card (its parent): the lowest point of
    everything else in it against the card's inner bottom edge. It returns to two lines only when there's clearly a
    line's worth of room, so it can't flicker between the two. */
+/* Type (product direction): Text 3xs-Header / Medium: 11px, 500, uppercase, 0.11px tracking, normal line height trimmed
+   to the cap height and baseline (text-box: trim-both cap alphabetic), in a box 12px tall for one line, 22px for two
+   (THE HEADER RULE: lib/widgetTypeSystem.js HEADER_RULE). Colour text/tertiary; text/secondary while the
+   widget is active (its Scope is open), passed as `selected`. TITLE_LINE is the untrimmed line (11px × normal ≈ 14). */
 const TITLE_LINE = 14;
-export function Header({ title, estimated }) {
+export function Header({ title, estimated, selected = false }) {
   const ref = useRef(null);
   const [lines, setLines] = useState(2);
   useLayoutEffect(() => {
@@ -54,7 +59,8 @@ export function Header({ title, estimated }) {
         if (lowest === -Infinity) return;
         const over = lowest - inner;
         const text = head.firstChild;
-        const wantsTwo = text && text.scrollHeight > TITLE_LINE + 2; // the title would actually use a second line
+        // Would the title actually use a second line? On one line it's truncated (wider than its box); on two, taller than one trimmed line (~8px).
+        const wantsTwo = text && (head.dataset.lines === "1" ? text.scrollWidth > text.clientWidth + 1 : text.scrollHeight > 11 + 2);
         setLines((l) => (l === 2 && over > 1 ? 1 : l === 1 && wantsTwo && over < -(TITLE_LINE + 2) ? 2 : l));
       });
     };
@@ -65,12 +71,16 @@ export function Header({ title, estimated }) {
     return () => { ro.disconnect(); cancelAnimationFrame(frame); };
   }, [title]);
   return (
-    <div ref={ref} data-part="widget-header" data-lines={lines} style={{ display: "flex", alignItems: "center", minHeight: 13, gap: 5, flexShrink: 0 }}>
-      <span title={typeof title === "string" ? title : undefined} style={{ fontSize: 11, fontWeight: 500, lineHeight: `${TITLE_LINE}px`, letterSpacing: "0.11px", textTransform: "uppercase", color: T.gray200, display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+    // The box (Figma): 12px tall with the text centred for one line, 22px for two (first cap top to second baseline:
+    // 7.7 + 14.3). The text inside is trimmed; a clamped two-line text can't trim its bottom, so it measures ~25px, but
+    // its second baseline sits exactly at 22: max-height 22 + "safe center" (start-aligned when it overflows) keeps the
+    // box at 22 with the text from the top, and the 3px below is empty (uppercase has no descenders).
+    <div ref={ref} data-part="widget-header" data-lines={lines} style={{ display: "flex", alignItems: "safe center", minHeight: HEADER_RULE.boxOneLine, maxHeight: HEADER_RULE.boxTwoLines, alignSelf: "stretch", gap: 4, flexShrink: 0 }}>
+      <span title={typeof title === "string" ? title : undefined} style={{ fontSize: HEADER_RULE.size, fontWeight: HEADER_RULE.weight, fontStyle: "normal", lineHeight: HEADER_RULE.lineHeight, letterSpacing: HEADER_RULE.tracking, textTransform: HEADER_RULE.transform, textBox: HEADER_RULE.trim, color: selected ? ds.text.secondary : ds.text.tertiary, transition: "color 160ms ease", overflow: "hidden", minWidth: 0, padding: "2px 0", margin: "-2px 0", /* room inside the clip for round letters that rise past the cap height (S, C, O), cancelled by the margin so the box stays 12 / 22 */ ...(lines === 1 ? { display: "block", whiteSpace: "nowrap", textOverflow: "ellipsis" } : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }) }}>
         {title}
       </span>
       {estimated && (
-        <span title="Estimated — no close survey data for this topic yet" style={{ width: 5, height: 5, borderRadius: "50%", background: T.gray200, flexShrink: 0, cursor: "help" }} />
+        <span title="Estimated — no close survey data for this topic yet" style={{ width: 5, height: 5, borderRadius: "50%", background: ds.text.quaternary, flexShrink: 0, cursor: "help" }} />
       )}
     </div>
   );
@@ -84,11 +94,11 @@ export function TrendPill({ delta, positive, compact, numberOnly }) {
   // No change: a neutral grey pill, not a red "down" one.
   if (delta === 0) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: ds.bg.primary, borderRadius: 46, height: 20, boxSizing: "border-box", lineHeight: "20px", padding: compact ? "0 6px" : "0 8px", fontSize: 11, whiteSpace: "nowrap" }}>
-        <span style={{ width: 8, height: 2, background: ds.text.tertiary, borderRadius: 1 }} />
+      <span data-part="trend" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: ds.bg.primary, borderRadius: 9999, height: 20, boxSizing: "border-box", lineHeight: "20px", padding: compact ? "0 6px" : "0 8px", fontSize: 11, whiteSpace: "nowrap" }}>
+        <span style={{ width: 8, height: 2, background: ds.text.tertiary, borderRadius: 9999 }} />
         {!compact && (
           <>
-            <span style={{ fontWeight: 600, color: ds.text.secondary }}>0</span>
+            <span style={{ fontWeight: 700, color: ds.text.secondary }}>0</span>
             {!numberOnly && <span style={{ fontWeight: 400, color: ds.text.tertiary }}> since last round</span>}
           </>
         )}
@@ -99,12 +109,12 @@ export function TrendPill({ delta, positive, compact, numberOnly }) {
   const st = pos ? ds.status.success : ds.status.error;
   const c = st.text, cs = st.textIndicator, bg = st.bg;
   return (
-    <span data-part="trend" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: bg, borderRadius: 46, height: 20, boxSizing: "border-box", lineHeight: "20px", padding: compact ? "0 6px" : "0 8px", fontSize: 11, whiteSpace: "nowrap" }}>
+    <span data-part="trend" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: bg, borderRadius: 9999, height: 20, boxSizing: "border-box", lineHeight: "20px", padding: compact ? "0 6px" : "0 8px", fontSize: 11, whiteSpace: "nowrap" }}>
       {/* Both exported caret assets point down (Figma flips the "Positive" one in-layout), so up = rotate 180°. */}
       <img src={pos ? trendCaretUp : trendCaretDown} width={8} height={8} alt="" style={pos ? { transform: "rotate(180deg)" } : undefined} />
       {!compact && delta !== undefined && (
         <>
-          <span style={{ fontWeight: 600, color: cs }}>{delta > 0 ? "+" : ""}{delta}</span>
+          <span style={{ fontWeight: 700, color: cs }}>{delta > 0 ? "+" : ""}{delta}</span>
           {!numberOnly && <span style={{ fontWeight: 400, color: c }}> since last round</span>}
         </>
       )}
@@ -115,9 +125,9 @@ export function TrendPill({ delta, positive, compact, numberOnly }) {
 export function BigNumber({ value, unit, size = 64, colorBand, color }) {
   const b = colorBand ? band(value) : null;
   return (
-    <span style={{ fontSize: size, fontWeight: 700, letterSpacing: -size * 0.02, color: b ? b.cs : color || T.gray800, lineHeight: 1 }}>
+    <span style={{ fontSize: size, fontWeight: 700, letterSpacing: -size * 0.02, color: b ? b.cs : color || ds.text.primary, lineHeight: 1 }}>
       {value}
-      {unit && <span style={{ fontSize: 11, fontWeight: 400, color: T.gray900, marginLeft: 4 }}>{unit}</span>}
+      {unit && <span style={{ fontSize: 11, fontWeight: 400, color: ds.text.primary, marginLeft: 4 }}>{unit}</span>}
     </span>
   );
 }
@@ -127,9 +137,9 @@ export function EvidenceSegmentBar({ flourishing, striving, struggling }) {
   const fw = (flourishing / total) * 100;
   const sw = ((flourishing + striving) / total) * 100;
   return (
-    <div style={{ height: 8, borderRadius: 6, background: T.red, position: "relative", width: "100%" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, height: 8, width: `${sw}%`, background: T.amber, borderRadius: "6px 0 0 6px" }} />
-      <div style={{ position: "absolute", left: 0, top: 0, height: 8, width: `${fw}%`, background: T.green, borderRadius: "6px 0 0 6px" }} />
+    <div data-part="status-bar" style={{ height: 8, borderRadius: 6, background: ds.status.error.bgStrong, position: "relative", width: "100%" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, height: 8, width: `${sw}%`, background: ds.status.warning.bgStrong, borderRadius: "6px 0 0 6px" }} />
+      <div style={{ position: "absolute", left: 0, top: 0, height: 8, width: `${fw}%`, background: ds.status.success.bgStrong, borderRadius: "6px 0 0 6px" }} />
     </div>
   );
 }
@@ -156,10 +166,10 @@ export function UsersIcon({ color, size = 14 }) {
    breakdown, which also uses a two-person "users" glyph, not a lone figure. */
 export function StatusBreakdown({ flourishing, striving, struggling }) {
   return (
-    <div style={{ display: "flex", gap: 16 }}>
-      {[["Flourishing", flourishing, T.greenStrong], ["Striving", striving, T.amberStrong], ["Struggling", struggling, T.redStrong]].map(([label, val, c]) => (
+    <div data-part="status-counts" style={{ display: "flex", gap: 16 }}>
+      {[["Flourishing", flourishing, ds.status.success.textIndicator], ["Striving", striving, ds.status.warning.textIndicator], ["Struggling", struggling, ds.status.error.textIndicator]].map(([label, val, c]) => (
         <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 11, color: T.gray500 }}>{label}</span>
+          <span style={{ fontSize: 11, color: ds.text.tertiary }}>{label}</span>
           <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 16, fontWeight: 700, color: c }}>{val}<UsersIcon color={c} /></span>
         </div>
       ))}
@@ -177,17 +187,17 @@ export function driverTier(val) {
 }
 
 const TIER_LABEL = { great: "Great", average: "Average", poor: "Poor" };
-const TIER_COLOR = { great: T.green, average: T.amber, poor: T.red };
+const TIER_COLOR = { great: ds.status.success.text, average: ds.status.warning.text, poor: ds.status.error.text };
 
 export function DriverGroupLabel({ tier, labels }) {
-  return <span style={{ fontSize: 13, fontWeight: 700, color: TIER_COLOR[tier] }}>{(labels || TIER_LABEL)[tier]}</span>;
+  return <span data-part="tier-label" style={{ fontSize: 13, fontWeight: 700, color: TIER_COLOR[tier] }}>{(labels || TIER_LABEL)[tier]}</span>;
 }
 
 export function DriverRow({ name, val, trend }) {
   const b = band(val);
   return (
-    <div style={{ borderLeft: `2px solid ${b.c}`, paddingLeft: 6, display: "flex", justifyContent: "space-between", alignItems: "center", height: 20, gap: 6 }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: T.gray900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{name}</span>
+    <div data-part="row" style={{ borderLeft: `2px solid ${b.c}`, paddingLeft: 6, display: "flex", justifyContent: "space-between", alignItems: "center", height: 20, gap: 6 }}>
+      <span style={{ fontSize: 11, fontWeight: 500, color: ds.text.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{name}</span>
       {trend !== undefined && <TrendPill delta={trend} numberOnly />}
       <span style={{ fontSize: 16, fontWeight: 700, color: b.cs, flexShrink: 0 }}>{val}</span>
     </div>
@@ -221,13 +231,13 @@ export function MiniBarChart({ rows, colors }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
       {rows.map(([label, pct], i) => (
         <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 11, color: T.gray500, width: 46, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-          <div style={{ flex: 1, height: 8, position: "relative", borderLeft: `1px solid ${T.gray100}` }}>
+          <span style={{ fontSize: 11, color: ds.text.tertiary, width: 46, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+          <div style={{ flex: 1, height: 8, position: "relative", borderLeft: `1px solid ${ds.border.secondary}` }}>
             <div style={{ height: 8, width: `${pct}%`, background: colors[i % colors.length], borderRadius: "0 12px 12px 0" }} />
           </div>
         </div>
       ))}
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: T.gray300, paddingLeft: 52 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: ds.text.quaternary, paddingLeft: 52 }}>
         <span>0</span>
         <span>100</span>
       </div>
@@ -252,18 +262,18 @@ export function Sparkline({ points, xLabels, w = 130, h = 46, gridY = [0, 20, 40
     <div style={{ width: "100%" }}>
       <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
         {gridY.map((g) => (
-          <line key={g} x1={gutter} y1={yOf(g)} x2={w} y2={yOf(g)} stroke={T.gray75} strokeWidth="1" />
+          <line key={g} x1={gutter} y1={yOf(g)} x2={w} y2={yOf(g)} stroke={ds.bg.secondary} strokeWidth="1" />
         ))}
         {gridY.map((g) => (
-          <text key={g} x="0" y={yOf(g) + 3} fontSize="8" fill={T.gray300}>{g}</text>
+          <text key={g} x="0" y={yOf(g) + 3} fontSize="8" fill={ds.text.quaternary}>{g}</text>
         ))}
-        <path d={path} fill="none" stroke={T.accent} strokeWidth="2" />
+        <path d={path} fill="none" stroke={ds.utility.graphColors.main.personalBlue} strokeWidth="2" />
         {points.map((p, i) => i >= points.length - 2 && (
-          <circle key={i} cx={gutter + i * step} cy={yOf(p)} r="3" fill={T.accent} />
+          <circle key={i} cx={gutter + i * step} cy={yOf(p)} r="3" fill={ds.utility.graphColors.main.personalBlue} />
         ))}
       </svg>
       {xLabels && (
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.gray300, paddingLeft: gutter }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.quaternary, paddingLeft: gutter }}>
           {xLabels.map((l, i) => <span key={i}>{l}</span>)}
         </div>
       )}
@@ -272,16 +282,16 @@ export function Sparkline({ points, xLabels, w = 130, h = 46, gridY = [0, 20, 40
 }
 
 export function Treemap({ tiles }) {
-  const colors = [T.personalBlue, T.amberOrange, T.lavender];
+  const colors = [ds.utility.graphColors.main.personalBlue, ds.utility.graphColors.main.amberOrange, ds.utility.graphColors.main.lavenderViolet];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", height: "100%" }}>
-      <div style={{ background: colors[0], borderRadius: 8, padding: 6, color: T.gray900, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>{tiles[0][0]}</span>
+      <div style={{ background: colors[0], borderRadius: 8, padding: 6, color: ds.text.primary, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase" }}>{tiles[0][0]}</span>
         <span style={{ fontSize: 20, fontWeight: 700 }}>{tiles[0][1]}</span>
       </div>
       <div style={{ display: "flex", gap: 4 }}>
         {tiles.slice(1).map((t, i) => (
-          <div key={i} style={{ flex: 1, background: colors[i + 1], borderRadius: 8, padding: 6, color: T.gray900, display: "flex", alignItems: "flex-end" }}>
+          <div key={i} style={{ flex: 1, background: colors[i + 1], borderRadius: 8, padding: 6, color: ds.text.primary, display: "flex", alignItems: "flex-end" }}>
             <span style={{ fontSize: 20, fontWeight: 700 }}>{t[1]}</span>
           </div>
         ))}
@@ -295,10 +305,10 @@ export function Treemap({ tiles }) {
    tile's share. Colors are the Graph palette, not status colors (this is a
    categorical split). Teal isn't a named token elsewhere, so it's the
    design's own #26a69a. */
-const MONEY_TEAL = "#26a69a";
+const MONEY_TEAL = ds.utility.graphColors.main.teal;
 export function MoneyComposition({ items }) {
   const total = items.reduce((n, [, v]) => n + v, 0) || 1;
-  const colors = { Productivity: T.personalBlue, Absenteeism: "#0074bc", Retention: MONEY_TEAL, "Injury/Claims": T.lavender };
+  const colors = { Productivity: ds.text.accent, Absenteeism: ds.utility.graphColors.main.teamBlue, Retention: MONEY_TEAL, "Injury/Claims": ds.utility.graphColors.main.lavenderViolet };
   const grid = ["Productivity", "Absenteeism", "Retention", "Injury/Claims"].map((k) => items.find(([n]) => n === k));
   let acc = 0;
   const stops = ["Productivity", "Absenteeism", "Retention", "Injury/Claims"].map((k) => { acc += items.find(([n]) => n === k)[1]; return [k, (acc / total) * 100]; });
@@ -306,9 +316,9 @@ export function MoneyComposition({ items }) {
     <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 12 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "40px 41px", gap: 6, height: 87 }}>
         {grid.map(([name, v]) => (
-          <div key={name} style={{ background: T.gray50, borderLeft: `2px solid ${colors[name]}`, paddingLeft: 6, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, minWidth: 0 }}>
-            <span style={{ fontSize: 11, color: T.gray500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1 }}>{name}</span>
-            <span style={{ display: "flex", alignItems: "flex-end", fontSize: 11, color: T.gray900, lineHeight: 1 }}>
+          <div key={name} style={{ background: ds.bg.primary, borderLeft: `2px solid ${colors[name]}`, paddingLeft: 6, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6, minWidth: 0 }}>
+            <span style={{ fontSize: 11, color: ds.text.tertiary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1 }}>{name}</span>
+            <span style={{ display: "flex", alignItems: "flex-end", fontSize: 11, color: ds.text.primary, lineHeight: 1 }}>
               $<b style={{ fontSize: 16, fontWeight: 700, color: colors[name], lineHeight: "16px" }}>{v}</b>K
             </span>
           </div>
@@ -345,7 +355,7 @@ export function StatusFaceIcon({ color, size = 51, status = "Flourishing" }) {
   );
 }
 
-const STATUS_COLOR = { Flourishing: T.green, Striving: T.amber, Struggling: T.red };
+const STATUS_COLOR = { Flourishing: ds.status.success.text, Striving: ds.status.warning.text, Struggling: ds.status.error.text };
 
 /* The status illustration: concentric rings (clean, wobbly, tangled) around the face. These are the exact SVGs from
    the design (status-illustrations/*), including the face, so nothing here is drawn by hand any more. */
@@ -360,7 +370,7 @@ export function StatusRipple({ status, size = 190 }) {
    behind the icon (confirmed against 12635:69176); that's a large, purely
    decorative background asset this component doesn't attempt to reproduce. */
 export function StatusRing({ status }) {
-  const c = status === "Flourishing" ? T.green : status === "Striving" ? T.amber : T.red;
+  const c = status === "Flourishing" ? ds.status.success.text : status === "Striving" ? ds.status.warning.text : ds.status.error.text;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
       <StatusFaceIcon color={c} status={status} />
@@ -393,21 +403,21 @@ export function ScatterMini({ topicA, topicB, r, points }) {
   let num = 0, den = 0;
   pts.forEach(([x, y]) => { num += (x - mx) * (y - my); den += (x - mx) ** 2; });
   const slope = den ? num / den : 0, x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0]));
-  const c = r < 0 ? T.red : T.accent;
+  const c = r < 0 ? ds.status.error.graph : ds.text.accent;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
       <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`}>
-        {[25, 50, 75].map((g) => <line key={g} x1={pad} x2={w - pad} y1={Y(g)} y2={Y(g)} stroke={T.gray75} strokeWidth="1" />)}
-        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={T.gray100} strokeWidth="1" />
-        <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={T.gray100} strokeWidth="1" />
-        {pts.map(([x, y], i) => <circle key={i} cx={X(x)} cy={Y(y)} r="2.4" fill={c} fillOpacity={real ? 0.45 : 0.3} stroke={T.white} strokeWidth="0.6" />)}
-        <line x1={X(x0)} y1={Y(my + slope * (x0 - mx))} x2={X(x1)} y2={Y(my + slope * (x1 - mx))} stroke={T.gray800} strokeWidth="1.2" />
+        {[25, 50, 75].map((g) => <line key={g} x1={pad} x2={w - pad} y1={Y(g)} y2={Y(g)} stroke={ds.bg.secondary} strokeWidth="1" />)}
+        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={ds.bg.quaternary} strokeWidth="1" />
+        <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={ds.bg.quaternary} strokeWidth="1" />
+        {pts.map(([x, y], i) => <circle key={i} cx={X(x)} cy={Y(y)} r="2.4" fill={c} fillOpacity={real ? 0.45 : 0.3} stroke={ds.surface.general.card} strokeWidth="0.6" />)}
+        <line x1={X(x0)} y1={Y(my + slope * (x0 - mx))} x2={X(x1)} y2={Y(my + slope * (x1 - mx))} stroke={ds.icon.primary} strokeWidth="1.2" />
       </svg>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.gray500 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.tertiary }}>
         <span>↑ {topicB}</span>
         <span>{topicA} →</span>
       </div>
-      {!real && <span style={{ fontSize: 9, color: T.gray300 }}>Illustrative — no survey data for this pair</span>}
+      {!real && <span style={{ fontSize: 10, color: ds.text.quaternary }}>Illustrative — no survey data for this pair</span>}
     </div>
   );
 }
@@ -488,17 +498,17 @@ export function ScoreDial({ value, size = 104, stroke = 11, numberSize = 26, wor
   const v = Math.max(0, Math.min(100, Math.round(value))), b = band(v), status = statusName(v);
   const cx = size / 2, r = (size - stroke) / 2, c = 2 * Math.PI * r;
   const at = (n) => (n / 100) * 360;
-  const tick = (n) => { const a = polar(cx, cx, r - stroke / 2 - 0.5, at(n)), e = polar(cx, cx, r + stroke / 2 + 0.5, at(n)); return <line key={n} x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke="#fff" strokeWidth={Math.max(1.5, stroke / 6)} />; };
+  const tick = (n) => { const a = polar(cx, cx, r - stroke / 2 - 0.5, at(n)), e = polar(cx, cx, r + stroke / 2 + 0.5, at(n)); return <line key={n} x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke={ds.surface.general.card} strokeWidth={Math.max(1.5, stroke / 6)} />; };
   return (
     <div role="img" aria-label={`${v} out of 100, ${status}`} style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <svg aria-hidden="true" width={size} height={size} style={{ display: "block" }}>
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={T.gray75} strokeWidth={stroke} />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={ds.bg.secondary} strokeWidth={stroke} />
         {v > 0 && <circle cx={cx} cy={cx} r={r} fill="none" stroke={b.c} strokeWidth={stroke} strokeLinecap="butt" strokeDasharray={`${(v / 100) * c} ${c}`} transform={`rotate(-90 ${cx} ${cx})`} />}
         {[STRIVING_AT, FLOURISHING_AT].map(tick)}
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: font }}>
         <span style={{ fontSize: numberSize, fontWeight: 700, letterSpacing: -numberSize * 0.02, lineHeight: 1, color: b.cs }}>{v}</span>
-        <span style={{ fontSize: wordSize, fontWeight: 600, color: b.cs, marginTop: 3 }}>{status}</span>
+        <span style={{ fontSize: wordSize, fontWeight: 700, color: b.cs, marginTop: 4 }}>{status}</span>
       </div>
     </div>
   );
@@ -545,7 +555,7 @@ export function RadarChart({ items, size = 286 }) {
         {[0.2, 0.4, 0.6, 0.8, 1].map((f) => <circle key={f} cx={cx} cy={cy} r={R * f} fill="none" stroke={grey} strokeWidth="0.75" />)}
         {items.map((_, i) => { const p = polar(cx, cy, R + 8, i * step); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={grey} strokeWidth="0.75" />; })}
         <polygon points={items.map((it, i) => { const p = at(i, it.value); return `${p.x},${p.y}`; }).join(" ")} fill={RADAR_SERIES} fillOpacity="0.08" stroke={RADAR_SERIES} strokeWidth="2" strokeLinejoin="round" />
-        {items.map((it, i) => { const p = at(i, it.value); return <circle key={`v${i}`} cx={p.x} cy={p.y} r="3" fill={RADAR_SERIES} stroke="#fff" strokeWidth="1.2"><title>{`${it.label}: ${it.value}`}</title></circle>; })}
+        {items.map((it, i) => { const p = at(i, it.value); return <circle key={`v${i}`} cx={p.x} cy={p.y} r="3" fill={RADAR_SERIES} stroke={ds.surface.general.card} strokeWidth="1.2"><title>{`${it.label}: ${it.value}`}</title></circle>; })}
         {items.map((_, i) => { const p = polar(cx, cy, R, i * step); return <circle key={`n${i}`} cx={p.x} cy={p.y} r="2.5" fill={ds.border.strong} />; })}
         {items.map((it, i) => {
           const a = i * step, sin = Math.sin((a * Math.PI) / 180), cos = Math.cos((a * Math.PI) / 180);

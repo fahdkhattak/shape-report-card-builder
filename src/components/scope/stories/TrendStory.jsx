@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { T, font, radius, band } from "../../../lib/tokens.js";
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, fmtDate, fmtMonth } from "../../../lib/scopeData.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import { StoryCard, noteText } from "./StoryCard.jsx";
@@ -23,6 +23,7 @@ const W = 776, H = 280, PL = 40, PR = 24, PT = 24, PB = 32;
 const LINE_COLORS = [T.teamBlue, T.hotPink, T.mintGreen, T.goldenYellow, T.lavender, T.orgBlue];
 
 export default function TrendStory({ title = "Score Over Time", line, series, mode = "single", domain = [0, 100], ticks = [0, 20, 40, 60, 80, 100], banded = true, unit = "", chipLabel = "Explorer Changes", note }) {
+  const ROUNDS = useRounds();
   const refined = useStoryStyle() === "refined";
   const [view, setView] = useState("chart");
   const [key, setKey] = useState(series[0].key);

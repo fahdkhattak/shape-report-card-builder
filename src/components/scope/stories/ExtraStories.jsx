@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { T, font, radius, band } from "../../../lib/tokens.js";
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, roundName, fmtDate, fmtMonth, groupGaps, connections, priorityPoints, responseCoverage, scoreSpread, brightSpots, withinReach, rankAmong, SUPPRESS_BELOW } from "../../../lib/scopeData.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import { StoryCard, noteText, bodyText } from "./StoryCard.jsx";
@@ -32,6 +32,7 @@ const eyebrow = { fontSize: 11, fontWeight: 600, letterSpacing: "0.4px", textTra
 
 /* ---- What Changed ----------------------------------------------------- */
 export function ChangesStoryLegacy({ items, noun = "Driver" }) {
+  const ROUNDS = useRounds();
   const refined = useStoryStyle() === "refined";
   const [ref, setRef] = useState(Math.max(0, LAST - 1));
   const rows = items.map((it) => ({ label: it.label, from: it.values[ref], to: it.values[LAST], d: it.values[LAST] - it.values[ref] }));
@@ -274,6 +275,7 @@ export function PriorityMapStoryLegacy({ items, noun = "Driver" }) {
 /* ---- Goal & Pace ------------------------------------------------------ */
 const nextTarget = (v) => nextLine(v) ?? 90;
 export function GoalStory({ label, series, initialTarget }) {
+  const ROUNDS = useRounds();
   const refined = useStoryStyle() === "refined";
   const cur = series[LAST];
   const [target, setTarget] = useState(initialTarget ?? nextTarget(cur));

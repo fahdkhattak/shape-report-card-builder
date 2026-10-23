@@ -52,6 +52,10 @@ export const FAMILY_FORMS = {
       { id: "form-priority", label: "Priority Map" },
       { id: "form-reach", label: "Within Reach" },
       { id: "form-rank", label: "How It Ranks" },
+      /* SHAPE report only (new dataset), documented on their own page. */
+      { id: "form-quadrant", label: "Where People Sit", doc: "relationships", note: "SHAPE report" },
+      { id: "form-difference", label: "What Makes the Difference", doc: "relationships", note: "SHAPE report" },
+      { id: "form-status-outcome", label: "Why Flourishing Matters", doc: "relationships", note: "SHAPE report · Waffle, People" },
     ],
   },
 };
@@ -84,6 +88,7 @@ FAMILY_FORMS.Trend = {
     { id: "form-rows", label: "By part" },
     { id: "form-age", label: "Health Age Over Time" },
     { id: "form-state", label: "State Over Time" },
+    { id: "form-flow", label: "How People Moved" },
     { id: "form-level", label: "Level Over Time" },
     { id: "form-enps", label: "eNPS Over Time" },
   ],

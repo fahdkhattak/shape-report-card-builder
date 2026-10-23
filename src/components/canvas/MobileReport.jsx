@@ -4,6 +4,7 @@ import { Menu, MoreHorizontal, ChevronRight, Plus } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
 import { CELL, GAP } from "./gridLayout.js";
 import WidgetCard from "./WidgetCard.jsx";
+import { isHeadline } from "./gridLayout.js";
 import ExplorerRingCard from "./ExplorerRingCard.jsx";
 import ScopePanel from "../scope/ScopePanel.jsx";
 import { PersonaMenu, GhostBtn } from "./ReportHeader.jsx";
@@ -65,7 +66,7 @@ export function MobileReport({ width, report, items, layer, scopeWidget, sheet, 
             <div style={{ display: "grid", gridTemplateColumns: `repeat(2, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridW }}>
               {items.map((w, i) => w.kind === "explorer"
                 ? <ExplorerRingCard key={w.id} index={i} name={w.dimension} value={w.value} selected={scopeWidget?.id === w.id} onClick={() => onOpen(w)} />
-                : <WidgetCard key={w.id} widget={w} {...cardHandlers} onOpenModal={onOpen} selected={scopeWidget?.id === w.id} startHere={w.familyId === "org-score"} />)}
+                : <WidgetCard key={w.id} widget={w} {...cardHandlers} onOpenModal={onOpen} selected={scopeWidget?.id === w.id} startHere={isHeadline(w)} />)}
             </div>
           </div>
         </div>

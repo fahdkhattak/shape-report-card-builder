@@ -8,6 +8,8 @@ import { CELL, GAP } from "./gridLayout.js";
 import { sizeToSpan } from "./gridLayout.js";
 import { familyById } from "../../lib/families.js";
 import WidgetCard from "./WidgetCard.jsx";
+import { isHeadline } from "./gridLayout.js";
+import { shapeSize } from "../shape/shapeWidgets.jsx";
 import ExplorerRingCard from "./ExplorerRingCard.jsx";
 import ScopePanel from "../scope/ScopePanel.jsx";
 import { MobileReport } from "./MobileReport.jsx";
@@ -142,7 +144,7 @@ function SplitInner({ display, pose, chrome, scrollMemo, rest }) {
   // own scroll moving — unlike the Dashboard, where the page is the scroller and must stay put.
   const inset = chrome.min ? 40 : BAR_H;
   // Nothing picked yet: the detail pane shows the "Start here" widget's Scope, so half the display is never empty.
-  const detail = rest.scopeWidget || rest.items.find((w) => w.familyId === "org-score") || null;
+  const detail = rest.scopeWidget || rest.items.find(isHeadline) || null;
   return (
     <>
       <div style={{ width: display.fold, flexShrink: 0, height: "100%" }}>
@@ -174,7 +176,7 @@ function SplitInner({ display, pose, chrome, scrollMemo, rest }) {
 const STEP = CELL + GAP;
 const spanOf = (w) => {
   if (w.kind === "explorer") return { col: 1, row: 1 };
-  const size = w.kind === "library" ? familyById(w.familyId).forms[w.formIndex].size : w.spec.size;
+  const size = w.kind === "shape" ? shapeSize(w) : w.kind === "library" ? familyById(w.familyId).forms[w.formIndex].size : w.spec.size;
   return sizeToSpan(size);
 };
 /* Place `items` on `cols` columns, top first. `pairs`: a 2-wide widget only starts on column 1 or 3, so on 4 columns
@@ -213,7 +215,7 @@ function Glide({ placed, height, rest }) {
         <motion.div key={w.id} initial={false} animate={{ x, y }} transition={{ ...GLIDE, delay: Math.min(i, 10) * 0.018 }} style={{ position: "absolute", left: 0, top: 0 }}>
           {w.kind === "explorer"
             ? <ExplorerRingCard index={i} name={w.dimension} value={w.value} selected={rest.scopeWidget?.id === w.id} onClick={() => rest.onOpen(w)} />
-            : <WidgetCard widget={w} {...rest.cardHandlers} onOpenModal={rest.onOpen} selected={rest.scopeWidget?.id === w.id} startHere={w.familyId === "org-score"} />}
+            : <WidgetCard widget={w} {...rest.cardHandlers} onOpenModal={rest.onOpen} selected={rest.scopeWidget?.id === w.id} startHere={isHeadline(w)} />}
         </motion.div>
       ))}
     </motion.div>
@@ -356,7 +358,7 @@ function DesktopInner({ display, pose, chrome, scrollMemo, rest }) {
   const layer = rest.layer ? { label: rest.layer.label, onExit: rest.layer.onExit } : null;
   return (
     <div style={{ position: "absolute", inset: 0, paddingTop: inset, boxSizing: "border-box", display: "flex", flexDirection: "column", fontFamily: font, background: T.gray50, transition: "padding-top 260ms cubic-bezier(.2,.8,.2,1)" }}>
-      <ReportTopBar title={rest.report.title} persona={rest.report.persona} roundLabel={`Round ${LATEST.round}`} />
+      <ReportTopBar title={rest.report.title} persona={rest.report.persona} roundLabel={rest.report.roundLabel || `Round ${LATEST.round}`} />
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         {/* the report column: the whole width, or the leading half while a Scope is open */}
         <motion.div initial={false} animate={{ width: colW }} transition={GLIDE} style={{ position: "absolute", left: 0, top: 0, bottom: 0, display: "flex", flexDirection: "column" }}>

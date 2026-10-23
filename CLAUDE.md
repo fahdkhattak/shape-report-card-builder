@@ -3160,6 +3160,209 @@ on the Duo). The native vertical bar above is kept only as the **"App · Native 
   the Dashboard hero and fold split, the half-folded sheet at 501–939pt (band ends at 489), closed Dashboard with the minimised side
   bar, Explorers layer inside the Dashboard; no console errors.
 
+## Developer: data contracts and widget pages
+
+- **Every Story page has a "Data it needs" section** (just before Props & usage): the backend contract for that Story, from
+  `components/developer/dataContract.js` (`CONTRACTS` keyed by page id; rendered by `DataNeeds.jsx`). Each lists the inputs
+  (input · shape · required · notes), an example JSON response, what the component works out itself, what's never sent to the
+  client, and what it does when part of the data is missing.
+- **Contracts use one generic vocabulary**, defined on **Foundations › Data model** (`docs/DataModelDoc.jsx`, `ENTITIES`, `RULES`):
+  Survey (scale, levels, bands, minGroupSize, version), Level (the survey's own nouns: Explorer, Driver, or another survey's),
+  Band, Measure (a tree; kind score / categorical / index / modelled), Round, Population, Score, Series, BandCounts,
+  Distribution, Attribute & Segment, LevelShare, Relationship, Content, Entitlement. So the same Stories fit any survey type:
+  no contract hard-codes 60 / 80, "Explorer" or "Driver". Rules: scores arrive on the survey's scale, privacy is applied on the
+  server (suppressed: true, value null), bands and nouns come from the survey, rounds oldest first, a null is a gap, text is
+  Content. The page's "Who needs what" matrix is read from the contracts (each contract's Shape column), so it can't drift.
+  `DevNavContext` / `DocLink` let any page link to another.
+- **Widgets group** in the Developer sidebar (replaces "Coming later"): Org Score, Score History, Explorers, plus the other
+  20 Library families listed as not documented yet. Pages are built by `docs/widgetDoc.jsx` (`makeWidgetDoc`, like
+  `makeDoc` for Stories) under `docs/widgets/`; contracts in `WIDGET_CONTRACTS`. Each page renders the **real canvas
+  `WidgetCard`** per form (hover, three-dot menu, Change Widget all work), a measured Anatomy (new `data-part` hooks:
+  score-headline / score-number / unit / headcount / status-bar / status-counts / tier-label / row / more / date / caption /
+  trend), the shared card-shell spec and behaviour, Data it needs, what it opens (its Scope's Stories, linked), states,
+  content, accessibility, usage and a done checklist. Add a widget: a config file in `docs/widgets/`, a contract in
+  `WIDGET_CONTRACTS`, and one line in `DeveloperScreen.jsx`'s `WIDGETS`.
+- Findings written on the pages: the widget card isn't keyboard-reachable yet (a clickable div; the dots only show on hover);
+  the Score History caption says "R2" while the axis says the month, and is built in code (`historyCaption`) rather than from
+  Content; the header title colour (T.gray200) isn't a design-system token.
+- The Style switch is hidden on Widget pages and the Data model page (it only re-skins Stories).
+
+## Developer › Data: the SHAPE Survey as a record (`data/import-survey.js`)
+
+The first step towards real, switchable datasets: the survey itself, transcribed exactly, before any dataset is generated
+from it. Source: `data/sources/SHAPE Survey File.xlsx` (copied from the user's "Survey File.xlsx"; sheets Survey (NEW), eNPS,
+ScoredNonscored, Score per response). `npm run survey` in `/data` writes `src/data/surveys/shape-survey.json`.
+- **Two layers, kept apart.** Transcription: every row verbatim (number, text, short label, Driver, design type, options,
+  hover label, stems, "please specify" follow-ups, Office/Home parts). Interpretation: each question's scoring scale (from
+  Score per response) and status (from ScoredNonscored): `scored` (counts towards its Explorer and the overall),
+  `separate` (has a score, shown on its own: resilience, stress sources, HPQ, WFH extras), `unscored` (free text, yes/no),
+  `profile`. Anything the file doesn't say is `source: "proposed"`, drawn with a dashed outline, and tied to an open question.
+- **Counts:** 175 questions in 13 sections (Your Profile 19, incl. HPQ Q16.1-16.3; 12 Explorers), 113 scored, 30 shown
+  separately, 16 not scored, 16 profile; 60 Drivers; 21 scales; 22 issues raised (16 answered, 1 for now, 5 open).
+- **Repairs, both flagged:** Excel stored 1.10 / 1.20 as 1.1 / 1.2 (CD1.10, CC1.10, CC1.20 restored by position), and it
+  turned "1-6" / "1-2" in ScoredNonscored into dates (the import reads the cell's formatted text).
+- **Three sources on every value:** `file`, `confirmed` (the product owner's answer, 20 Oct 2026, written on the issue) and
+  `proposed` (still waiting; dashed outline). Issues carry `state`: resolved / for-now / open, plus `answer` and `proposal`.
+- **Decisions (confirmed):** names are Life Outside Work and Business Essentials; scores are means (Driver = mean of its scored
+  questions, Explorer = mean of its scored questions; overall = mean of the 12 Explorers is the for-now choice); QLB = question
+  level breakdown, a chart, not a calculation; Life Outside Work Q1 uses the five strain levels (Severe 0 … No strain 100, N/A
+  left out); Q3 uses agreement; Coworker Dynamic All 100 / Most 75 / About half 50 / Some 25 / None 0; the scoring sheet's
+  MS2.4 is the survey's MS2.6 (scored) and its agreement list is out of date (EE1.1-1.9, JS2.1-2.5; PWE was Personal Work
+  Ethic, removed); free text is never scored; PSY2.1 is not reversed (not scored); Job Satisfaction Q1 is shown as smileys,
+  5 = good; Hybrid people's office and home answers on the work-environment questions are averaged weighted by Q12 hours
+  (for now); country = a full ISO list (249) for now, salary bands depend on country; work model = Office / Home / Hybrid from
+  Q12 hours (**the product's Onsite / Remote labels must become Office / Home** when the dataset is rebuilt); the Employee
+  Engagement Driver "Coworker Dynamic" is renamed **Working relationships**; a scored question with no Driver is its own
+  Driver, named by its short label (Belonging, Enthusiasm, Know what's expected, Self-actualising, Décor, Dress code,
+  Equipment), giving **60 Drivers**; "*manager x*" is a {manager's name} slot and "consistant" is fixed (file text kept);
+  eNPS comes only from CC2.3 (9-10 / 7-8 / 0-6); the 9-item DASS is intentional and feeds Mental Well-Being as Feeling Low
+  (Depression), Feeling Stressed (Stress), Feeling Anxious (Anxiety) in five levels (Normal, Mild, Moderate, Severe,
+  Extremely Severe).
+- **Still open:** Situational Leadership's formula (I6; Manager Style 1.1-1.4 and 2.1 grouped under it, unscored until then);
+  Ex Smoker (100 for now, I8); BMI underweight scoring 100 (team discussing, I9); country exceptions, ethnicity lists, site
+  codes and salary bands (I15); the five mental well-being cut-offs for the 9-item form (I22; 80/60/40/20 used for now).
+- **Worked out from the answers** (`derived` in the JSON, its own section on the page): Driver, Explorer and overall scores,
+  QLB, status, work model, age, eNPS, the three mental well-being measures and their levels, HPQ (absolute = Q16.3 × 10,
+  relative = Q16.3 ÷ Q16.1), and the Hybrid weighting.
+- **Page:** Developer › Data › SHAPE Survey (`docs/data/surveyDoc.jsx`, generic `makeSurveyDoc(survey)`; a new record is one
+  JSON + a three-line page + one entry in `DeveloperScreen.jsx`'s `DATA`). Overview facts, every question by section with a
+  sticky search / status / "with open questions" filter, scoring scales (which questions use each), Drivers, the two lists as
+  written, eNPS wordings, open questions (linked both ways).
+- **Not done yet, by direction:** nothing reads this record; the generated dataset (`shape-survey-dataset.json`, 45 Drivers)
+  still predates it and differs (e.g. it has no Coworker Dynamic drivers beyond five, no Situational Leadership, and a
+  "Resilience" driver the survey doesn't define). Next: settle the open questions, then generate respondents from this record.
+
+## The new SHAPE dataset — 150 people from the survey record (`data/generate-survey-dataset.mjs`)
+
+Built on the survey record above. `npm run dataset` in `/data` (after `npm run survey` if the record changed) writes
+`src/data/surveys/shape-survey-responses.json` (~710 KB): `meta` (rounds with invited counts, sites, what isn't collected,
+the story) and `people[]` = `{ id, profile, responses: [{ round, answers, comments? }] }`.
+- **Answers are stored, scores are not.** `src/lib/survey/scoring.js` turns any answers into question / Driver / Explorer /
+  overall scores, status, eNPS (Promoter / Passive / Detractor), the three mental well-being measures and levels, and HPQ.
+  The generator's checks, Developer › Data and (next) the reports all use it, so stored data can't disagree with the rules.
+  Answer encoding: list = option index (N/A is an index), numeric = number, alcohol = drinks a week, BMI = [cm, kg], a
+  Hybrid person's work-environment answer = [office, home] (weighted by Q12 hours), free text in `comments`.
+  Status bands import from `lib/bands.js`; the well-being cut-offs are `WELLBEING_CUTOFFS` (80/60/40/20, still open, I22).
+- **`src/lib/survey/surveyData.js`** is the read layer: `PEOPLE` (every response scored once), `personById`, `respondents`,
+  `summary(round, keep)` (org or a 5+ group: n, invited, overall, status counts, Explorers, Drivers, eNPS, well-being, HPQ;
+  under 5 → `suppressed`), `composition(field)`, `answerText(q, v)`. **Nothing in the reports reads it yet**: the old
+  `lib/dataset.js` (100 people, 45 Drivers) still feeds every widget until the Org and Personal reports move over.
+- **The organisation:** 150 people, 13 departments, sites SYD-HQ / MEL-02 / AKL-01 / SIN-01 / LON-01 (+ "Does not apply" for
+  Home workers), countries Australia / New Zealand / Singapore / United Kingdom with local-currency salaries, work model
+  derived from hours (Office ~85, Hybrid ~40, Home ~17). Rounds Nov 2025 / Mar 2026 / Aug 2026; recent starters only answer
+  rounds after they joined, and 5 to 12% don't answer a round (105 / 124 / 142 responses; 371 in all).
+- **How answers are made:** latent traits per person (general outlook `g` through everything, plus body, mind, life,
+  job, manager, team, culture, workload, office and home environment, IT, pay), shifted by department (Customer
+  Services/Support heaviest workload, R&D and Management/Admin strongest), site (London's office poorest) and work model
+  (Home lonelier but freer), and by round (round 2: workload and culture dip; round 3: a manager programme and workload
+  review). Each question picks the option nearest a target from its traits plus noise, so answers are real options and
+  correlations come from shared traits (Sleep-Stress r≈0.7, Workload-Work-life balance r≈0.7). All survey rules are
+  followed (who's asked what, N/A, two answers for Hybrid, a third write free text). Job titles use their own random
+  stream so cosmetic changes can't move answers.
+- **Result:** overall 64 → 62 → 67; eNPS −13 → −17 → +3; latest round 23 Flourishing / 78 Striving / 45 Struggling;
+  Manager Style 61 → 72; Customer Services lowest; most people Normal or Mild on the well-being measures.
+- **Developer › Data › SHAPE Survey · 150 people** (`docs/data/ShapeDatasetDoc.jsx`): rounds, Explorers by round, who's in it
+  (profile composition), mental well-being levels, **One person** (pick anyone and a round: their profile, scores every
+  round, and every answer with its score: a personal report's whole input), how it was made, and live checks (all pass).
+- Personal vs Org (product direction): a personal report is one person's own answers, with no grouped data; grouping by
+  department, site and so on is Org-level analysis only. Teams are still to be explained.
+
+## The SHAPE report — Personal and Org on the new dataset (`components/shape/`)
+
+Sidebar **Your Reports** now lists two reports: the old **SHAPE Performance Report** (Personal / Team / Org; only Org is
+built, unchanged, still on `lib/dataset.js`) and **SHAPE** (Personal / Org) on the new 150-person survey dataset. The six
+placeholder reports (Workplace Experience, Total Employee Brand, Brain Health, DAS, WFI, Diversity and Inclusion) were removed
+from `navRailData.js`. The rail's Org icon still opens the old report.
+- **Widgets are a new kind**: `{ id, kind: "shape", widgetId, personId? }`, defined in `components/shape/shapeWidgets.jsx`
+  (`SHAPE_WIDGETS`: persona, name, size, `Body(widget)`; `SHAPE_REPORT_WIDGETS` = each report's order). They read
+  `lib/survey/surveyData.js` and are drawn with the Library's own parts (ScoreHeadline, StatusChip, EvidenceSegmentBar,
+  DriverGroupedList, GraphInsight, HBars, FocusRow, SeverityRow…), so they look like the rest. `WidgetCard`, `ScopePanel`,
+  `DuoSafari` and the canvas understand the kind; Change Widget and Edit with AI don't apply to them; **Add Widget is disabled**
+  on SHAPE reports (the Library's widgets still read the old data).
+- **Personal (11 widgets)**: Your Score, Your Status, Score History, Your Explorers, Mental Well-being (Feeling Low / Stressed /
+  Anxious levels), Where to Focus (three lowest Drivers), Your Drivers, Health Snapshot (their sleep, exercise, fruit and veg,
+  alcohol, smoking and BMI answers with scores), Work-life Balance, Your Morale (morale and would-recommend, 0 to 10), Your
+  Performance (HPQ). **One person's own answers only: no group, no one else.** The top bar has a prototype **Viewing as**
+  picker (`PersonPicker.jsx`, any of the 150; default `DEFAULT_PERSON`, someone who answered all three rounds near the middle).
+- **Org (11 widgets)**: Org Score (Employees = invited, participation), Org Status, Score History, Explorers, ENPS (from CC2.3),
+  Areas to Focus (lowest 5+ group on each of 9 ways of grouping, `focusGroups()`), Factors (60 Drivers), Mental Well-being
+  (level shares per measure), Work Model (Office / Hybrid / Home), Gender Composition, Performance (HPQ).
+- **Scopes** (`shapeScopes.jsx`): every widget opens a Scope built from the existing Story components, fed by props from the new
+  data (Insight Summary, Meaning, Status Meaning, Breakdown radar / bars / zones, What Stands Out, What Changed, Within Reach,
+  Areas to Focus, Who Is in Each Status, Status Over Time, Score History, Score Over Time / by part, eNPS Over Time, Mental
+  Well-Being severity, Methodology). Health and Work-life Balance Scopes include a question-level breakdown (QLB). **Not used yet:**
+  Actions (its guidance and scores read the old dataset), Composition and Priority Map (read the old dataset directly).
+- **`lib/roundsContext.js`**: `RoundsContext` (default = the old dataset's rounds) gives Stories their round dates; the SHAPE
+  Scopes provide `STORY_ROUNDS`. The Stories that printed dates from the old dataset (HistoryCards, Score History, Compare
+  control, Trend Story, History line chart, What Changed, Goal & Pace) now read `useRounds()`. Both datasets have 3 rounds, so
+  `LAST` agrees. Verified the old report still shows Feb / Jun / Nov 2025 and the SHAPE ones Nov 2025 / Mar / Aug 2026.
+- **Persona menu** (`ReportHeader.jsx`) takes `personas` (`[{ label, onSelect }]`) so the SHAPE report switches Personal ↔ Org;
+  the old report's menu is unchanged. `ReportTopBar` takes `extra` (the person picker) and `roundLabel`. Report props carry
+  `id` (the canvas key), `service` ("SHAPE", used in the chat tag), `roundLabel`. `isHeadline()` (gridLayout.js) tags the
+  "Start here" widget on either report. `Dropdown` now caps its list at 360px and scrolls.
+- **Dataset change made for this**: a person's answers are now stable between rounds (most of each answer's noise is the
+  person's own and kept; habits such as smoking and drinking are decided once). Individual overall moves are a median 4.5
+  points between rounds (was much jumpier); org story unchanged (overall 64 → 62 → 67, eNPS −13 → −17 → +3).
+- Not done: Team; the Duo / phone Dashboard hero still shows the old org score; Library-side widgets for the new data.
+
+## Widget library in Developer + the widget Font System (Figma 9158:33686)
+
+- **Widget Font System** (Figma "Font System" board, `984qJvMt7fCHASYHRwgrab` node `9158:33686`) is now data in
+  `lib/widgetTypeSystem.js`: font rules (IBM Plex Sans; 400 / 500 / 700 only; no Light, Italic, Underline), the **13 text roles**
+  (Header Label / Eyebrow 11 Medium uppercase 1%; Primary Metric Display 64, Standard 48, Dense 36, Compact 32, all Bold; Metric
+  Unit 11 Regular; Status Primary 20 Bold, Secondary 11 Regular; Supporting 11 Regular; Label Category large 13 Bold, small 11
+  Regular; Label Value large 16 Bold, small 11 Bold) and **colour by section** (Header utility-gray-300 #A5A2A2, never semantic;
+  Insight text-primary, status overrides, chart labels text-quaternary; Evidence text-tertiary; Action Bar text-primary).
+  Every widget is Header → Insight → Evidence → Action Bar. `auditText(el)` measures every text in a live widget and returns its
+  role(s) or why it has none (weight, off-role size, header colour / case, family, italic, underline).
+- **Foundations › Widget type system** (`docs/WidgetTypeSystemDoc.jsx`): the rules, each role rendered live, the section colours,
+  how to pick a metric size, and where the board disagrees with the code: grey numbers one step apart (board "tertiary (600)" =
+  DS text/tertiary = Gray/500), the header is #B4B2B1 not #A5A2A2, Semibold in use, off-role sizes.
+- **Developer › Widgets** now covers everything: **All widgets** (`docs/widgets/AllWidgetsDoc.jsx`, the review sheet: all 23
+  Library families / 61 forms by Library group, then the 22 SHAPE report widgets, each live with its audit badge and "what's
+  off", plus totals and the ten most common reasons) and **a page for every family**, grouped in the sidebar like the Library
+  (`docs/widgets/widgetPages.js`: hand-written pages for Org Score, Score History and Explorers; the rest generated by
+  `makeWidgetDoc({ familyId })` from families.js and the group's About copy). Every form on every page has a type audit.
+- **First audit result (nothing changed yet, by direction):** 0 of 83 forms fully on-system, 25 of 83 clean apart from the
+  shared header colour; 312 of 812 texts off. Top reasons: 11px / 600 (Semibold, 123), the header grey (83), 12px / 700 (37),
+  10px (28), 14px / 700 (12), 56px / 700 (9, eNPS and focus numbers between Standard 48 and Display 64), 18px, 54px.
+- `LiveWidget` takes `widget` (any kind, e.g. a SHAPE widget) and `fit` (grid as wide as the card). `Dropdown` caps at 360px.
+- **Developer › Widgets › Widget structure** (`docs/widgets/WidgetStructureDoc.jsx`, first page of the Widgets group): the blank
+  widget (1x1 / 2x2 / 3x3 shell with the real Header and dashed Insight / Evidence / Action Bar slots), its measured anatomy, **the
+  Header Rule** (spec from `HEADER_RULE`, live one-line / two-line headers that measure their own box against 12 / 22, the active
+  state), what each section holds and its colour and roles, sizes and the grid, states, **can / can't** lists for making a widget,
+  and a new-widget checklist. Measured: all 83 live widgets' headers are 12px (77, one line) or 22px (6, two lines).
+- **Widget header rule (product direction, supersedes the board's utility-gray-300 and the old T.gray200):** Text 3xs-Header /
+  Medium: 11px, 500, uppercase, 0.11px tracking, line height normal trimmed to cap height and baseline (`text-box: trim-both cap
+  alphabetic`), colour **text/tertiary** (#7C7879), and **text/secondary** (#504C4D) while the widget is active (its Scope open;
+  `Header`'s `selected` prop, passed by `WidgetCard`). **THE HEADER RULE (`HEADER_RULE` in lib/widgetTypeSystem.js): the header box is 12px tall for one line (text centred:
+  7.7px cap height, ~2.2px above and below) and 22px for two (first cap top to second baseline).** Done with `minHeight 12`, `maxHeight 22`,
+  `align-items: safe center`: a clamped two-line text can't trim its bottom (it measures ~25px), but its second baseline lands
+  at 22, so the box stops there and the empty 3px below spills harmlessly. When the title gives way to the content it drops to
+  a single truncated line (plain `nowrap` + ellipsis, so the trim still applies).
+  **Nothing is cropped:** the text keeps 2px of padding above and below inside its clip (cancelled by a −2px margin), so round
+  letters that rise past the cap height (S, C, O) aren't shaved by `overflow: hidden`, and the box still measures 12 / 22. The audit accepts either
+  colour; after the change 25 of 83 forms are fully on-system and 229 of 812 texts off (was 312).
+
+## Widget token audit (Developer › Widgets › Token audit)
+
+Question from the product owner: are the widgets all on design-system tokens? **No, about half.** Two checks, one page
+(`docs/widgets/WidgetTokenAuditDoc.jsx`):
+- **Code** (`node scripts/audit-widgets.mjs` → `src/lib/widgetTokenAudit.generated.js`; re-run after converting): 13 widget files
+  (widgets/*, shapeWidgets, WidgetCard, WidgetMenu, ExplorerRingCard): **331 legacy `T.*` colour uses, 20 hex, 2 rgba** against
+  130 token uses; 14 off-scale font sizes, 6 radii, 27 spacings; 22 Semibold weights. Worst: SubjectBody (109 T.*), widgetParts
+  (66), WidgetBody (57), primitives (47), shapeWidgets (36). For every T key it records **what it's used for** (the property in
+  front of it: text / fill / border / chart / passed on) and suggests the design-system token with the same Light hex for that use
+  (e.g. T.gray500 text → text/tertiary, T.gray100 border → border/secondary, T.gray900 fill → bg/inverse, T.redStrong →
+  status/error/text-indicator). **No token exists for** T.teamBlue (#0096EC), T.hotPink (#FFABCF), the severity pill fills
+  (#FFEFC4, #F8C8D1), the radar orange (#EB5421) and two colours in the SHAPE Org well-being widget (#F6C35B, #9E1C33, #8A5A0A).
+- **Live** (`lib/widgetTokenCheck.js` `auditTokens(el)`): every element of every rendered widget form (83), its inline colours
+  (and SVG fill / stroke) as `var(--ds-…)` or raw, plus font sizes, radii and gaps against the DS scales. **51% of rendered
+  colours are tokens (942 token, 917 raw); 0 of 83 forms fully on tokens**, mainly because the shared card shell (WidgetCard: white
+  surface, T.gray100 border) and the header's 5px gap are raw on every card. Fully transparent values are ignored.
+- The page has a conversion plan (shared parts first: primitives / widgetParts; then the bodies; then the shell; then scales;
+  decisions for the colours with no token). **Nothing converted yet** pending the go-ahead.
+
 ## Status
 
 Chat-first architecture rebuild complete and verified end-to-end (landing → canvas with inline
@@ -3288,3 +3491,161 @@ report shows Time to Gain as one number, no breakdown.** "Money Composition" is 
   (personal): Meaning → the ladder for that person → the model with their own Explorer scores; sample-tagged throughout.
   New Stories live in `stories/ImpactStories.jsx`. The team form of Time Impact uses the same Scope (no team data exists).
 - Gallery: `?scopes=time-impact,money-composition,time-gain&w=340` renders Scopes at a card width (new `w` param).
+
+## One Score widget, one Index (product direction) — `lib/scoreWidget.js`, `widgets/ScoreCard.jsx`
+
+- **There is one Score widget.** The same card shows the score of the organisation, a team, a group (department, age band,
+  work model…), one person, a cluster, an Explorer or a Driver. Two things decide what it may carry: **who** (`WHO`: org /
+  team / group / person) and **what** (`WHAT`: overall / cluster / explorer / driver). `SCORE_ELEMENTS` is the rule table:
+  score, change, date and status always; headcount, participation and people-by-status only for a population (never a
+  person; participation for a group only when invites carry the grouping); parts-by-status only when the score has parts
+  (never a Driver). `defaultElements()`: 1x1 = headcount for a population, status for a person; 2x2 = one evidence bar,
+  people for a population, parts for a person. A group or team under 5 shows "Not shown". `scoreTitle()` builds the title
+  ("Org Score", "Your Sleep Score", "IT Group · Physical Health Score").
+- **`ScoreCard`** draws it and drops any element the subject doesn't allow, even if `show` asks for it. The Library's Org
+  Score / Your Score / Team Score / Explorer Score families and the SHAPE report's p-score / o-score are now all presets of
+  it (their local Score1x1 / Score2x2 / BandSentence copies are gone). New widget kinds on `WidgetCard`:
+  `{ kind: "score", size, who, what, data, show?, title }` and `{ kind: "index", size, wedges, center, title }`.
+- **There is one Index**: any score with parts, the score in the centre and its parts around it; 2x2 = one layer deeper,
+  3x3 = two. `indexSizes(what)`: overall → 2x2 / 3x3 (Explorers, then Drivers); Explorer or cluster → 2x2 only; Driver → none.
+  "Wellbeing Index" is now **Index** (family `index`, titles "Org Index"); the old `dimension-index` family ("Explorer Index")
+  is form 2 of `index` (appended, so seeds are unaffected). `RingIndex.jsx` exports a generic `Index({ wedges, center, size })`.
+  The builder's `index` and `dindex` forms are merged: `index` works for any subject with 3+ parts, and `fitSizes` keeps an
+  Explorer or cluster at 2x2.
+- **Card shell fill is `color/surface/General/card`** (`ds.surface.general.card`), border `border/secondary`, `border/strong`
+  while active (was T.gray500 #7C7879, which has no border token; now #908D8E), in `WidgetCard` and the Widget structure page.
+  The dashed section slots there (bg/secondary, text/quaternary) are demonstrative only.
+- **Developer**: Widgets › Score › **Score** (`docs/widgets/ScoreWidgetDoc.jsx`: the who / what model, the element × subject
+  table read from the rules, every subject live from the 150-person dataset via `subjectExamples.js`, then the four Library
+  families' forms) and **Index** (`IndexWidgetDoc.jsx`). `makeWidgetDoc` takes `familyIds` (one page for several families),
+  `extra` sections, `usageCode` / `usageNote`; `widgetPages.js` groups families by page, so the sidebar lists Score and Index
+  once. Contracts `widget-score` (any population × measure) and `widget-index` replace `widget-org-score`.
+- Not done: Team has no data (the Team examples are the Library sample); the Library still lists the four Score families
+  separately (merging them would renumber report seeds).
+
+## Widgets converted to design-system tokens (21 Oct 2026)
+
+Done on the go-ahead after the widget token audit. Files: `widgets/*` (primitives, widgetParts, WidgetBody, SubjectBody,
+GeneratedBody, ScoreCard, RingIndex, GraphInsight), `shape/shapeWidgets.jsx`, `canvas/WidgetCard.jsx`, `lib/families.js` (card surfaces).
+- **Colours**: 312 `T.*` uses became the `ds.*` token whose Light value equals the T hex for that use (same rules as
+  `scripts/audit-widgets.mjs`), so Light is unchanged; then hand fixes where a token only shared the hex: text → text tokens
+  (`text/primary` for Insight numbers, `text/tertiary` for evidence), SVG chart labels → `text/quaternary`, marker outlines,
+  slice dividers and the Index hole → `surface/General/card` (they were "#fff", wrong in Dark), the "Start here" tag text →
+  `text/inverse`. Hex with a token: #0074BC Graph Team Blue, #26A69A Graph Teal, Likert Subtle tints (Index second ring, severity
+  Moderate / Extremely Severe pills; small Light shift), the SHAPE Org well-being bar → the five Likert colours (Mild is now green,
+  not gold), locked date → `status/warning/text-strong`, Score Comparisons locked card → `status/warning/bg` (edge dropped),
+  Mindfulness → `bg/quaternary`.
+- **Type**: no Semibold left (values / status words 700, names / labels 500); 9 → 10, 10.5 → 11, 12.5 → 12, 17 → 16, 22 → 20,
+  44 / 52 / 54 / 56 → 48 (Standard), Health Age → 36 (Dense). **Radii**: 46 → full, 3 / 5 → 4. **Spacing**: down to the nearest step
+  (3, 5 → 4; 9, 10 → 8; 14 → 12; 18 → 16; 28 → 24) so nothing grows.
+- **Result**: code 331 → 9 legacy T uses, 0 Semibold, 0 off-scale radii; live 100% of rendered colours on tokens (6 raw), **74 of 83
+  forms fully on tokens** (was 0), 54 of 83 fully on the Font System (was 25); no form overflows its card; Dark renders.
+- **Still raw, waiting on a decision**: `T.teamBlue` #0096EC and `T.hotPink` #FFABCF (category charts; the DS has #0074BC / #FF4081),
+  the radar orange #EB5421, Mindfulness low-score #FDE8EA. Left on purpose: 1px hairline gaps, label gutters (55 / 92 / 105px).
+- Fixed along the way: the Score card's team headcount icons had picked up T.teamBlue; they use the frames' team blue (#0074BC) again.
+
+## Dashboards — client dashboard redesign mockups (`components/dashboards/`), isolated
+
+A **Dashboards** item under Developer in the sidebar (`NavRail` `NAV_ITEMS`, `navActions.openDashboards`, App screen `"dashboards"`).
+Nothing here touches the rest of the product. `DashboardsScreen.jsx`: a dashboard dropdown (`DASHBOARDS`, add an entry to add one),
+**Original | Redesign**, page tabs, the page scaled to fit, and a **Build notes** panel (what changed, how to build it, theme colours).
+- **CBI · WXI Site Dashboard** (`cbi-wxi/`): Sodexo × Central Bank of Ireland's Power BI report (source PDF: the user's
+  "Prototype Operator Actions CBI WXI Site Dashboard.pdf", 6 pages, rendered to `original/page-N.jpg` with macOS PDFKit; no poppler
+  on this machine). `data.js` = the PDF's numbers only (one Driver drill-through, one department, one Driver detail are all the PDF
+  shows; other drills say so). `pbi.jsx` = Power BI-native parts (theme, cards, data bars, 100% stacked bar, bar rows with constant
+  lines, dropdown slicers, buttons) on a fixed 1280 × 720 page in Segoe UI. `pages.jsx` = Overview, Actions, Action detail
+  (drill-through, Back returns to where you came from), Evidence, Departments, Driver. `notes.js` = per-page "what changed" and
+  "build it in Power BI". Its own theme colours, not the SHAPE design system (it ships in the client's Power BI).
+- Power BI constraints kept: native visuals where possible (the range rows on Driver need the stacked-bar trick or a table,
+  said in the notes), no hover-only content, drill-through by button, slicers in one synced bar.
+- **Second pass (user feedback):** Evidence, Departments, Driver and Action detail approved as they are. **Actions** rebuilt as a
+  tile "cockpit" from the user's own sketch: headline sentence + Struggling / Striving / Flourishing toggle; Overall WXI tile
+  spanning two rows; Do now / Plan next / Raise with CBI (top 3, "See all 8" expands) / Nudge staff tiles, each row = score
+  chip, Driver, action, who (`whoActs`), drilling to Action detail; The balance (100% stacked bar). Striving / Flourishing views
+  swap the action tiles for "Within reach" / "Working well". **Overview** keeps the **WXI wheel** (pillars inner ring, seven
+  topics outer, status-tinted; selecting a topic filters Driver scores via `TOPIC_OF`, which is confirmed for Nutrition only
+  and read from Driver names for the rest) and a **Health Age** card that is always there: "Not requested", or (screen switch
+  "Health Age requested") the value against actual age, using SAMPLE numbers (`HEALTH_AGE`), tagged Sample. Notes say how
+  to build the wheel without a custom visual (DAX SVG measure in an Image or Table visual) and with click-to-filter (Deneb,
+  or transparent buttons + bookmarks).
+- **Shareable page**: `node scripts/share/build-cbi-wxi.mjs <out.html>` builds `components/dashboards/share/CbiWxiShare.jsx` (the
+  same `Report`, original images as data URIs, notes; React 18.3.1 from cdnjs; own light/dark chrome in IBM Plex Sans) into one
+  ~1.3 MB HTML file, published as the Artifact https://claude.ai/artifact/PHnJKnAy9mnPDRfcArFfZt (private). Pages open by hash:
+  `#overview`, `#actions`, `#detail`, `#evidence`, `#department`, `#driver`. Rebuild and republish to update it.
+
+## How People Moved — a Sankey of mental well-being levels (Trend family)
+
+`FlowOverTime` in `stories/TrendCharts.jsx`, fed by `lib/survey/wellbeingFlows.js` (`wellbeingFlows()`), real data from the
+150-person SHAPE survey dataset. A flow only means something for the same people, so the cohort is everyone who answered every
+round (93 of 150); the Story says so. One column per round with the five levels stacked (Normal on top, Likert colours), bands to
+scale from each level to where its people were at the next round (they leave in target order and arrive in source order, so they
+never cross inside a node; conservation checked for all three measures). Tabs per measure (Feeling Low / Stressed / Anxious),
+**Colour by: Change** (better green, same grey, worse red; default) **| Level**, mouse hover with the shared chart tooltip and a
+detail line for taps (kept separate, so a mouse never leaves it pinned), a summary line for the latest move, Table View (every
+from → to pair per move) and Copy Table. Compact (under 520px): no side labels, 10px nodes, a level key. In the SHAPE Org
+Mental Well-being Scope (between the severity breakdown and Measures Over Time) and on Developer › Trend (`#form-flow`, the
+forms table, props, the responsive showcase; `FAMILY_FORMS.Trend` lists it). Not in the Widget Builder catalogue yet (it reads
+the new dataset; the builder still reads the old one).
+
+## Relationship Stories — Where People Sit, What Makes the Difference, Why Flourishing Matters
+
+Three Diagnostic-family Stories built from SHAPE report samples the product owner shared (stress against resilience as a
+matrix, with / without circles with a p-value, an outcome-by-status pictogram). Real data from the 150-person SHAPE survey
+dataset; no sample values. Components `stories/InsightStories.jsx` (props in), data `lib/survey/insightData.js` (pure).
+- **Where People Sit** (`QuadrantStory`, `quadrant(pairKey)`): two measures cut at the Striving line (60) into four zones.
+  Each axis runs bad → good, so top-right is always the good zone (green), bottom-left red, the mixed two amber. Pairs
+  (`PAIRS`): Stress and Resilience (Steady / Coping / Untested / At risk), Workload and Balance, Engagement and Commitment;
+  zone names and one-line meanings live on the pair. Resilience = mean of PSY3.1-3.3 (shown on its own, not in the SHAPE
+  score); Stress = the Stress Driver (100 = never stressed). Tap a zone for its people, change and meaning. Latest: Steady
+  49%, At risk 25%, Untested 25%, Coping 1%. In **SHAPE › Org › Mental Well-being**.
+- **What Makes the Difference** (`WithWithoutStory`, `withWithout({ outcome, split })`): six questions (`OFFERS`: SoftWE1.2
+  disruption-free, SoftWE1.4 software, PhysWE1.5 ergonomic, SoftWE1.1 flexible, EE1.4 training, EC2 safe). "With" = Agree /
+  Strongly agree (75+), "without" = Disagree / Strongly disagree (25 or less), Neutral left out. Outcome Flourishing or Would
+  recommend (eNPS Promoter); people = everyone or one work model. **Fisher's exact test** (two-sided, log-factorial) in plain
+  words: under 0.01 Strong evidence, under 0.05 Some evidence, else Could be chance; p shown to three places under 0.1. Groups
+  under 5: no share, no test. Drawn as two circles side by side on one baseline (not nested as in the sample: nested labels
+  collided), areas to scale across the whole Story. The parent owns outcome / split and recomputes (`DifferenceStory` in
+  `shapeScopes.jsx`). In **SHAPE › Org › Org Score**. Latest, Flourishing: training 28% with vs 0% without (p < 0.001),
+  flexible 29% vs 0% (p 0.005), software 25% vs 0% (p 0.009), ergonomic 28% vs 6% (p 0.10), disruption-free 26% vs 10% (p 0.13).
+- **Why Flourishing Matters** (`StatusOutcomeStory`, `outcomeByStatus()`): per status, would recommend (Promoter share), look
+  forward to work (agree on EC1.6) and self-rated performance (HPQ absolute); shares as ten people, part-filled, the score as a
+  bar. Flourishing 83% / 96% / 89, Striving 35% / 53% / 73, Struggling 2% / 11% / 53. **Intent to leave isn't asked** in the
+  survey, so the sample's "likely to leave" isn't shown. In **SHAPE › Org › Org Status**.
+- Every card says "A link, not proof that one causes the other." Under 560px: long tab labels become a `Dropdown` (`Choice`),
+  offer circles go to two columns (radius 34, 26 under 400px), status rows stack. Checked at 320 / 390 / 480 / 808: no overflow.
+- **Developer › Stories › Diagnostic** lists the three (note "SHAPE report"); they open one page, `docs/RelationshipsDoc.jsx`
+  (id `relationships`; a `FAMILY_FORMS` form can now carry its own `doc`). Contract `relationships` in `dataContract.js`.
+- Not in the Widget Builder catalogue (it still reads the old dataset).
+
+### Relationship Stories, sleeker charts (redesign-existing-projects pass)
+
+Same props, data, controls and Table Views; only the charts changed (`InsightStories.jsx`). The source samples were inspiration only.
+- **Where People Sit is now a real scatter**: every person a dot on a 0 to 100 square, zones tinted with `status/*/bg` and cut
+  at 60, so they're **drawn to scale** (the good corner is 40 × 40, not a quarter). Answers come in steps, so people sharing a
+  spot are packed into a small sunflower cluster (`packPoints`), kept on their own side of the cut. `quadrant()` now returns
+  `points` ({ id, x, y, k }). A card chip in each zone's outer corner (share + name). Hover / tap: 2px inset ring in the zone's
+  graph colour, other dots fade to 15%; switching pairs glides the dots. **Don't use `status/*/bg-strong` for a hover tint**: in
+  Light it is the full status colour (#CC2944) and floods the zone.
+- **What Makes the Difference is a dumbbell list**: one row per offer on one shared scale, hollow dot without, solid dot with,
+  bar between, biggest gap first; Team Blue only when p < 0.05 (grey otherwise), "4.7×" or "+29 pts" (when no one without it
+  reaches the outcome) and the evidence words on the right. Rows are buttons; hover / tap shows the question and counts below.
+- **Why Flourishing Matters is three waffles side by side** (100 squares, filled from the bottom, a 4ms-per-square ripple on
+  change); the performance score fills the same square to its level. Lucide `User` icons gone.
+- Checked at 320 / 390 / 480 / 808 (no overflow), Light and Dark, clean console in a fresh tab. Developer page spec rewritten.
+
+### Relationship Stories, round 2: cards back, two forms, any survey
+
+- **What Makes the Difference is cards again** (the user preferred them to the dumbbell rows), with the text stripped: the offer
+  name, two circles (With solid, Without at 35%, areas to scale across the Story), then one line, "2.6×" (or "+29 pts") and the
+  evidence in two words. The question, counts and p-value moved to the line under the cards (hover or tap a card; cards are
+  buttons). The note is one short sentence. The dumbbell version is gone.
+- **Why Flourishing Matters has two forms** (`form`): `waffle` (default) and `people` (the earlier ten-figure rows, cleaned up).
+  The report Scope uses the waffle.
+- **Built for any survey, not SHAPE only.** StatusOutcomeStory takes `groups` (or `statuses`), best first, each with its own
+  label and an optional `tone` (success / warning / error / neutral; SHAPE's status names map by themselves); the title defaults
+  to "Why {best group} Matters". QuadrantStory takes `pair.scale` ([min, max], default [0, 100]) and draws ticks and the cut on
+  the survey's own range; zone names are optional and fall back to plain words ("High pay, low growth"). The Developer page shows
+  both on a made-up 1 to 5 survey with its own bands. What still has to come from each survey: its bands (or an ordered
+  segmentation), the outcome questions it treats as outcomes, and which pairs of measures are worth putting on a quadrant.
+- **Hover ring fixed**: each zone button now has the plot's radius on its outer corner, so the 2px ring follows the rounded
+  corner instead of being clipped by it.

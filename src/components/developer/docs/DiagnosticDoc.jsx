@@ -11,6 +11,7 @@ import { StoryStyleContext } from "../../scope/stories/storyStyle.js";
 import SegmentedControl from "../../ui/SegmentedControl.jsx";
 import { Section, Prose, Callout, Variant, Anatomy, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, lightHexOf } from "../docKit.jsx";
 import { SpecTable, SimpleTable, T, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "diagnostic", name: "Diagnostic", group: "Stories", kind: "Diagnostic",
@@ -22,7 +23,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "anatomy", label: "Anatomy" }, { id: "spec", label: "Specification" },
     { id: "states", label: "States & variants" }, { id: "responsive", label: "Responsive" }, { id: "limits", label: "Few, many, odd" }, { id: "content", label: "Content & voice" },
-    { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
+    { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
     { id: "story", label: "The data story" }, { id: "glance", label: "At a glance" }, { id: "forms", label: "The forms" }, { id: "live", label: "Live from the data" },
@@ -253,6 +254,7 @@ function DeveloperView({ style }) {
         </Prose>
       </Section>
 
+      <DataNeeds id="diagnostic" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "StrongestWeakestStory.strongest / weakest", type: "{ label, value }", required: true, desc: "The best and the worst part, from the same list. Pass the same part twice for the one-part card." },

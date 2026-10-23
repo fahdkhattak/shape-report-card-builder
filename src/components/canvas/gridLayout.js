@@ -28,3 +28,6 @@ export function colsForWidth(width) {
   for (const n of [6, 5, 4, 3]) if (width >= pxForSpan(n)) return n;
   return 2;
 }
+
+/* A report's headline widget, tagged "Start here" (the old Org Score, or the SHAPE reports' score widgets). */
+export const isHeadline = (w) => w.familyId === "org-score" || w.widgetId === "o-score" || w.widgetId === "p-score";

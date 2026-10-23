@@ -166,7 +166,7 @@ const FORM_WORDS = [
   ["status", /\b(status badge|status)\b/],
   ["score", /\b(number|single number|metric|score)\b/],
 ];
-const CASE_FORMS = new Set(["story", "index", "check", "whatif", "heat", "momentum", "duel", "team", "composition", "dindex"]);
+const CASE_FORMS = new Set(["story", "index", "check", "whatif", "heat", "momentum", "duel", "team", "composition"]);
 /* A spec to carry the title forward from when the current widget isn't one of the new forms. */
 const prevOf = (spec) => (spec.vizType === "form" ? spec : { ...spec, autoTitle: spec.title, options: {} });
 
@@ -271,7 +271,7 @@ export function refine(text, built) {
   const wantsChart = /\b(make|turn|change|switch|show|display|use)\b/.test(t) && !/\b(remove|drop|add|include)\b/.test(t);
   const viz = FORM_WORDS.find(([, re]) => re.test(t));
   if (viz && (wantsChart || /chart|graph|widget|gauge|dial|radar/.test(t) || CASE_FORMS.has(viz[0])) && !/\b(remove|drop|add|include)\b/.test(t)) {
-    const id = viz[0] === "index" && subject.kind === "dimension" ? "dindex" : viz[0]; // one Explorer has its own (2×2) index
+    const id = viz[0]; // one Index for any score with parts; its sizes follow how many layers it has
     const def = formById(id);
     if (def) {
       const why = def.blocked(subject);

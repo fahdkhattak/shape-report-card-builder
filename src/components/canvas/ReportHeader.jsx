@@ -28,7 +28,10 @@ export function GhostBtn({ children, icon, iconRight, disabled, style, ...rest }
   );
 }
 
-export function PersonaMenu({ persona }) {
+/* `personas` (optional): this report's own versions, `[{ label, onSelect }]`. A version with no onSelect is shown but does
+   nothing (the old Performance report's Personal and Team aren't built). Without `personas`, the three labels are inert. */
+export function PersonaMenu({ persona, personas }) {
+  const list = personas || PERSONAS.map((label) => ({ label }));
   const [open, setOpen] = useState(false);
   const { refs, floatingStyles, context } = useFloating({ open, onOpenChange: setOpen, placement: "bottom-start", middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 })], whileElementsMounted: autoUpdate });
   const dismiss = useDismiss(context, { outsidePressEvent: "mousedown" });
@@ -51,10 +54,10 @@ export function PersonaMenu({ persona }) {
                 initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} transition={POP_SPRING}
                 style={{ transformOrigin: "top left", width: 160, background: T.gray25, borderRadius: radius.lg, padding: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.14), 0 4px 4px rgba(0,0,0,0.1), 0 10px 6px rgba(0,0,0,0.06)", fontFamily: font, boxSizing: "border-box" }}
               >
-                {PERSONAS.map((p) => (
+                {list.map(({ label: p, onSelect }) => (
                   <button
                     key={p}
-                    onClick={() => setOpen(false)}
+                    onClick={() => { setOpen(false); if (p !== persona) onSelect?.(); }}
                     style={{ width: "100%", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", padding: "8px 12px", borderRadius: radius.sm, fontSize: 14, fontFamily: font, color: T.gray900, fontWeight: p === persona ? 700 : 400 }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = T.gray75; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -71,13 +74,14 @@ export function PersonaMenu({ persona }) {
   );
 }
 
-export function ReportTopBar({ title, persona, roundLabel, device, onDeviceChange }) {
+export function ReportTopBar({ title, persona, personas, extra, roundLabel, device, onDeviceChange }) {
   return (
     <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 32px", background: T.white, flexShrink: 0, fontFamily: font }}>
       <div style={{ display: "flex", alignItems: "center", gap: 17 }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: T.gray700, lineHeight: "20px" }}>{title}</span>
         <div style={{ width: 1, height: 20, background: T.gray100 }} />
-        <PersonaMenu persona={persona} />
+        <PersonaMenu persona={persona} personas={personas} />
+        {extra}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

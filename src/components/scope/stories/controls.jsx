@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { BarChart3, Table, Copy, Share2, ListFilter } from "lucide-react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsText, dsRadius, dsSpace, dsBorder, dsShadow } from "../../../lib/ds.js";
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, roundName, fmtMonth } from "../../../lib/scopeData.js";
 import SegmentedControl from "../../ui/SegmentedControl.jsx";
 import Dropdown from "../../ui/Dropdown.jsx";
@@ -51,6 +51,7 @@ export function useCompare() {
 }
 
 export function CompareControl({ cmp }) {
+  const ROUNDS = useRounds();
   const options = ROUNDS.map((_, i) => i).filter((i) => i < LAST);
   // Wraps: on a phone the round picker drops to its own line instead of pushing the card wider.
   return (

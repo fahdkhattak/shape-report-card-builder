@@ -17,7 +17,7 @@ import ExplorerRingCard from "./ExplorerRingCard.jsx";
 import { LATEST, DIMENSIONS, dimensionValue } from "../../lib/dataset.js";
 import Button from "../ui/Button.jsx";
 import mascotAvatar from "../../assets/mascot-avatar.svg";
-import { CELL, GAP, colsForWidth } from "./gridLayout.js";
+import { CELL, GAP, colsForWidth, isHeadline } from "./gridLayout.js";
 import { ScrollThumb } from "../ui/MinimalScroll.jsx";
 import DevicePreview from "./DevicePreview.jsx";
 
@@ -65,6 +65,9 @@ const COEXIST_MIN_W = CHAT_W + REPORT_MIN_W + SCOPE_MIN_W;
 /* docked ChatPanel while this same canvas is visible underneath,        */
 /* showing a skeleton grid until generation completes.                   */
 /* ================================================================== */
+/* A widget's key in a report's per-column layout: a Library family, or a SHAPE widget's id. */
+const layoutKeyOf = (w) => w.familyId || w.widgetId;
+
 export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainChat, initialChatOpen = false, initialGenerating = false, initialLibraryOpen = false, report = null, navExpanded, onNavExpandedChange, onOpenSearch, onOpenReportBuilder, onOpenSurveyBuilder }) {
   const [widgets, setWidgets] = useState(initialWidgets);
   const [libCollapsed, setLibCollapsed] = useState(!initialLibraryOpen);
@@ -225,13 +228,13 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
   const layoutOrder = report?.layouts && !customOrder ? report.layouts[cols] : null;
   const displayWidgets = layoutOrder
     ? [...widgets].sort((a, b) => {
-        const ia = layoutOrder.indexOf(a.familyId), ib = layoutOrder.indexOf(b.familyId);
+        const ia = layoutOrder.indexOf(layoutKeyOf(a)), ib = layoutOrder.indexOf(layoutKeyOf(b));
         return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
       })
     : widgets;
   // The phone shows 2 columns, in the report's own 2-column order.
   const mobileOrder = report?.layouts?.[2];
-  const mobileWidgets = mobileOrder ? [...widgets].sort((a, b) => { const ia = mobileOrder.indexOf(a.familyId), ib = mobileOrder.indexOf(b.familyId); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); }) : widgets;
+  const mobileWidgets = mobileOrder ? [...widgets].sort((a, b) => { const ia = mobileOrder.indexOf(layoutKeyOf(a)), ib = mobileOrder.indexOf(layoutKeyOf(b)); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); }) : widgets;
   const onScopeResizeStart = (e) => {
     e.preventDefault();
     const startX = e.clientX, startW = scopeW;
@@ -254,7 +257,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
       <div ref={areaRef} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {report && (
           <div style={{ background: T.gray50, flexShrink: 0 }}>
-            <ReportTopBar title={report.title} persona={report.persona} roundLabel={`Round ${LATEST.round}`} device={device} onDeviceChange={chooseDevice} />
+            <ReportTopBar title={report.title} persona={report.persona} personas={report.personas} extra={report.extra} roundLabel={report.roundLabel || `Round ${LATEST.round}`} device={device} onDeviceChange={chooseDevice} />
           </div>
         )}
         {report && device !== "desktop" ? (
@@ -273,7 +276,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
         <div style={{ flex: 1, minHeight: 0, display: "flex", background: report ? T.gray50 : T.white }}>
       <AnimatePresence mode="wait">
         {chatOpen ? (
-          <ChatPanel key="chat" width={chatW} inset={!!report} expanded={chatExpanded} onToggleExpand={() => setChatExpanded((v) => !v)} contextTag={report ? `SHAPE Performance Index | ${report.persona}` : undefined} onClose={() => { setChatOpen(false); setChatExpanded(false); }} editingWidget={editingWidget} onAddWidget={addGeneratedWidget} onReplaceWidget={replaceWidget} onCancelEdit={() => setEditingId(null)} mainChat={mainChat} reportGenerating={generating} onGeneratingComplete={() => setGenerating(false)} />
+          <ChatPanel key="chat" width={chatW} inset={!!report} expanded={chatExpanded} onToggleExpand={() => setChatExpanded((v) => !v)} contextTag={report ? `${report.service || "SHAPE Performance Index"} | ${report.persona}` : undefined} onClose={() => { setChatOpen(false); setChatExpanded(false); }} editingWidget={editingWidget} onAddWidget={addGeneratedWidget} onReplaceWidget={replaceWidget} onCancelEdit={() => setEditingId(null)} mainChat={mainChat} reportGenerating={generating} onGeneratingComplete={() => setGenerating(false)} />
         ) : (
           !libCollapsed && (
             <LibraryPanel
@@ -305,7 +308,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
 
         <div style={{ flex: 1, display: "flex", minHeight: 0, background: T.gray50 }}>
           <div style={{ flex: 1, minWidth: 0, display: scopeExpanded && scopeWidget ? "none" : "flex", flexDirection: "column" }}>
-            {report && <ReportSubBar reportType={report.reportType} onAddWidget={openLibrary} addDisabled={generating || !!reportLayer} layer={reportLayer ? { label: "Explorers", onExit: exitLayer } : null} />}
+            {report && <ReportSubBar reportType={report.reportType} onAddWidget={openLibrary} addDisabled={generating || !!reportLayer || report?.service === "SHAPE"} layer={reportLayer ? { label: "Explorers", onExit: exitLayer } : null} />}
         <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
         {/* Scroll-edge fade (same treatment as the Scope and chat headers) in the
             report's own grey, so widgets dissolve under the sub-bar instead of
@@ -340,7 +343,7 @@ export default function CanvasScreen({ initialWidgets, scopeLabel, onExit, mainC
                   <motion.div key="widgets" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL}px)`, gridAutoRows: `${CELL}px`, gridAutoFlow: "row dense", gap: GAP, width: gridWidth }}>
                     {displayWidgets.map((w, i) => (
                       <div key={w.id} onDragOver={(e) => e.preventDefault()} onDrop={() => onWidgetDrop(w.id)} style={{ display: "contents" }}>
-                        <WidgetCard layoutKey={`${cols}:${i}`} widget={w} onChangeForm={changeForm} onEdit={startEdit} onRemove={removeWidget} onRename={renameWidget} onOpenModal={report ? openWidget : setModalWidget} selected={w.id === scopeId} startHere={!!report && w.familyId === "org-score"} dragProps={{ draggable: true, onDragStart: () => onWidgetDragStart(w.id) }} />
+                        <WidgetCard layoutKey={`${cols}:${i}`} widget={w} onChangeForm={changeForm} onEdit={startEdit} onRemove={removeWidget} onRename={renameWidget} onOpenModal={report ? openWidget : setModalWidget} selected={w.id === scopeId} startHere={!!report && isHeadline(w)} dragProps={{ draggable: true, onDragStart: () => onWidgetDragStart(w.id) }} />
                       </div>
                     ))}
                     {dragOverCanvas ? (

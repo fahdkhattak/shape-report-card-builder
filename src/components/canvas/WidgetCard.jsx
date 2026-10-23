@@ -2,13 +2,16 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowDown } from "lucide-react";
 import { T, font, radius } from "../../lib/tokens.js";
-import { dsShadow } from "../../lib/ds.js";
+import { ds, dsShadow } from "../../lib/ds.js";
 import { familyById, formTitle, cardSurface, nextFormIndex } from "../../lib/families.js";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
 import { Header } from "../widgets/primitives.jsx";
 import { sizeToSpan, pxForSpan } from "./gridLayout.js";
 import { DotsButton, WidgetMenu } from "./WidgetMenu.jsx";
+import { ShapeWidgetBody, shapeTitle, shapeSize } from "../shape/shapeWidgets.jsx";
+import ScoreCard from "../widgets/ScoreCard.jsx";
+import { Index } from "../widgets/RingIndex.jsx";
 
 /* ================================================================== */
 /* WIDGET CARD (canvas instance) — handles both kinds:                 */
@@ -35,9 +38,12 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
   const [cardEl, setCardEl] = useState(null);
   const isLib = widget.kind === "library";
   const family = isLib ? familyById(widget.familyId) : null;
-  const size = isLib ? family.forms[widget.formIndex].size : widget.spec.size;
+  const isShape = widget.kind === "shape"; // the SHAPE report's widgets, from the new survey dataset (components/shape/)
+  // The Score card and the Index for any subject (lib/scoreWidget.js): { kind: "score" | "index", size, title, … }.
+  const isSubject = widget.kind === "score" || widget.kind === "index";
+  const size = isSubject ? widget.size : isShape ? shapeSize(widget) : isLib ? family.forms[widget.formIndex].size : widget.spec.size;
   const span = sizeToSpan(size);
-  const defaultTitle = isLib ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title;
+  const defaultTitle = isSubject ? widget.title : isShape ? shapeTitle(widget) : isLib ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title;
   const surface = isLib ? cardSurface(widget.familyId, widget.formIndex) : {};
   const title = widget.customTitle || defaultTitle;
   const canChange = isLib && nextFormIndex(widget.familyId, widget.formIndex) !== widget.formIndex;
@@ -64,8 +70,8 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
         transition={{ ...PRESS, layout: GLIDE }}
         style={{
           width: "100%", height: "100%",
-          background: surface.background || T.white,
-          border: `1px solid ${selected ? T.gray500 : surface.borderColor || T.gray100}`,
+          background: surface.background || ds.surface.general.card,
+          border: `1px solid ${selected ? ds.border.strong : surface.borderColor || ds.border.secondary}`,
           boxShadow: raised ? dsShadow("md") : "0 0 0 rgba(0,0,0,0)",
           transition: "box-shadow 200ms ease, border-color 200ms ease",
           borderRadius: radius.widget,
@@ -79,7 +85,7 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
         }}
       >
         {startHere && (
-          <span style={{ position: "absolute", top: -11, left: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 4, background: T.gray900, color: T.white, fontSize: 11, lineHeight: "16px", padding: "2px 8px 2px 6px", borderRadius: radius.sm, pointerEvents: "none" }}>
+          <span style={{ position: "absolute", top: -11, left: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 4, background: ds.bg.inverse, color: ds.text.inverse, fontSize: 11, lineHeight: "16px", padding: "2px 8px 2px 6px", borderRadius: radius.sm, pointerEvents: "none" }}>
             <ArrowDown size={11} />Start here
           </span>
         )}
@@ -91,13 +97,15 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
             onClick={(e) => e.stopPropagation()}
             onBlur={(e) => { onRename(widget.id, e.target.value.trim() || title); setRenaming(false); }}
             onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
-            style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.11px", textTransform: "uppercase", color: T.gray700, border: `1px solid ${T.accent}`, borderRadius: 4, padding: "1px 4px", width: "100%", boxSizing: "border-box", fontFamily: font }}
+            style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.11px", textTransform: "uppercase", color: ds.text.secondary, border: `1px solid ${ds.border.focus}`, borderRadius: 4, padding: "1px 4px", width: "100%", boxSizing: "border-box", fontFamily: font }}
           />
         ) : (
-          <Header title={title} estimated={!isLib && widget.spec.real === false} />
+          <Header title={title} selected={selected} estimated={widget.kind === "generated" && widget.spec.real === false} />
         )}
 
-        {isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
+        {widget.kind === "score" ? <ScoreCard size={widget.size} who={widget.who} what={widget.what} data={widget.data} show={widget.show} />
+          : widget.kind === "index" ? <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0, overflow: "hidden" }}><Index wedges={widget.wedges} center={widget.center} size={widget.size} title={widget.title} /></div>
+          : isShape ? <ShapeWidgetBody widget={widget} /> : isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
 
         <DotsButton open={menuOpen} visible={hover} onToggle={() => setMenuOpen((v) => !v)} />
       </motion.div>
@@ -108,7 +116,7 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
         onChange={canChange ? () => onChangeForm(widget.id) : null}
         onAbout={() => onOpenModal(widget)}
         onRename={() => setRenaming(true)}
-        onEdit={() => onEdit(widget.id)}
+        onEdit={isShape ? null : () => onEdit(widget.id)}
         onRemove={() => onRemove(widget.id)}
       />
     </div>

@@ -15,6 +15,7 @@ import { STORIES } from "../../widgetbuilder/storyCatalog.jsx";
 import { overallSubject } from "../../../lib/scopeSubject.js";
 import { Section, Prose, Callout, Variant, Anatomy, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, lightHexOf } from "../docKit.jsx";
 import { ContrastTable, SpecTable, SimpleTable, T, tok, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 const OVERALL = overallSubject();
 const liveStory = (id) => STORIES.find((x) => x.id === id).render(OVERALL, {});
@@ -29,7 +30,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "playground", label: "Try it" }, { id: "anatomy", label: "Anatomy" },
     { id: "spec", label: "Specification" }, { id: "states", label: "States & variants" }, { id: "responsive", label: "Responsive" }, { id: "limits", label: "Few, many, odd" }, { id: "edges", label: "Sizes & edge cases" }, { id: "content", label: "Content & voice" },
-    { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
+    { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
     { id: "story", label: "The data story" }, { id: "glance", label: "At a glance" }, { id: "shows", label: "What it can show" }, { id: "forms", label: "The forms" },
@@ -508,6 +509,7 @@ function DeveloperView({ style }) {
         <ContrastTable rows={[["color/status/success/text-indicator", "Used", "Flourishing"], ["color/status/warning/text-indicator", "Used", "Striving"], ["color/status/error/text-indicator", "Used", "Struggling"]]} />
       </Section>
 
+      <DataNeeds id="breakdown" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "items", type: "[{ label, values, blurb? }]", required: true, desc: "One per part. `values` is the score in each round, oldest first, ending with the current one. `blurb` is the sentence the radar tooltip and the List form show." },

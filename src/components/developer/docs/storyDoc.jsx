@@ -3,6 +3,7 @@ import { StoryStyleContext } from "../../scope/stories/storyStyle.js";
 import { Section, Prose, Callout, Variant, StoryStage, PropsTable, CodeBlock, FigmaParity, lightHexOf } from "../docKit.jsx";
 import { SpecTable, SimpleTable, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
 import WidthShowcase from "./WidthShowcase.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 /* ================================================================== */
 /* STORY DOC: one page shape for every Story family, driven by config,   */
@@ -35,7 +36,7 @@ export function makeDoc(c) {
   const toc = {
     developer: [
       { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "spec", label: "Specification" }, { id: "states", label: "States & variants" },
-      { id: "responsive", label: "Responsive" }, { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" },
+      { id: "responsive", label: "Responsive" }, { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" },
       { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
     ],
     researcher: [
@@ -91,6 +92,7 @@ export function makeDoc(c) {
           <Prose>{c.a11y.map((p, i) => <p key={i}>{p}</p>)}</Prose>
         </Section>
 
+        <DataNeeds id={c.id} />
         <Section id="props" title="Props & usage">
           <PropsTable rows={c.props} />
           <CodeBlock label="Usage" code={c.usage} />

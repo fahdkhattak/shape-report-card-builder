@@ -7,6 +7,7 @@ import { StoryStyleContext } from "../../scope/stories/storyStyle.js";
 import SegmentedControl from "../../ui/SegmentedControl.jsx";
 import { Section, Prose, Callout, Variant, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, lightHexOf } from "../docKit.jsx";
 import { SpecTable, SimpleTable, T, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "composition", name: "Composition", group: "Stories", kind: "Composition",
@@ -18,7 +19,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "spec", label: "Specification" },
     { id: "states", label: "States & variants" }, { id: "responsive", label: "Responsive" }, { id: "limits", label: "Few, many, odd" },
-    { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" },
+    { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" },
     { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
@@ -180,6 +181,7 @@ function DeveloperView({ style }) {
         </Prose>
       </Section>
 
+      <DataNeeds id="composition" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "initialTab", type: "\"People\" | \"Organisation\" | \"Employment\" | \"Locations\"", def: "\"People\"", desc: "The tab it opens on." },

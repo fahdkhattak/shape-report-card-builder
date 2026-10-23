@@ -3,7 +3,8 @@ import { ROUNDS, DIMENSIONS, EMPLOYEE_COUNT } from "../../../lib/dataset.js";
 import { LAST, fmtMonth, fmtDate, enpsParts } from "../../../lib/scopeData.js";
 import { severityByRound } from "../../../lib/wellbeing.js";
 import { overallSubject } from "../../../lib/scopeSubject.js";
-import { ScoreOverTime, ScoreOverTimeRows, StateOverTime, LevelOverTime, ENPSOverTime } from "../../scope/stories/TrendCharts.jsx";
+import { ScoreOverTime, ScoreOverTimeRows, StateOverTime, LevelOverTime, ENPSOverTime, FlowOverTime } from "../../scope/stories/TrendCharts.jsx";
+import { wellbeingFlows } from "../../../lib/survey/wellbeingFlows.js";
 import ScoreHistoryStory from "../../scope/stories/ScoreHistoryStory.jsx";
 import { GoalStory } from "../../scope/stories/ExtraStories.jsx";
 import { StoryStyleContext } from "../../scope/stories/storyStyle.js";
@@ -11,6 +12,7 @@ import { SampleTag } from "../../scope/stories/StoryCard.jsx";
 import { Section, Prose, Callout, Variant, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, lightHexOf } from "../docKit.jsx";
 import WidthShowcase from "./WidthShowcase.jsx";
 import { SpecTable, SimpleTable, T, tok, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "trend", name: "Trend", group: "Stories", kind: "Trend",
@@ -22,7 +24,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "spec", label: "Specification" },
     { id: "states", label: "States & variants" }, { id: "responsive", label: "Responsive" }, { id: "limits", label: "Few, many, odd" },
-    { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" },
+    { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" },
     { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
@@ -36,6 +38,7 @@ const ROUNDS_LIVE = ROUNDS.map((r, i) => ({ label: fmtMonth(r.date), latest: i =
 const OVERALL = ROUNDS.map((r) => Math.round(r.avgOverall));
 const ROWS_LIVE = [{ label: "Overall Score", overall: true, values: OVERALL }, ...DIMENSIONS.map((d) => ({ label: d, values: ROUNDS.map((r) => Math.round(r.dimensionAvg[d])) }))];
 const SEVERITY = severityByRound();
+const FLOWS = wellbeingFlows(); // the SHAPE survey dataset: the same people every round
 const ENPS_LIVE = ROUNDS.map((_, i) => { const p = enpsParts(i); const pc = (k) => Math.round((p[k] / p.total) * 100); return { promoters: pc("promoters"), passives: pc("passives"), detractors: pc("detractors"), enps: p.enps }; });
 const subject = overallSubject();
 
@@ -103,6 +106,7 @@ function DeveloperView({ style }) {
           [<a key="3" href="#form-rows" style={{ color: "inherit" }}>Score Over Time, by part</a>, "A small line per part under an overall row, every value printed.", "Every part's path at once."],
           [<a key="4" href="#form-age" style={{ color: "inherit" }}>Health Age Over Time</a>, "Health Age as a line with actual age dashed.", "Health Age, against actual age."],
           [<a key="5" href="#form-state" style={{ color: "inherit" }}>State Over Time</a>, "Each round as a stacked bar of severity (Normal to Extremely Severe), one tab per measure.", "How people are spread across severity, and how that moved."],
+          [<a key="6f" href="#form-flow" style={{ color: "inherit" }}>How People Moved</a>, "A Sankey: one column per round with the levels stacked, bands joining each level to where its people were at the next round, coloured by change or by level.", "Who got better or worse, not just how the totals changed."],
           [<a key="6" href="#form-level" style={{ color: "inherit" }}>Level Over Time</a>, "One bar per round at its severity level; hover compares it with the round before.", "One person's or one group's level."],
           [<a key="7" href="#form-enps" style={{ color: "inherit" }}>eNPS Over Time</a>, "Promoters, Passives and Detractors stacked, the eNPS line over them, a legend.", "eNPS and what it's made of."],
           [<a key="8" href="#form-goal" style={{ color: "inherit" }}>Goal & Pace</a>, "The score so far, a target the reader sets, and a straight-line estimate of when it is reached at the current pace.", "Where it is heading, against a target."],
@@ -132,6 +136,7 @@ function DeveloperView({ style }) {
           <div id="form-rows" /><Variant title="Score Over Time, by part · live"><StoryStage style={style} kind={meta.kind} width={808}><ScoreOverTimeRows rounds={ROUNDS_LIVE} rows={ROWS_LIVE} /></StoryStage></Variant>
           <div id="form-age" /><Variant title="Health Age Over Time · design sample" note="No ages exist in the data."><StoryStage style={style} kind={meta.kind} width={808}><div style={{ display: "flex", flexDirection: "column", gap: dsSpace[8] }}><SampleTag>Sample data</SampleTag><ScoreOverTime title="Health Age Over Time" axis="Health Age" rounds={R5} values={D_AGE} domain={[20, 30]} ticks={[30, 28, 26, 24, 22, 20]} banded={false} reference={D_REF} unit=" yrs" /></div></StoryStage></Variant>
           <div id="form-state" /><Variant title="State Over Time · live" note="Severity bands are a prototype assumption (see Mental Well-Being on the Breakdown page)."><StoryStage style={style} kind={meta.kind} width={808}><StateOverTime rounds={ROUNDS_LIVE} measures={SEVERITY} /></StoryStage></Variant>
+          <div id="form-flow" /><Variant title="How People Moved · live" note={`The SHAPE survey dataset: the ${FLOWS.cohort} people who answered all three rounds. Hover a band or a level; switch Colour by.`}><StoryStage style={style} kind={meta.kind} width={808}><FlowOverTime rounds={FLOWS.rounds} measures={FLOWS.measures} cohort={FLOWS.cohort} /></StoryStage></Variant>
           <div id="form-level" /><Variant title="Level Over Time · design sample" note="Hover a bar."><StoryStage style={style} kind={meta.kind} width={808}><LevelOverTime rounds={R5} measures={D_LEVEL} /></StoryStage></Variant>
           <Variant title="Level Over Time · live" note="The organisation's mean score on each measure, as a level."><StoryStage style={style} kind={meta.kind} width={808}><LevelOverTime rounds={ROUNDS_LIVE} measures={SEVERITY} who="Organisation's mental well-being" /></StoryStage></Variant>
           <div id="form-enps" /><Variant title="eNPS Over Time · live" note="eNPS is negative in every round, which is why it has its own axis."><StoryStage style={style} kind={meta.kind} width={808}><ENPSOverTime rounds={ROUNDS_LIVE} parts={ENPS_LIVE} /></StoryStage></Variant>
@@ -144,6 +149,7 @@ function DeveloperView({ style }) {
           { name: "Score Over Time · sample, 5 rounds", render: () => <ScoreOverTime rounds={R5} values={D_LINE} /> },
           { name: "By part · live", render: () => <ScoreOverTimeRows rounds={ROUNDS_LIVE} rows={ROWS_LIVE.slice(0, 5)} /> },
           { name: "State Over Time · sample", render: () => <StateOverTime rounds={R5} measures={D_STATE} /> },
+          { name: "How People Moved · live", render: () => <FlowOverTime rounds={FLOWS.rounds} measures={FLOWS.measures} cohort={FLOWS.cohort} /> },
           { name: "Level Over Time · sample", render: () => <LevelOverTime rounds={R5} measures={D_LEVEL} /> },
           { name: "eNPS Over Time · sample", render: () => <ENPSOverTime rounds={R5} parts={D_ENPS} /> },
           { name: "Goal & Pace · live", render: () => <GoalStory label="Overall Score" series={subject.series} /> },
@@ -183,6 +189,7 @@ function DeveloperView({ style }) {
         </Prose>
       </Section>
 
+      <DataNeeds id="trend" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "rounds", type: "[{ label, latest?, date? }]", required: true, desc: "Oldest first. The latest is drawn in capitals." },
@@ -190,6 +197,8 @@ function DeveloperView({ style }) {
           { name: "ScoreOverTime.banded", type: "boolean", def: "true", desc: "Print and colour each value by status. Off for Health Age." },
           { name: "ScoreOverTimeRows.rows", type: "[{ label, values, overall? }]", required: true, desc: "One row per part; `overall` marks the highlighted first row." },
           { name: "StateOverTime.measures", type: "[{ label, rounds: number[5][] }]", required: true, desc: "Per measure, per round, the percent in each level, Normal first." },
+          { name: "FlowOverTime.measures", type: "[{ label, nodes: number[round][level], links: number[move][from][to] }]", required: true, desc: "Per measure: people at each level each round, and for each move between rounds a from × to matrix of people. Levels Normal first. The same people every round (lib/survey/wellbeingFlows.js)." },
+          { name: "FlowOverTime.cohort", type: "number", required: true, desc: "How many people are in every round; sets the scale." },
           { name: "LevelOverTime.measures", type: "[{ label, levels: number[] }]", required: true, desc: "Per measure, the level index per round (0 Normal … 4 Extremely Severe)." },
           { name: "ENPSOverTime.parts", type: "[{ promoters, passives, detractors, enps }]", required: true, desc: "Percent per part and the eNPS, per round." },
         ]} />

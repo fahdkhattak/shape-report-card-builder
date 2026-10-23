@@ -1,3 +1,5 @@
+import { ds } from "./ds.js";
+
 /* ================================================================== */
 /* FIXED LIBRARY FAMILIES                                              */
 /* Library-sourced widgets belong to a fixed family with pre-built     */
@@ -32,7 +34,7 @@
 /* Library sections, in display order. `about` is the long copy shown in a
    widget's information window ("About <group>"). */
 export const GROUPS = [
-  { id: "Score", blurb: "A single number for how people are doing overall, for you, a team or the whole organisation.", about: ["Score widgets show the headline number — the average of the SHAPE survey areas on a 0–100 scale — together with how it has moved since the last round and how many people answered.", "Use them as the anchor of a report. Everything else on the page explains why this number is what it is."] },
+  { id: "Score", blurb: "One number for how a score is doing, for anyone and anything: the organisation, a team, a group, a person, an Explorer or a Driver.", about: ["There's one Score widget. The same card shows the organisation's score, a team's, a group's (a department, an age band, a work model), one person's, or the score of a cluster, an Explorer or a Driver. What else it carries depends on who and what it's about: a group of people gets a headcount, a participation rate and how its people split across the statuses; one person gets their status and how their Explorers split.", "The Index is the same score with its parts around it: one layer deeper on a 2x2, two on a 3x3. Use the Score card as the anchor of a report, and the Index when the parts matter."] },
   { id: "Status", blurb: "Where people stand right now: Flourishing, Striving or Struggling.", about: ["A status is a band, not a number: 80 and above is Flourishing, 60 to 79 is Striving, and below 60 is Struggling.", "The bar underneath shows how everyone splits across the three bands, so a Striving organisation with a large Struggling tail reads differently from one that is evenly spread."] },
   { id: "ENPS", blurb: "How likely people are to recommend working here.", about: ["Employee Net Promoter Score asks one question — how likely are you to recommend this organisation as a place to work — and subtracts the share of detractors (0–6) from the share of promoters (9–10).", "A score can run from −100 to 100. Passives (7–8) don't count either way, but they are the easiest group to move."] },
   { id: "Areas to Focus", blurb: "Identify the areas holding performance back and where action is needed first.", about: ["Areas of Focus are the segments of your audience that scored below a defined threshold in one or more of the SHAPE survey areas. These aren't arbitrary flags — they're calculated from response data and weighted by participation, so the list reflects real signal, not noise.", "Each entry shows the segment name, its lowest-scoring area, and the score itself. The list is ordered by urgency: the segments with the most critical scores appear at the top.", "These widgets are most useful when you need a fast read on where your organisation is under pressure — without filtering through a full heat map manually."] },
@@ -49,7 +51,7 @@ export const groupById = (id) => GROUPS.find((g) => g.id === id);
 
 /* A few cards sit on their own surface instead of white (a locked
    comparison, the support nudges). */
-const CARD_LOCKED = { bg: "#fff6e4", border: "#fbe7bd" };
+const CARD_LOCKED = { bg: ds.status.warning.bg, border: ds.status.warning.bg }; // the design's #FBE7BD edge has no token; the card reads by its fill
 
 export const FAMILIES = [
   /* ---- Score ---- */
@@ -67,19 +69,20 @@ export const FAMILIES = [
     { size: "1x1", label: "With headcount", name: "Team Score · Headcount", blurb: "Your team's score with team size and participation.", title: "Team Score", sample: true },
     { size: "2x2", label: "With breakdown", name: "Team Score", blurb: "Your team's score, participation and how its members split by status.", title: "Team Score", sample: true },
   ] },
-  { id: "explorer-score", name: "Explorer Score", category: "Score", blurb: "One Explorer's score — here, Physical Health.", owned: false, persona: "personal", forms: [
+  { id: "explorer-score", name: "Explorer Score", category: "Score", blurb: "One Explorer's score, here Physical Health.", owned: false, persona: "personal", forms: [
     { size: "1x1", label: "Plain", name: "Explorer Score", blurb: "One Explorer's score at a glance.", title: "Physical Health Score" },
     { size: "1x1", label: "With status", name: "Explorer Score · Status", blurb: "An Explorer's score with its status.", title: "Physical Health Score" },
     { size: "1x1", label: "Team headcount", name: "Explorer Score · Team", blurb: "An Explorer's score with team size and participation.", title: "Physical Health Score", persona: "team", sample: true },
     { size: "1x1", label: "Org headcount", name: "Explorer Score · Org", blurb: "An Explorer's score with headcount and participation.", title: "Physical Health Score", persona: "org" },
     { size: "2x2", label: "With status", name: "Explorer Score · Detail", blurb: "An Explorer's score, status and how it has moved.", title: "Physical Health Score" },
   ] },
-  { id: "index", name: "Wellbeing Index", category: "Score", blurb: "Your overall score, broken down by Explorer and driver.", owned: false, persona: "org", forms: [
-    { size: "2x2", label: "Explorer ring", name: "Wellbeing Index", blurb: "The overall score at the centre with all twelve Explorers around it." },
-    { size: "3x3", label: "Explorer + driver ring", name: "Wellbeing Index · Drivers", blurb: "The same ring, with each Explorer split into its Drivers in an outer ring." },
-  ] },
-  { id: "dimension-index", name: "Explorer Index", category: "Score", blurb: "One Explorer's score at the centre, with every driver inside it around the ring.", owned: false, persona: "org", forms: [
-    { size: "2x2", label: "Driver ring", name: "Explorer Index", blurb: "One Explorer's score with each of its drivers around the ring.", title: "Corporate Culture Index" },
+  /* One Index (lib/scoreWidget.js): any score that breaks down into parts, the score in the centre and its parts around
+     it. 2x2 = one layer deeper, 3x3 = two. The overall score has two layers (Explorers, then Drivers); an Explorer has
+     one (its Drivers), so it is 2x2 only. The old "Explorer Index" family is form 2 here. */
+  { id: "index", name: "Index", category: "Score", blurb: "Any score with parts: the score at the centre and its parts around it, one or two layers deep.", owned: false, persona: "org", forms: [
+    { size: "2x2", label: "One layer", name: "Index", blurb: "The overall score at the centre with all twelve Explorers around it.", title: "Org Index", subject: { who: "org", what: "overall" } },
+    { size: "3x3", label: "Two layers", name: "Index · Two layers", blurb: "The same ring, with each Explorer split into its Drivers in an outer ring.", title: "Org Index", subject: { who: "org", what: "overall" } },
+    { size: "2x2", label: "An Explorer", name: "Index · Explorer", blurb: "One Explorer's score with each of its Drivers around it. An Explorer has one layer under it, so it is 2x2 only.", title: "Corporate Culture Index", subject: { who: "org", what: "explorer" } },
   ] },
 
   /* ---- Status ---- */
@@ -179,7 +182,7 @@ export const FAMILIES = [
 
   /* ---- Support ---- */
   { id: "support-nudge", name: "Support", category: "Support", blurb: "A nudge that points people to help when they need it.", owned: false, persona: "personal", forms: [
-    { size: "1x1", label: "Mindfulness", name: "Mindfulness", blurb: "Offers support to someone who is struggling or just wants to be heard.", title: "Mindfulness", sample: true, card: { bg: "#cecdcc", border: "#cecdcc" } },
+    { size: "1x1", label: "Mindfulness", name: "Mindfulness", blurb: "Offers support to someone who is struggling or just wants to be heard.", title: "Mindfulness", sample: true, card: { bg: ds.bg.quaternary, border: ds.bg.quaternary } },
     { size: "1x1", label: "Psychological health", name: "Mindfulness · Low score", blurb: "Offers support when Psychological Health scores are low.", title: "Mindfulness", sample: true, card: { bg: "#fde8ea", border: "#fde8ea" } },
   ] },
 ];

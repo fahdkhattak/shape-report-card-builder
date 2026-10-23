@@ -21,11 +21,21 @@ import CitationDoc, { meta as citationMeta, toc as citationToc } from "./docs/Ci
 import VideoDoc, { meta as videoMeta, toc as videoToc } from "./docs/VideoDoc.jsx";
 import QuestionnaireDoc, { meta as questionnaireMeta, toc as questionnaireToc } from "./docs/QuestionnaireDoc.jsx";
 import GoalPaceDoc, { meta as goalMeta, toc as goalToc } from "./docs/GoalPaceDoc.jsx";
+import RelationshipsDoc, { meta as relMeta, toc as relToc } from "./docs/RelationshipsDoc.jsx";
 import ControlsDoc, { meta as controlsMeta, toc as controlsToc } from "./docs/ControlsDoc.jsx";
 import TokenAuditDoc, { meta as auditMeta, toc as auditToc } from "./docs/TokenAuditDoc.jsx";
 import StoryFamiliesDoc, { meta as famMeta, toc as famToc } from "./docs/StoryFamiliesDoc.jsx";
 import StoryAvailabilityDoc, { meta as availMeta, toc as availToc } from "./docs/StoryAvailabilityDoc.jsx";
 import StorySweepDoc, { meta as sweepMeta, toc as sweepToc } from "./docs/StorySweepDoc.jsx";
+import DataModelDoc, { meta as dataMeta, toc as dataToc } from "./docs/DataModelDoc.jsx";
+import { WIDGET_PAGES, WIDGET_GROUPS } from "./docs/widgets/widgetPages.js";
+import AllWidgetsDoc, { meta as allWMeta, toc as allWToc } from "./docs/widgets/AllWidgetsDoc.jsx";
+import WidgetStructureDoc, { meta as wsMeta, toc as wsToc } from "./docs/widgets/WidgetStructureDoc.jsx";
+import WidgetTokenAuditDoc, { meta as wtaMeta, toc as wtaToc } from "./docs/widgets/WidgetTokenAuditDoc.jsx";
+import WidgetTypeSystemDoc, { meta as wtsMeta, toc as wtsToc } from "./docs/WidgetTypeSystemDoc.jsx";
+import ShapeSurveyDoc, { meta as surveyMeta, toc as surveyToc } from "./docs/data/ShapeSurveyDoc.jsx";
+import ShapeDatasetDoc, { meta as datasetMeta, toc as datasetToc } from "./docs/data/ShapeDatasetDoc.jsx";
+import { DevNavContext } from "./DataNeeds.jsx";
 import { FAMILY_INFO, FAMILY_FORMS, DOCS_BY_STORY } from "./storyFamilies.js";
 
 /* ================================================================== */
@@ -56,10 +66,15 @@ const DOCS = [
   { meta: videoMeta, toc: videoToc, Page: VideoDoc },
   { meta: questionnaireMeta, toc: questionnaireToc, Page: QuestionnaireDoc },
   { meta: goalMeta, toc: goalToc, Page: GoalPaceDoc },
+  { meta: relMeta, toc: relToc, Page: RelationshipsDoc },
 ];
-const FOUNDATIONS = [{ meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: availMeta, toc: availToc, Page: StoryAvailabilityDoc }, { meta: sweepMeta, toc: sweepToc, Page: StorySweepDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
+const FOUNDATIONS = [{ meta: wtsMeta, toc: wtsToc, Page: WidgetTypeSystemDoc }, { meta: dataMeta, toc: dataToc, Page: DataModelDoc }, { meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: availMeta, toc: availToc, Page: StoryAvailabilityDoc }, { meta: sweepMeta, toc: sweepToc, Page: StorySweepDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
 const COMPONENTS = [{ meta: controlsMeta, toc: controlsToc, Page: ControlsDoc }];
-const ALL_DOCS = [...DOCS, ...COMPONENTS, ...FOUNDATIONS];
+/* Widgets: one page per Library family (docs/widgets/, built with widgetDoc.jsx). Every other family is listed as not documented yet. */
+const WIDGETS = [{ meta: wsMeta, toc: wsToc, Page: WidgetStructureDoc }, { meta: allWMeta, toc: allWToc, Page: AllWidgetsDoc }, { meta: wtaMeta, toc: wtaToc, Page: WidgetTokenAuditDoc }, ...WIDGET_PAGES];
+/* Data: survey records (data/import-survey.js). More records go here; a switcher can pick between them later. */
+const DATA = [{ meta: surveyMeta, toc: surveyToc, Page: ShapeSurveyDoc }, { meta: datasetMeta, toc: datasetToc, Page: ShapeDatasetDoc }];
+const ALL_DOCS = [...DOCS, ...WIDGETS, ...DATA, ...COMPONENTS, ...FOUNDATIONS];
 DOCS.forEach((d) => { DOCS_BY_STORY[d.meta.name] = d.meta.id; });
 /* The Breakdown page also covers these two forms (they are separate Stories in the catalogue). */
 ["Mental Well-Being", "Health Age Drivers", "Who Is Where", "How Scores Are Spread"].forEach((n) => { DOCS_BY_STORY[n] = breakdownMeta.id; });
@@ -78,6 +93,8 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
   const [mode, setMode] = useState(() => read("developer-mode", "light"));
   const [view, setView] = useState(() => read("developer-view", "developer"));
   const [inspect, setInspect] = useState(false);
+  const [openWGroup, setOpenWGroup] = useState(() => new Set());
+  const toggleWGroup = (n) => setOpenWGroup((o) => { const x = new Set(o); x.has(n) ? x.delete(n) : x.add(n); return x; });
   const [openFam, setOpenFam] = useState(() => new Set(FAMILIES.filter((f) => f.stories.some((s) => DOCS_BY_STORY[s.name])).map((f) => f.name)));
   const toggleFam = (n) => setOpenFam((o) => { const x = new Set(o); x.has(n) ? x.delete(n) : x.add(n); return x; });
   const scroller = useRef(null);
@@ -133,7 +150,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
                 <div style={{ paddingLeft: dsSpace[20], display: "flex", flexDirection: "column" }}>
                   {FAMILY_INFO[f.name]?.question && <div style={{ ...dsText("Text 2xs"), color: ds.text.tertiary, padding: `${dsSpace[2]}px ${dsSpace[12]}px ${dsSpace[4]}px` }}>{FAMILY_INFO[f.name].question}</div>}
                   {ff && ff.forms.map((fm) => (
-                    <button key={fm.id} onClick={() => openForm(ff.doc, fm.id)} aria-current={doc.meta.id === ff.doc && activeForm === fm.id ? "true" : undefined} style={sideItem(doc.meta.id === ff.doc && activeForm === fm.id)}>
+                    <button key={fm.id} onClick={() => openForm(fm.doc || ff.doc, fm.id)} aria-current={doc.meta.id === (fm.doc || ff.doc) && activeForm === fm.id ? "true" : undefined} style={sideItem(doc.meta.id === (fm.doc || ff.doc) && activeForm === fm.id)}>
                       <span>{fm.label}{fm.note && <span style={{ display: "block", ...dsText("Text 3xs"), fontWeight: 400, color: ds.text.tertiary }}>{fm.note}</span>}</span>
                     </button>
                   ))}
@@ -148,12 +165,29 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
             </div>
           );
         })}
+        <div style={groupLabel}>Widgets</div>
+        <button onClick={() => setDocId(wsMeta.id)} style={sideItem(doc.meta.id === wsMeta.id)}>Widget structure</button>
+        <button onClick={() => setDocId(allWMeta.id)} style={sideItem(doc.meta.id === allWMeta.id)}>All widgets</button>
+        <button onClick={() => setDocId(wtaMeta.id)} style={sideItem(doc.meta.id === wtaMeta.id)}>Token audit</button>
+        {WIDGET_GROUPS.map((g) => {
+          const open = openWGroup.has(g.name) || g.pages.some((p) => p.id === doc.meta.id);
+          const written = g.pages.filter((p) => p.written).length;
+          return (
+            <div key={g.name} style={{ marginBottom: dsSpace[2] }}>
+              <button onClick={() => toggleWGroup(g.name)} aria-expanded={open} title={g.blurb} style={{ ...sideItem(false), fontWeight: 600, color: ds.text.primary }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[6] }}>{open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}{g.name}</span>
+                <span style={{ ...dsText("Text 3xs"), color: ds.text.tertiary }} title="Written up / pages">{written}/{g.pages.length}</span>
+              </button>
+              {open && <div style={{ paddingLeft: dsSpace[20], display: "flex", flexDirection: "column" }}>{g.pages.map((p) => <button key={p.id} onClick={() => setDocId(p.id)} title={p.familyIds.length > 1 ? `One widget: ${p.familyIds.length} Library families` : undefined} style={sideItem(p.id === doc.meta.id)}>{p.name}</button>)}</div>}
+            </div>
+          );
+        })}
+        <div style={groupLabel}>Data</div>
+        {DATA.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
         <div style={groupLabel}>Components</div>
         {COMPONENTS.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
         <div style={groupLabel}>Foundations</div>
         {FOUNDATIONS.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
-        <div style={groupLabel}>Coming later</div>
-        {["Widgets"].map((n) => <div key={n} style={sideItem(false, true)}>{n}</div>)}
       </aside>
 
       <main ref={scroller} style={{ flex: 1, minWidth: 0, overflowY: "auto", background: ds.bg.white }}>
@@ -165,7 +199,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
                 <SegmentedControl options={doc.meta.views.map((v) => ({ id: v.id, label: v.label }))} value={activeView} onChange={pickView} />
               </div>
             )}
-            {doc.meta.id !== "token-audit" && (
+            {!["token-audit", "data-model", "widget-type-system", "widgets-tokens"].includes(doc.meta.id) && !["Widgets", "Data"].includes(doc.meta.group) && (
               <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
                 <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>Style</span>
                 <SegmentedControl options={[{ id: "classic", label: "Current" }, { id: "refined", label: "Refined" }]} value={style} onChange={pickStyle} />
@@ -188,7 +222,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
               <FileBadge>{doc.meta.source}</FileBadge>
               
             </div>
-            <InspectProvider on={inspect} dark={dark}><Page style={style} view={activeView} onOpenDoc={(id) => setDocId(id)} /></InspectProvider>
+            <DevNavContext.Provider value={{ openDoc: (id) => setDocId(id) }}><InspectProvider on={inspect} dark={dark}><Page style={style} view={activeView} onOpenDoc={(id) => setDocId(id)} /></InspectProvider></DevNavContext.Provider>
           </article>
           <nav aria-label="On this page" style={{ width: 168, flexShrink: 0, position: "sticky", top: 84, display: "flex", flexDirection: "column", gap: 2 }}>
             <div style={{ ...dsText("Text 3xs-Header", 600), textTransform: "uppercase", color: ds.text.quaternary, marginBottom: dsSpace[6] }}>On this page</div>

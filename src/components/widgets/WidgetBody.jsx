@@ -13,13 +13,14 @@ import {
   StatusRipple,
 } from "./primitives.jsx";
 import {
-  fmtDate, statusOf, STATUS_COLOR, TEAM_BLUE, date11, muted11,
-  StatusChip, Headcount, ScoreHeadline, GroupCounts, MoreLine,
+  statusOf, STATUS_COLOR, TEAM_BLUE, date11, muted11,
+  GroupCounts, MoreLine,
   SeverityRow, DistributionRow, SupportButton, AgeNumber, AgeScale,
   CompareRow, CompareIcons, LockedBody, HeatTable, HistoryChart,
   FocusRow,
 } from "./widgetParts.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
+import ScoreCard from "./ScoreCard.jsx";
 import GraphInsight from "./GraphInsight.jsx";
 import { impact, impactSeries, samplePerson, fmtMoney } from "../../lib/impactModel.js";
 import { HBars, TileGrid, Treemap } from "./ChartInsight.jsx";
@@ -31,9 +32,9 @@ import {
 } from "../../lib/dataset.js";
 import { FLOURISHING_AT, countByStatus } from "../../lib/bands.js";
 
-const GENDER_COLORS = { Male: T.teamBlue, Female: T.hotPink, Other: T.goldenYellow, "Prefer not to respond": T.gray300 };
-const WORK_MODEL_COLORS = { Onsite: T.orgBlue, Remote: T.teamBlue, Hybrid: T.mintGreen };
-const MONEY_COLORS = { Productivity: T.personalBlue, Absenteeism: "#0074bc", Retention: "#26a69a", "Injury/Claims": T.lavender };
+const GENDER_COLORS = { Male: T.teamBlue, Female: T.hotPink, Other: ds.utility.graphColors.main.goldenYellow, "Prefer not to respond": ds.text.quaternary };
+const WORK_MODEL_COLORS = { Onsite: ds.utility.graphColors.main.orgBlue, Remote: T.teamBlue, Hybrid: ds.utility.graphColors.main.mintGreen };
+const MONEY_COLORS = { Productivity: ds.text.accent, Absenteeism: ds.utility.graphColors.main.teamBlue, Retention: ds.utility.graphColors.main.teal, "Injury/Claims": ds.utility.graphColors.main.lavenderViolet };
 
 /* ================================================================== */
 /* FIXED-FAMILY WIDGET BODY (Library-sourced)                          */
@@ -54,48 +55,6 @@ const col = (extra) => ({ flex: 1, display: "flex", flexDirection: "column", min
 /* How many of a set of values land in each status band. */
 function bandCounts(values) {
   return countByStatus(values);
-}
-
-/* "Across the 12 Explorers, 5 are Flourishing, 3 are Striving, and 4 are
-   Struggling." — counts of parts, not of people. */
-function BandSentence({ noun, f, s, t }) {
-  return (
-    <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
-      Across the <b style={{ color: T.gray900 }}>{f + s + t}</b> {noun}, <b style={{ color: T.greenStrong }}>{f}</b> are Flourishing, <b style={{ color: T.amberStrong }}>{s}</b> are Striving, and <b style={{ color: T.redStrong }}>{t}</b> are Struggling.
-    </span>
-  );
-}
-
-/* 1x1 score card: headline up top, date (and any footer) at the bottom. */
-function Score1x1({ value, delta: d, size = 64, footer, date = fmtDate(LATEST.date), color }) {
-  return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ paddingTop: 4 }}><ScoreHeadline value={value} delta={d} size={size} compact valueColor={color} /></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={date11}>{date}</span>
-        {footer}
-      </div>
-    </div>
-  );
-}
-
-/* 2x2 score card: headline centred in the free space, date / extras / bar at
-   the bottom. */
-function Score2x2({ value, delta: d, extra, bar, sentence, chip, date = fmtDate(LATEST.date) }) {
-  return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={value} delta={d} /></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={date11}>{date}</span>
-          {chip}
-          {extra}
-        </div>
-        {bar}
-        {sentence}
-      </div>
-    </div>
-  );
 }
 
 /* Great / Average / Poor — up to two of each, strongest and weakest first, so
@@ -133,12 +92,12 @@ function RankedList({ rows, noun, form }) {
 /* Wording for how a score moved across rounds ("After dipping in R2, …"). */
 function historyCaption(points) {
   const n = points.length, last = points[n - 1], prev = points[n - 2], d = last - prev;
-  const B = ({ children, c }) => <b style={{ color: c || T.gray900 }}>{children}</b>;
+  const B = ({ children, c }) => <b style={{ color: c || ds.text.primary }}>{children}</b>;
   if (d > 0) {
     const dipped = n >= 3 && points[n - 2] < points[n - 3];
-    return <>{dipped ? <>After dipping in <B>R{n - 1}</B>, the score increased by </> : <>The score increased by </>}<B c={T.greenStrong}>+{d} points</B>{!dipped && <> since <B>R{n - 1}</B></>}, reaching <B>{last}</B> in the latest round.</>;
+    return <>{dipped ? <>After dipping in <B>R{n - 1}</B>, the score increased by </> : <>The score increased by </>}<B c={ds.status.success.textIndicator}>+{d} points</B>{!dipped && <> since <B>R{n - 1}</B></>}, reaching <B>{last}</B> in the latest round.</>;
   }
-  if (d < 0) return <>The score fell by <B c={T.redStrong}>{-d} points</B> since <B>R{n - 1}</B>, to <B>{last}</B> in the latest round.</>;
+  if (d < 0) return <>The score fell by <B c={ds.status.error.textIndicator}>{-d} points</B> since <B>R{n - 1}</B>, to <B>{last}</B> in the latest round.</>;
   return <>The score held at <B>{last}</B> since <B>R{n - 1}</B>.</>;
 }
 
@@ -150,71 +109,43 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
   const avgDelta = delta(LATEST.avgOverall, PREVIOUS.avgOverall);
   const orgBar = <EvidenceSegmentBar flourishing={LATEST.flourishing} striving={LATEST.striving} struggling={LATEST.struggling} />;
   const orgCounts = <StatusBreakdown flourishing={LATEST.flourishing} striving={LATEST.striving} struggling={LATEST.struggling} />;
+  const orgPeople = { f: LATEST.flourishing, s: LATEST.striving, t: LATEST.struggling };
   const explorers = bandCounts(DIMENSIONS.map((d) => dimensionValue(d)));
-  const explorerBar = <EvidenceSegmentBar flourishing={explorers.f} striving={explorers.s} struggling={explorers.t} />;
 
   switch (familyId) {
     /* ---- Score ---- */
-    case "org-score":
-      if (formIndex === 1) return <Score1x1 value={avg} delta={avgDelta} footer={<Headcount count={EMPLOYEE_COUNT} rate={participationRate()} tone={T.orgBlue} />} />;
-      return (
-        <Score2x2
-          value={avg} delta={avgDelta}
-          extra={<Headcount labelled label="Employees" count={EMPLOYEE_COUNT} rate={participationRate()} tone={T.orgBlue} />}
-          bar={orgBar} sentence={orgCounts}
-        />
-      );
+    /* One Score card for every subject (widgets/ScoreCard.jsx, lib/scoreWidget.js): who and what decide what it may
+       show, each form picks from that. */
+    case "org-score": {
+      const data = { value: avg, delta: avgDelta, date: LATEST.date, n: EMPLOYEE_COUNT, rate: participationRate(), people: orgPeople };
+      return <ScoreCard size={formIndex === 1 ? "1x1" : "2x2"} who="org" what="overall" data={data} />;
+    }
 
     case "your-score": {
-      const status = statusOf(LATEST.avgOverall);
-      if (formIndex === 0) return <Score1x1 value={avg} delta={avgDelta} />;
-      if (formIndex === 2) return <Score1x1 value={avg} delta={avgDelta} footer={<StatusChip status={status} />} />;
-      return (
-        <Score2x2
-          value={avg} delta={avgDelta}
-          chip={formIndex === 3 ? <StatusChip status={status} /> : null}
-          bar={explorerBar} sentence={<BandSentence noun="Explorers" {...explorers} />}
-        />
-      );
+      const data = { value: avg, delta: avgDelta, date: LATEST.date, parts: explorers, partsNoun: "Explorers" };
+      const show = [["score", "change", "date"], ["score", "change", "date", "parts"], null, null][formIndex];
+      return <ScoreCard size={formIndex % 2 ? "2x2" : "1x1"} who="person" what="overall" data={data} show={show} />;
     }
 
     case "team-score": {
       const s = SAMPLE.team;
-      if (formIndex === 0) return <Score1x1 value={83} delta={s.d} footer={<Headcount count={s.members} rate={s.rate} tone={TEAM_BLUE} />} />;
-      return (
-        <Score2x2
-          value={s.score} delta={s.d}
-          extra={<Headcount labelled label="Team Members" count={s.members} rate={s.rate} tone={TEAM_BLUE} />}
-          bar={<EvidenceSegmentBar flourishing={s.counts[0]} striving={s.counts[1]} struggling={s.counts[2]} />}
-          sentence={<StatusBreakdown flourishing={s.counts[0]} striving={s.counts[1]} struggling={s.counts[2]} />}
-        />
-      );
+      const data = { value: formIndex === 0 ? 83 : s.score, delta: s.d, date: LATEST.date, n: s.members, rate: s.rate, people: { f: s.counts[0], s: s.counts[1], t: s.counts[2] } };
+      return <ScoreCard size={formIndex === 0 ? "1x1" : "2x2"} who="team" what="overall" data={data} />;
     }
 
     case "explorer-score": {
       const dim = "Physical Health";
-      const val = Math.round(dimensionValue(dim));
-      const d = delta(dimensionValue(dim), dimensionValue(dim, PREVIOUS));
-      const status = statusOf(val);
-      const drivers = bandCounts((DIMENSION_DRIVERS[dim] || []).map((x) => driverValue(x)));
-      if (formIndex === 0) return <Score1x1 value={val} delta={d} size={54} />;
-      if (formIndex === 1) return <Score1x1 value={val} delta={d} size={54} footer={<StatusChip status={status} />} />;
-      if (formIndex === 2) return <Score1x1 value={val} delta={d} size={54} footer={<Headcount count={SAMPLE.team.members} rate={SAMPLE.team.rate} tone={TEAM_BLUE} />} />;
-      if (formIndex === 3) return <Score1x1 value={val} delta={d} size={54} footer={<Headcount count={EMPLOYEE_COUNT} rate={participationRate()} tone={T.orgBlue} />} />;
-      return (
-        <Score2x2
-          value={val} delta={d} chip={<StatusChip status={status} />}
-          bar={<EvidenceSegmentBar flourishing={drivers.f} striving={drivers.s} struggling={drivers.t} />}
-          sentence={<BandSentence noun="Factors" {...drivers} />}
-        />
-      );
+      const parts = bandCounts((DIMENSION_DRIVERS[dim] || []).map((x) => driverValue(x)));
+      const data = { value: Math.round(dimensionValue(dim)), delta: delta(dimensionValue(dim), dimensionValue(dim, PREVIOUS)), date: LATEST.date, parts, partsNoun: "Factors" };
+      if (formIndex === 2) return <ScoreCard size="1x1" who="team" what="explorer" data={{ ...data, n: SAMPLE.team.members, rate: SAMPLE.team.rate }} numberSize={48} />;
+      if (formIndex === 3) return <ScoreCard size="1x1" who="org" what="explorer" data={{ ...data, n: EMPLOYEE_COUNT, rate: participationRate() }} numberSize={48} />;
+      if (formIndex === 4) return <ScoreCard size="2x2" who="person" what="explorer" data={data} />;
+      return <ScoreCard size="1x1" who="person" what="explorer" data={data} show={formIndex === 0 ? ["score", "change", "date"] : null} numberSize={48} />;
     }
 
     case "index":
+      if (formIndex === 2) return <DimensionIndex dimension="Corporate Culture" />;
       return <IndexRing variant={formIndex === 1 ? "3x3" : "2x2"} overall={LATEST.avgOverall} />;
-
-    case "dimension-index":
-      return <DimensionIndex dimension="Corporate Culture" />;
 
     /* ---- Status ---- */
     case "org-status": {
@@ -236,7 +167,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         );
       }
       return (
-        <div style={col({ justifyContent: "center", gap: 10 })}>
+        <div style={col({ justifyContent: "center", gap: 8 })}>
           <StatusRing status={status} />
           {bar}
         </div>
@@ -254,7 +185,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         return (
           <div style={col({ justifyContent: "space-between" })}>
             <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.1, color: T.gray800, lineHeight: 0.9 }}>{score}</span>
+              <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, color: ds.text.primary, lineHeight: 0.9 }}>{score}</span>
               <TrendPill delta={d} compact />
             </div>
             {bar}
@@ -264,10 +195,10 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       if (formIndex === 1) {
         return (
           <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ flex: 1, display: "flex", alignItems: "center" }}><span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: T.gray800, lineHeight: 0.82 }}>{score}</span></div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center" }}><span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: ds.text.primary, lineHeight: 0.82 }}>{score}</span></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {bar}
-              <GroupCounts items={[["Promoters", g.promoters, T.greenStrong], ["Passives", g.passives, T.amberStrong], ["Detractors", g.detractors, T.redStrong]]} />
+              <GroupCounts items={[["Promoters", g.promoters, ds.status.success.textIndicator], ["Passives", g.passives, ds.status.warning.textIndicator], ["Detractors", g.detractors, ds.status.error.textIndicator]]} />
             </div>
           </div>
         );
@@ -275,13 +206,13 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       return (
         <div style={col({ justifyContent: "space-between" })}>
           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: T.gray800, lineHeight: 0.82 }}>{score}</span>
+            <span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: ds.text.primary, lineHeight: 0.82 }}>{score}</span>
             <TrendPill delta={d} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {bar}
-            <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
-              Across the <b style={{ color: T.gray900 }}>{g.total}</b> people who answered, <b style={{ color: T.greenStrong }}>{g.promoters}</b> are Promoters, <b style={{ color: T.amberStrong }}>{g.passives}</b> are Passives, and <b style={{ color: T.redStrong }}>{g.detractors}</b> are Detractors.
+            <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
+              Across the <b style={{ color: ds.text.primary }}>{g.total}</b> people who answered, <b style={{ color: ds.status.success.textIndicator }}>{g.promoters}</b> are Promoters, <b style={{ color: ds.status.warning.textIndicator }}>{g.passives}</b> are Passives, and <b style={{ color: ds.status.error.textIndicator }}>{g.detractors}</b> are Detractors.
             </span>
           </div>
         </div>
@@ -299,10 +230,10 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         return (
           <div style={col({ justifyContent: "space-between" })}>
             <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <BigNumber value={Math.round(value)} size={56} colorBand />
+              <BigNumber value={Math.round(value)} size={48} colorBand />
               <TrendPill delta={trendDelta} numberOnly />
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: T.gray900, lineHeight: "14px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{group}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: ds.text.primary, lineHeight: "14px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{group}</span>
           </div>
         );
       }
@@ -398,7 +329,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
           </div>
         );
       return (
-        <div style={col({ gap: 10, overflow: "hidden" })}>
+        <div style={col({ gap: 8, overflow: "hidden" })}>
           <CompareRow label="Your Score" value={83} icon={CompareIcons.you} delta={9} big />
           <CompareRow label="Team Score" value={71} icon={CompareIcons.team} chip="team-a@example.com" big />
           <CompareRow label="Team Score" value={64} icon={CompareIcons.team} chip="team-b@example.com" big />
@@ -411,36 +342,36 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
     case "health-age": {
       const persona = formIndex < 2 ? "personal" : formIndex < 4 ? "team" : "org";
       const older = persona === "org"; // the Org frame shows the "older" state
-      const tone = older ? T.redStrong : T.greenStrong;
+      const tone = older ? ds.status.error.textIndicator : ds.status.success.textIndicator;
       const who = persona === "personal" ? "Your health actions make you" : persona === "team" ? "Your Team's health actions make them" : "Your Employees' health actions make them";
       const gapChip = (
-        <span style={{ alignSelf: "flex-start", background: older ? T.redBg : T.greenBg, color: older ? T.redStrong : T.greenStrong, borderRadius: 46, padding: "3px 10px", fontSize: 11, fontWeight: 600 }}>
+        <span style={{ alignSelf: "flex-start", background: older ? ds.status.error.bg : ds.status.success.bg, color: older ? ds.status.error.textIndicator : ds.status.success.textIndicator, borderRadius: 9999, padding: "4px 8px", fontSize: 11, fontWeight: 700 }}>
           {older ? "1 yr 1 mo older" : "2 yrs 3 mo younger"}
         </span>
       );
       if (formIndex % 2 === 0) {
         return (
           <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ paddingTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
               <AgeNumber years={26} months={3} color={tone} />
               <TrendPill delta={older ? 2 : -2} compact positive={older} />
             </div>
-            <span style={{ background: older ? T.redBg : T.greenBg, color: older ? T.redStrong : T.greenStrong, borderRadius: 46, padding: "4px 8px", fontSize: 11, fontWeight: 600, textAlign: "center", whiteSpace: "nowrap" }}>{older ? "1 yr 1 mo older" : "2 yrs 3 mo younger"}</span>
+            <span style={{ background: older ? ds.status.error.bg : ds.status.success.bg, color: older ? ds.status.error.textIndicator : ds.status.success.textIndicator, borderRadius: 9999, padding: "4px 8px", fontSize: 11, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{older ? "1 yr 1 mo older" : "2 yrs 3 mo younger"}</span>
           </div>
         );
       }
       return (
         <div style={col({ justifyContent: "space-between" })}>
           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
-            <AgeNumber years={26} months={3} color={tone} size={52} />
+            <AgeNumber years={26} months={3} color={tone} size={36} />
             {older
-              ? <span style={{ display: "inline-flex", gap: 4, background: T.greenBg, color: T.green, borderRadius: 46, height: 20, boxSizing: "border-box", lineHeight: "20px", alignItems: "center", padding: "0 10px", fontSize: 11 }}>▲ Improved by <b style={{ color: T.greenStrong }}>2 yrs 3 mo</b></span>
-              : <span style={{ display: "inline-flex", gap: 4, background: T.redBg, color: T.red, borderRadius: 46, height: 20, boxSizing: "border-box", lineHeight: "20px", alignItems: "center", padding: "0 10px", fontSize: 11 }}>▼ Declined by <b style={{ color: T.redStrong }}>2 yrs 3 mo</b></span>}
+              ? <span style={{ display: "inline-flex", gap: 4, background: ds.status.success.bg, color: ds.status.success.text, borderRadius: 9999, height: 20, boxSizing: "border-box", lineHeight: "20px", alignItems: "center", padding: "0 8px", fontSize: 11 }}>▲ Improved by <b style={{ color: ds.status.success.textIndicator }}>2 yrs 3 mo</b></span>
+              : <span style={{ display: "inline-flex", gap: 4, background: ds.status.error.bg, color: ds.status.error.text, borderRadius: 9999, height: 20, boxSizing: "border-box", lineHeight: "20px", alignItems: "center", padding: "0 8px", fontSize: 11 }}>▼ Declined by <b style={{ color: ds.status.error.textIndicator }}>2 yrs 3 mo</b></span>}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span style={{ fontSize: 11, color: T.gray900 }}>{who}</span>
+            <span style={{ fontSize: 11, color: ds.text.primary }}>{who}</span>
             {gapChip}
-            <span style={{ fontSize: 11, color: T.gray900 }}>than your actual age.</span>
+            <span style={{ fontSize: 11, color: ds.text.primary }}>than your actual age.</span>
             <AgeScale older={older} />
           </div>
         </div>
@@ -452,23 +383,23 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       if (formIndex < 2) {
         return (
           <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <SeverityRow label="Feeling Low" level="Moderate" trend={formIndex === 1 ? "up" : undefined} />
               <SeverityRow label="Feeling Anxious" level="Severe" trend={formIndex === 1 ? "down" : undefined} />
               <SeverityRow label="Feeling Stressed" level="Extremely Severe" trend={formIndex === 1 ? "down" : undefined} />
             </div>
-            {formIndex === 1 && <SupportButton tone={T.accent} />}
+            {formIndex === 1 && <SupportButton tone={ds.utility.graphColors.main.personalBlue} />}
           </div>
         );
       }
       const team = formIndex < 4;
-      const tone = team ? TEAM_BLUE : T.orgBlue;
+      const tone = team ? TEAM_BLUE : ds.utility.graphColors.main.orgBlue;
       const rows = team ? [["Feeling Low", 60, -3], ["Feeling Anxious", 24, 2], ["Feeling Stressed", 32, 2]] : feelingShare();
       const big = formIndex % 2 === 1;
       return (
         <div style={col({ gap: big ? 8 : 4 })}>
           <span style={{ ...muted11, lineHeight: "13px" }}>{team ? "Team" : "Org"} distribution (%)</span>
-          <div style={{ display: "flex", flexDirection: "column", gap: big ? 14 : 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: big ? 12 : 4 }}>
             {rows.map(([label, pct, d]) => <DistributionRow key={label} label={label} pct={pct} delta={big ? d : undefined} tone={tone} bar={big} />)}
           </div>
         </div>
@@ -482,11 +413,11 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       const series = impactSeries();
       const now = Math.round(series[series.length - 1].hours.total), before = Math.round(series[series.length - 2]?.hours.total ?? now);
       const team = formIndex === 1;
-      const tone = team ? TEAM_BLUE : T.orgBlue;
+      const tone = team ? TEAM_BLUE : ds.utility.graphColors.main.orgBlue;
       return (
         <div style={col({ justifyContent: "space-between" })}>
           <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-            <BigNumber value={team ? 25 : now} size={56} unit="hrs" color={tone} />
+            <BigNumber value={team ? 25 : now} size={48} unit="hrs" color={tone} />
             {!team && now !== before && <TrendPill compact positive={now < before} />}
           </div>
           <span style={date11}>to gain per person, per year</span>
@@ -497,7 +428,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       const p = samplePerson();
       return (
         <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ paddingTop: 8 }}><BigNumber value={Math.round(p.hours)} size={56} unit="hrs" color={T.orgBlue} /></div>
+          <div style={{ paddingTop: 8 }}><BigNumber value={Math.round(p.hours)} size={48} unit="hrs" color={ds.utility.graphColors.main.orgBlue} /></div>
           <span style={date11}>to gain, per year</span>
         </div>
       );
@@ -512,10 +443,10 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
     case "support-nudge":
       return (
         <div style={col({ justifyContent: "space-between" })}>
-          <span style={{ fontSize: 11, color: T.gray900, lineHeight: "14px" }}>
+          <span style={{ fontSize: 11, color: ds.text.primary, lineHeight: "14px" }}>
             {formIndex === 0 ? "Struggling or just want to be heard? Get support now." : "Want help with low Psychological Health Scores?"}
           </span>
-          <SupportButton tone={formIndex === 0 ? T.gray900 : T.accent} />
+          <SupportButton tone={formIndex === 0 ? ds.text.primary : ds.text.accent} />
         </div>
       );
 

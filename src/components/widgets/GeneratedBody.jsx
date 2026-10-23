@@ -1,4 +1,5 @@
 import { T, band } from "../../lib/tokens.js";
+import { ds } from "../../lib/ds.js";
 import {
   BigNumber,
   TrendPill,
@@ -24,7 +25,7 @@ export default function GeneratedBody({ spec }) {
     case "form":
       return <SubjectBody spec={spec} />;
     case "scatter": {
-      const b = payload.r < 0 ? T.redStrong : T.greenStrong;
+      const b = payload.r < 0 ? ds.status.error.textIndicator : ds.status.success.textIndicator;
       return (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, justifyContent: "center" }}>
           <span style={{ fontSize: 11, fontWeight: 700, color: b }}>
@@ -45,7 +46,7 @@ export default function GeneratedBody({ spec }) {
           {/* Topics compared on one 0–100 score scale: colour = the score's own status band
               (the same 60/80 thresholds as everywhere else), never a different hue per bar. */}
           {/* Chart rules, horizontal bars: 0–100 scale, 1x1 2 to 5 categories, 2x2 up to 13. */}
-          <HBars size={size} values={size === "2x2"} rows={payload.rows.map((r, i) => ({ label: r[0], value: r[1], color: payload.byStatus ? band(r[1]).c : [T.teamBlue, T.hotPink, T.goldenYellow, T.lavender, T.turquoise][i % 5] }))} />
+          <HBars size={size} values={size === "2x2"} rows={payload.rows.map((r, i) => ({ label: r[0], value: r[1], color: payload.byStatus ? band(r[1]).c : [T.teamBlue, T.hotPink, ds.utility.graphColors.main.goldenYellow, ds.utility.graphColors.main.lavenderViolet, ds.utility.graphColors.main.turquoise][i % 5] }))} />
         </div>
       );
     case "ranking":
@@ -58,11 +59,11 @@ export default function GeneratedBody({ spec }) {
       return <Gauge value={payload.value} />;
     case "insight":
       return (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
-          <p style={{ fontSize: 12.5, color: T.gray900, lineHeight: 1.5, margin: 0 }}>{payload.text}</p>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+          <p style={{ fontSize: 12, color: ds.text.primary, lineHeight: 1.5, margin: 0 }}>{payload.text}</p>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
             <BigNumber value={payload.stat} size={28} colorBand />
-            <span style={{ fontSize: 10, color: T.gray500 }}>strength of the link (0–100)</span>
+            <span style={{ fontSize: 10, color: ds.text.tertiary }}>strength of the link (0–100)</span>
           </div>
         </div>
       );

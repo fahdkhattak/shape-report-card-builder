@@ -12,6 +12,7 @@ import Button from "../ui/Button.jsx";
 import { ScopeCard, ScopeCardTitle } from "./stories/StoryCard.jsx";
 import ScopeRecipe, { hasRecipe, ExplorerScope } from "./scopeRecipes.jsx";
 import BuiltScope from "../widgetbuilder/BuiltScope.jsx";
+import ShapeScope, { shapeScopeTitle } from "../shape/shapeScopes.jsx";
 import { ScopeNavContext } from "./scopeNav.js";
 import { useLayerStack, LayerBody, Breadcrumb } from "./layers.jsx";
 import { StoryStyleContext } from "./stories/storyStyle.js";
@@ -99,6 +100,7 @@ function GenericScope({ widget }) {
 
 export function scopeTitle(widget) {
   if (widget.kind === "explorer") return widget.dimension;
+  if (widget.kind === "shape") return widget.customTitle || shapeScopeTitle(widget);
   if (isFullScope(widget)) return FULL_SCOPE_FAMILIES[widget.familyId];
   if (widget.familyId === "org-score") return "Your Headline Score";
   return widget.customTitle || (widget.kind === "library" ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title);
@@ -180,7 +182,7 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
           {/* Switching to another widget's Scope: the new content settles in (a short fade and a 6px rise) from the top
               of the pane. The first open has no fade; the sheet's own slide carries that. */}
           <motion.div key={widget.id} initial={firstWidget.current === widget.id ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: layers.depth || full ? "none" : "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16 }}>
-          {full ? null : widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
+          {full ? null : widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.kind === "shape" ? <ShapeScope widget={widget} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
           </motion.div>
         </div>
         </StoryStyleContext.Provider>

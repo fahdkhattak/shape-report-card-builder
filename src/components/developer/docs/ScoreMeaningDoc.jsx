@@ -11,6 +11,7 @@ import { ORG_MEANING } from "../../scope/scopeRecipes.jsx";
 import { MEANING } from "../../widgetbuilder/storyCatalog.jsx";
 import { Section, Prose, Callout, Variant, Anatomy, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, lightHexOf, StatusPill } from "../docKit.jsx";
 import { ContrastTable, SpecTable, SimpleTable, T, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "score-meaning", name: "Score Meaning", group: "Stories", kind: "Score / Status Meaning",
@@ -22,7 +23,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The four forms" }, { id: "playground", label: "Try it" }, { id: "anatomy", label: "Anatomy" },
     { id: "spec", label: "Specification" }, { id: "states", label: "States & variants" }, { id: "edges", label: "Sizes & edge cases" }, { id: "content", label: "Content & voice" },
-    { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
+    { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
     { id: "story", label: "The data story" }, { id: "glance", label: "At a glance" }, { id: "shows", label: "What it can show" }, { id: "made", label: "How the words are chosen" },
@@ -333,6 +334,7 @@ function DeveloperView({ style }) {
         <Callout tone="warn" title="Known gap">The Striving number is below 4.5:1 on a white card at 14px, where it appears inside the headline. The 64px number passes the 3:1 rule for large text. The darker <code>warning/text-strong</code> would fix the headline.</Callout>
       </Section>
 
+      <DataNeeds id="score-meaning" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "title", type: "string", required: true, desc: "The Story title, in title case (“What Your Score Is Telling You”)." },

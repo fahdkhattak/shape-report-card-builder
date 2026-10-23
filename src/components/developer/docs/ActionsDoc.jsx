@@ -5,6 +5,7 @@ import { ActionsStoryBar, ActionsCta, ActionsLayer, ActionsYouCanTakeCard, Think
 import { StoryStyleContext } from "../../scope/stories/storyStyle.js";
 import { Section, Prose, Callout, Variant, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, lightHexOf } from "../docKit.jsx";
 import { SpecTable, SimpleTable, T, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "actions", name: "Actions", group: "Stories", kind: "Actions",
@@ -16,7 +17,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "spec", label: "Specification" },
     { id: "states", label: "States & variants" }, { id: "responsive", label: "Responsive" }, { id: "content", label: "Content & voice" },
-    { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
+    { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
     { id: "story", label: "The data story" }, { id: "glance", label: "At a glance" }, { id: "limits", label: "Constraints" }, { id: "open", label: "Open questions" },
@@ -163,6 +164,7 @@ function DeveloperView({ style }) {
         </Prose>
       </Section>
 
+      <DataNeeds id="actions" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "ActionsStoryBar.drivers", type: "string[]", required: true, desc: "The Drivers the layer will list; it opens on the weakest." },

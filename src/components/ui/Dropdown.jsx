@@ -20,7 +20,7 @@ export default function Dropdown({ value, options, onChange, ariaLabel, maxWidth
   const [active, setActive] = useState(0);
   const { refs, floatingStyles, context } = useFloating({
     open, onOpenChange: setOpen, placement: "bottom-start",
-    middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply({ availableWidth, rects, elements }) { Object.assign(elements.floating.style, { minWidth: `${Math.min(rects.reference.width, availableWidth)}px`, maxWidth: `${Math.min(maxWidth, availableWidth)}px` }); } })],
+    middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply({ availableWidth, availableHeight, rects, elements }) { Object.assign(elements.floating.style, { minWidth: `${Math.min(rects.reference.width, availableWidth)}px`, maxWidth: `${Math.min(maxWidth, availableWidth)}px`, maxHeight: `${Math.min(360, availableHeight)}px`, overflowY: "auto" }); } })],
     whileElementsMounted: autoUpdate,
   });
   const click = useClick(context);

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { T, font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsSpace, dsRadius } from "../../../lib/ds.js";
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, fmtMonth, fmtDate } from "../../../lib/scopeData.js";
 import { StoryCard } from "./StoryCard.jsx";
 import { ViewSwitch, CopyTable } from "./controls.jsx";
@@ -31,6 +31,7 @@ const spring = { type: "spring", bounce: 0, duration: 0.35 };
 const refinedEyebrow = { fontSize: 13, fontWeight: 600, color: T.gray600, fontFamily: font };
 
 export default function ScoreHistoryStory({ title = "Your Score History", line = "Explore your past performance and trends in this detailed score history.", overall, items, noun = "Explorer" }) {
+  const ROUNDS = useRounds();
   const refined = useStoryStyle() === "refined";
   const [view, setView] = useState("chart");
   const [sel, setSel] = useState(LAST);
@@ -161,6 +162,7 @@ function Dumbbell({ rows, onHover, open, onToggle, noun }) {
 }
 
 function ChangesHead({ sel, noun }) {
+  const ROUNDS = useRounds();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: font }}>
       <span style={{ fontSize: 14, fontWeight: 700, color: T.gray900, paddingBottom: 6, borderBottom: `1px solid ${T.gray300}` }}>{noun} Changes</span>

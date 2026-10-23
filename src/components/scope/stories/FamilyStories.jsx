@@ -2,7 +2,7 @@ import { useState } from "react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsBorder, dsShadow } from "../../../lib/ds.js";
 import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../../lib/bands.js";
-import { ROUNDS } from "../../../lib/dataset.js";
+import { useRounds } from "../../../lib/roundsContext.js";
 import { LAST, roundName, fmtMonth, groupGaps, connections, priorityPoints, scoreSpread, brightSpots, withinReach, SUPPRESS_BELOW } from "../../../lib/scopeData.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
 import { StoryCard, EvidenceSection, bodyText, noteText } from "./StoryCard.jsx";
@@ -50,6 +50,7 @@ function ChangeRow({ r }) {
   );
 }
 function ChangesClassic({ items, noun = "Driver" }) {
+  const ROUNDS = useRounds();
   const [ref, setRef] = useState(Math.max(0, LAST - 1));
   const rows = items.map((it) => ({ label: it.label, from: it.values[ref], to: it.values[LAST], d: it.values[LAST] - it.values[ref] }));
   const gains = rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d).slice(0, 3);

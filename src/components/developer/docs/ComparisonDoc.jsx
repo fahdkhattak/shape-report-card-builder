@@ -8,6 +8,7 @@ import { Section, Prose, Callout, Variant, StoryStage, PropsTable, CodeBlock, Fi
 import { SpecTable, SimpleTable, T, tok, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
 import { useState } from "react";
 import WidthShowcase from "./WidthShowcase.jsx";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "comparison", name: "Comparison", group: "Stories", kind: "Comparison",
@@ -19,7 +20,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "forms", label: "The forms" }, { id: "spec", label: "Specification" },
     { id: "states", label: "States & variants" }, { id: "responsive", label: "Responsive" }, { id: "content", label: "Content & voice" },
-    { id: "a11y", label: "Accessibility" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
+    { id: "a11y", label: "Accessibility" }, { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
     { id: "story", label: "The data story" }, { id: "glance", label: "At a glance" }, { id: "live", label: "Live from the data" },
@@ -171,6 +172,7 @@ function DeveloperView({ style }) {
         </Prose>
       </Section>
 
+      <DataNeeds id="comparison" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "entities", type: "[{ id, kind: \"you\"|\"team\"|\"org\", label, tag?, score?, values?, age? }]", required: true, desc: "Who is compared. `values` are one per part (radar, area); `age` is { value, gap } (Health Age)." },

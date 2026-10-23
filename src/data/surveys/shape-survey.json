@@ -1,0 +1,7446 @@
+{
+ "id": "shape-survey",
+ "name": "SHAPE Survey",
+ "service": "SHAPE Performance Index",
+ "source": {
+  "file": "data/sources/SHAPE Survey File.xlsx",
+  "sheets": [
+   "Survey (NEW)",
+   "eNPS",
+   "ScoredNonscored",
+   "Score per response"
+  ],
+  "importedAt": "2026-10-20"
+ },
+ "scale": {
+  "min": 0,
+  "max": 100
+ },
+ "levels": [
+  {
+   "depth": 0,
+   "noun": "Overall"
+  },
+  {
+   "depth": 1,
+   "noun": "Explorer",
+   "nounPlural": "Explorers"
+  },
+  {
+   "depth": 2,
+   "noun": "Driver",
+   "nounPlural": "Drivers"
+  }
+ ],
+ "sections": [
+  {
+   "id": "profile",
+   "name": "Your Profile",
+   "fileName": "Demographics",
+   "kind": "profile",
+   "code": "PRO",
+   "fileHeading": "DEMOGRAPHICS",
+   "groups": [
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO1.1",
+       "number": "1.1",
+       "text": "First name",
+       "line": 4,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "firstName",
+       "sensitive": true
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO1.2",
+       "number": "1.2",
+       "text": "Last name",
+       "line": 5,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "lastName",
+       "sensitive": true
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO2",
+       "number": "2",
+       "text": "Title",
+       "line": 6,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Mr",
+        "Ms",
+        "Mrs",
+        "Miss",
+        "Dr"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "title",
+       "sensitive": true
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO3",
+       "number": "3",
+       "text": "Date of birth",
+       "line": 7,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (unique)",
+       "options": [
+        "3 fields for D/M/Y"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "dateOfBirth → age",
+       "sensitive": true
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO4",
+       "number": "4",
+       "text": "Gender",
+       "line": 8,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Male",
+        "Female",
+        "Other",
+        "Prefer not to respond"
+       ],
+       "hoverLabel": null,
+       "followUps": [
+        {
+         "text": "Please specify (if 'other' is selected)",
+         "design": "Free text",
+         "line": 9
+        }
+       ],
+       "section": "profile",
+       "status": "profile",
+       "field": "gender",
+       "sensitive": true
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO5",
+       "number": "5",
+       "text": "Education",
+       "line": 10,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Did not complete high school",
+        "High school graduate",
+        "University (incomplete)",
+        "Trade/technical/vocational training",
+        "Bachelor's degree",
+        "Master's degree",
+        "Professional degree",
+        "Doctoral degree",
+        "Other"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "education"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO6",
+       "number": "6",
+       "text": "Country",
+       "line": 11,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Afghanistan",
+        "Åland Islands",
+        "Albania",
+        "Algeria",
+        "American Samoa",
+        "Andorra",
+        "Angola",
+        "Anguilla",
+        "Antarctica",
+        "Antigua & Barbuda",
+        "Argentina",
+        "Armenia",
+        "Aruba",
+        "Australia",
+        "Austria",
+        "Azerbaijan",
+        "Bahamas",
+        "Bahrain",
+        "Bangladesh",
+        "Barbados",
+        "Belarus",
+        "Belgium",
+        "Belize",
+        "Benin",
+        "Bermuda",
+        "Bhutan",
+        "Bolivia",
+        "Bosnia & Herzegovina",
+        "Botswana",
+        "Bouvet Island",
+        "Brazil",
+        "British Indian Ocean Territory",
+        "British Virgin Islands",
+        "Brunei",
+        "Bulgaria",
+        "Burkina Faso",
+        "Burundi",
+        "Cambodia",
+        "Cameroon",
+        "Canada",
+        "Cape Verde",
+        "Caribbean Netherlands",
+        "Cayman Islands",
+        "Central African Republic",
+        "Chad",
+        "Chile",
+        "China",
+        "Christmas Island",
+        "Cocos (Keeling) Islands",
+        "Colombia",
+        "Comoros",
+        "Congo - Brazzaville",
+        "Congo - Kinshasa",
+        "Cook Islands",
+        "Costa Rica",
+        "Côte d’Ivoire",
+        "Croatia",
+        "Cuba",
+        "Curaçao",
+        "Cyprus",
+        "Czechia",
+        "Denmark",
+        "Djibouti",
+        "Dominica",
+        "Dominican Republic",
+        "Ecuador",
+        "Egypt",
+        "El Salvador",
+        "Equatorial Guinea",
+        "Eritrea",
+        "Estonia",
+        "Eswatini",
+        "Ethiopia",
+        "Falkland Islands",
+        "Faroe Islands",
+        "Fiji",
+        "Finland",
+        "France",
+        "French Guiana",
+        "French Polynesia",
+        "French Southern Territories",
+        "Gabon",
+        "Gambia",
+        "Georgia",
+        "Germany",
+        "Ghana",
+        "Gibraltar",
+        "Greece",
+        "Greenland",
+        "Grenada",
+        "Guadeloupe",
+        "Guam",
+        "Guatemala",
+        "Guernsey",
+        "Guinea",
+        "Guinea-Bissau",
+        "Guyana",
+        "Haiti",
+        "Heard & McDonald Islands",
+        "Honduras",
+        "Hong Kong SAR China",
+        "Hungary",
+        "Iceland",
+        "India",
+        "Indonesia",
+        "Iran",
+        "Iraq",
+        "Ireland",
+        "Isle of Man",
+        "Israel",
+        "Italy",
+        "Jamaica",
+        "Japan",
+        "Jersey",
+        "Jordan",
+        "Kazakhstan",
+        "Kenya",
+        "Kiribati",
+        "Kuwait",
+        "Kyrgyzstan",
+        "Laos",
+        "Latvia",
+        "Lebanon",
+        "Lesotho",
+        "Liberia",
+        "Libya",
+        "Liechtenstein",
+        "Lithuania",
+        "Luxembourg",
+        "Macao SAR China",
+        "Madagascar",
+        "Malawi",
+        "Malaysia",
+        "Maldives",
+        "Mali",
+        "Malta",
+        "Marshall Islands",
+        "Martinique",
+        "Mauritania",
+        "Mauritius",
+        "Mayotte",
+        "Mexico",
+        "Micronesia",
+        "Moldova",
+        "Monaco",
+        "Mongolia",
+        "Montenegro",
+        "Montserrat",
+        "Morocco",
+        "Mozambique",
+        "Myanmar (Burma)",
+        "Namibia",
+        "Nauru",
+        "Nepal",
+        "Netherlands",
+        "New Caledonia",
+        "New Zealand",
+        "Nicaragua",
+        "Niger",
+        "Nigeria",
+        "Niue",
+        "Norfolk Island",
+        "North Korea",
+        "North Macedonia",
+        "Northern Mariana Islands",
+        "Norway",
+        "Oman",
+        "Pakistan",
+        "Palau",
+        "Palestinian Territories",
+        "Panama",
+        "Papua New Guinea",
+        "Paraguay",
+        "Peru",
+        "Philippines",
+        "Pitcairn Islands",
+        "Poland",
+        "Portugal",
+        "Puerto Rico",
+        "Qatar",
+        "Réunion",
+        "Romania",
+        "Russia",
+        "Rwanda",
+        "Samoa",
+        "San Marino",
+        "São Tomé & Príncipe",
+        "Saudi Arabia",
+        "Senegal",
+        "Serbia",
+        "Seychelles",
+        "Sierra Leone",
+        "Singapore",
+        "Sint Maarten",
+        "Slovakia",
+        "Slovenia",
+        "Solomon Islands",
+        "Somalia",
+        "South Africa",
+        "South Georgia & South Sandwich Islands",
+        "South Korea",
+        "South Sudan",
+        "Spain",
+        "Sri Lanka",
+        "St. Barthélemy",
+        "St. Helena",
+        "St. Kitts & Nevis",
+        "St. Lucia",
+        "St. Martin",
+        "St. Pierre & Miquelon",
+        "St. Vincent & Grenadines",
+        "Sudan",
+        "Suriname",
+        "Svalbard & Jan Mayen",
+        "Sweden",
+        "Switzerland",
+        "Syria",
+        "Taiwan",
+        "Tajikistan",
+        "Tanzania",
+        "Thailand",
+        "Timor-Leste",
+        "Togo",
+        "Tokelau",
+        "Tonga",
+        "Trinidad & Tobago",
+        "Tunisia",
+        "Türkiye",
+        "Turkmenistan",
+        "Turks & Caicos Islands",
+        "Tuvalu",
+        "U.S. Outlying Islands",
+        "U.S. Virgin Islands",
+        "Uganda",
+        "Ukraine",
+        "United Arab Emirates",
+        "United Kingdom",
+        "United States",
+        "Uruguay",
+        "Uzbekistan",
+        "Vanuatu",
+        "Vatican City",
+        "Venezuela",
+        "Vietnam",
+        "Wallis & Futuna",
+        "Western Sahara",
+        "Yemen",
+        "Zambia",
+        "Zimbabwe"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "country",
+       "optionsInFile": [
+        "All countries with a few exceptions"
+       ],
+       "optionsSource": "confirmed",
+       "optionsNote": "A full country list for now (249, ISO 3166). The file says “all countries with a few exceptions”; the exceptions are still to come.",
+       "issues": [
+        "I15"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO7",
+       "number": "7",
+       "text": "How would you best describe yourself? (if SSA approved asking Ethnicity q in COB)",
+       "line": 12,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Contingent on country selected"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "ethnicity",
+       "audience": "Only where approved for the country (ethnicity)",
+       "sensitive": true,
+       "issues": [
+        "I15"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO8",
+       "number": "8",
+       "text": "Department",
+       "line": 13,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List (editable)",
+       "options": [
+        "Human Resources",
+        "Accounting and Finance",
+        "Marketing and Advertising",
+        "Production",
+        "IT",
+        "Operations",
+        "Customer Services/Support",
+        "Legal",
+        "Purchasing",
+        "Business Development/Sales",
+        "Distribution",
+        "Research and Development",
+        "Management/Admin"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "department"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO9",
+       "number": "9",
+       "text": "Site name/code",
+       "line": 14,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List (editable) + Does not apply",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "site",
+       "issues": [
+        "I15"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO10",
+       "number": "10",
+       "text": "Job title",
+       "line": 15,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "jobTitle",
+       "sensitive": true
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO11",
+       "number": "11",
+       "text": "Employment status",
+       "line": 16,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Full-time",
+        "Part-time",
+        "Casual",
+        "Temporary"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "employmentStatus"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO12",
+       "number": "12",
+       "text": "How many hours a week are you contracted to work from office and home?",
+       "line": 17,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (unique)",
+       "options": [],
+       "hoverLabel": null,
+       "parts": [
+        "Office",
+        "Home"
+       ],
+       "section": "profile",
+       "status": "profile",
+       "field": "officeHours, homeHours → work model (Office · Home · Hybrid) and the weighting of work-environment answers",
+       "derives": {
+        "workModel": [
+         [
+          "Office",
+          "every contracted hour is at the office"
+         ],
+         [
+          "Home",
+          "every contracted hour is at home"
+         ],
+         [
+          "Hybrid",
+          "both"
+         ]
+        ]
+       },
+       "issues": [
+        "I16"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO13",
+       "number": "13",
+       "text": "Job level",
+       "line": 20,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Administrative staff",
+        "Support staff",
+        "Trained professional",
+        "Skilled labourer",
+        "Researcher",
+        "Junior management",
+        "Middle management",
+        "Upper management",
+        "Consultant",
+        "Self-employed/Partner",
+        "Intern",
+        "Student",
+        "Other"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "jobLevel"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO14",
+       "number": "14",
+       "text": "Duration of your employment (with current employer)",
+       "line": 21,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Less than 1 year",
+        "1-3 years",
+        "3-5 years",
+        "5-10 years",
+        "10-20 years",
+        "20+ years"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "tenure"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PRO15",
+       "number": "15",
+       "text": "Annual salary",
+       "line": 22,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Separate algorithm"
+       ],
+       "hoverLabel": null,
+       "section": "profile",
+       "status": "profile",
+       "field": "salaryBand (bands depend on country)",
+       "sensitive": true,
+       "dependsOn": "PRO6",
+       "optionsNote": "The salary bands depend on the country picked (local currency). The bands are still to come.",
+       "issues": [
+        "I15"
+       ]
+      }
+     ]
+    },
+    {
+     "number": "16",
+     "text": "On a scale of 0-10, with 10 being the highest, how would you rate the following?",
+     "line": 23,
+     "questions": [
+      {
+       "id": "PRO16.1",
+       "number": "16.1",
+       "text": "The usual performance of most other workers in a job similar to yours",
+       "line": 24,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Numeric range 0-10",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "scale": "hpq",
+       "scaleSource": "file",
+       "status": "separate",
+       "field": "hpqOthers",
+       "group": "hpq"
+      },
+      {
+       "id": "PRO16.2",
+       "number": "16.2",
+       "text": "Your usual job performance over the past year or two",
+       "line": 25,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Numeric range 0-10",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "scale": "hpq",
+       "scaleSource": "file",
+       "status": "separate",
+       "field": "hpqUsual",
+       "group": "hpq"
+      },
+      {
+       "id": "PRO16.3",
+       "number": "16.3",
+       "text": "Your overall performance on the days you worked during the past 4 weeks",
+       "line": 26,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Numeric range 0-10",
+       "options": [],
+       "hoverLabel": null,
+       "section": "profile",
+       "scale": "hpq",
+       "scaleSource": "file",
+       "status": "separate",
+       "field": "hpqRecent",
+       "group": "hpq"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "physical-health",
+   "name": "Physical Health",
+   "kind": "explorer",
+   "code": "PHYS",
+   "fileHeading": "PHYSICAL HEALTH",
+   "groups": [
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS1",
+       "number": "1",
+       "text": "On average, how many servings of fruits and vegetables do you consume per day?",
+       "line": 28,
+       "shortLabel": "Nutrition",
+       "driver": "Nutrition",
+       "design": "List",
+       "options": [
+        "None",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5 to 6",
+        "7+"
+       ],
+       "hoverLabel": "On average, how many servings of fruits and vegetables do you consume per day?",
+       "section": "physical-health",
+       "scale": "fruitVeg",
+       "scaleSource": "file",
+       "scores": [
+        0,
+        17,
+        34,
+        51,
+        68,
+        85,
+        100
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS2",
+       "number": "2",
+       "text": "How many hours of moderate to vigorous physical activity do you do per week?",
+       "line": 29,
+       "shortLabel": "Exercise",
+       "driver": "Exercise",
+       "design": "List",
+       "options": [
+        "None",
+        "Less than 0.5",
+        "0.5 to 1",
+        "1 to 2",
+        "2 to 3",
+        "3 to 4",
+        "Greater than 4"
+       ],
+       "hoverLabel": "How many hours of moderate to vigorous physical activity do you do per week?",
+       "section": "physical-health",
+       "scale": "exercise",
+       "scaleSource": "file",
+       "scores": [
+        0,
+        17,
+        34,
+        51,
+        68,
+        85,
+        100
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS3",
+       "number": "3",
+       "text": "On average, how many cigarettes do you smoke per day?",
+       "line": 30,
+       "shortLabel": "Smoking",
+       "driver": "Smoking",
+       "design": "List",
+       "options": [
+        "None",
+        "Ex Smoker",
+        "Less than 5",
+        "5 to 20",
+        "Greater than 20"
+       ],
+       "hoverLabel": "On average, how many cigarettes do you smoke per day?",
+       "section": "physical-health",
+       "scale": "smoking",
+       "scaleSource": "file",
+       "scaleNote": "“Ex Smoker” isn't in the scoring sheet; it scores 100 for now (proposed, still to be clarified: I8).",
+       "scores": [
+        100,
+        100,
+        67,
+        33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "proposedOptions": [
+        "Ex Smoker"
+       ],
+       "issues": [
+        "I8"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS4",
+       "number": "4",
+       "text": "In an average week, how many of each of the following alcoholic drinks would you consume?",
+       "line": 31,
+       "shortLabel": "Alcohol",
+       "driver": "Alcohol",
+       "design": "Unique",
+       "options": [],
+       "hoverLabel": "In an average week, how many standard alcoholic drinks do you consume?",
+       "section": "physical-health",
+       "scale": "alcohol",
+       "scaleSource": "file",
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS5",
+       "number": "5",
+       "text": "Do you feel tired due to lack of sleep?",
+       "line": 32,
+       "shortLabel": "Sleep",
+       "driver": "Sleep",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost Always"
+       ],
+       "hoverLabel": "Do you feel tired due to lack of sleep?",
+       "section": "physical-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS6",
+       "number": "6",
+       "text": "Height and weight",
+       "line": 33,
+       "shortLabel": "BMI",
+       "driver": "Nutrition",
+       "design": "Free text (unique)",
+       "options": [],
+       "hoverLabel": "Body Mass Index",
+       "section": "physical-health",
+       "scale": "bmi",
+       "scaleSource": "file",
+       "scaleNote": "Scored from the BMI worked out of height and weight, not from an answer option.",
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I9"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS7",
+       "number": "7",
+       "text": "Do you suffer from a chronic medical condition (e.g. diabetes, high blood pressure/cholesterol, asthma/COPD, arthritis, etc.)?",
+       "line": 34,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Yes",
+        "No"
+       ],
+       "hoverLabel": null,
+       "section": "physical-health",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS8",
+       "number": "8",
+       "text": "My workplace supports healthy behaviours by providing seminars, activities or facilities (e.g. showers/changing rooms/bike racks etc.) to improve employee health",
+       "line": 35,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Yes",
+        "No"
+       ],
+       "hoverLabel": null,
+       "section": "physical-health",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PHYS9",
+       "number": "9",
+       "text": "What's one thing you feel you could do to improve your physical health?",
+       "line": 36,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (unique)",
+       "options": [],
+       "hoverLabel": null,
+       "section": "physical-health",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "psychological-health",
+   "name": "Psychological Health",
+   "kind": "explorer",
+   "code": "PSY",
+   "fileHeading": "PSYCHOLOGICAL HEALTH",
+   "groups": [
+    {
+     "number": "1",
+     "text": "Please indicate how much each statement applied to you over the past week",
+     "line": 38,
+     "questions": [
+      {
+       "id": "PSY1.1",
+       "number": "1.1",
+       "text": "I found it hard to wind down",
+       "line": 39,
+       "shortLabel": "Wind down",
+       "driver": "Stress",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I found it hard to wind down (stress)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.2",
+       "number": "1.2",
+       "text": "I couldn't seem to experience any positive feelings at all",
+       "line": 40,
+       "shortLabel": "No positive feelings",
+       "driver": "Depression",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I couldn't seem to experience any positive feelings at all (depression)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.3",
+       "number": "1.3",
+       "text": "I tended to over-react to situations",
+       "line": 41,
+       "shortLabel": "Overreact",
+       "driver": "Stress",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I tended to over-react to situations (stress)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.4",
+       "number": "1.4",
+       "text": "I experienced trembling or uncontrollable shaking (such as in the hands)",
+       "line": 42,
+       "shortLabel": "Trembling",
+       "driver": "Anxiety",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I experienced trembling (anxiety)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.5",
+       "number": "1.5",
+       "text": "I found myself getting agitated",
+       "line": 43,
+       "shortLabel": "Agitated",
+       "driver": "Stress",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I found myself getting agitated (stress)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.6",
+       "number": "1.6",
+       "text": "I felt down-hearted and blue",
+       "line": 44,
+       "shortLabel": "Downhearted",
+       "driver": "Depression",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I felt down-hearted and blue (depression)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.7",
+       "number": "1.7",
+       "text": "I felt I was close to panic",
+       "line": 45,
+       "shortLabel": "Panic",
+       "driver": "Anxiety",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I felt I was close to panic (anxiety)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.8",
+       "number": "1.8",
+       "text": "I was unable to become enthusiastic about anything",
+       "line": 46,
+       "shortLabel": "No enthusiasm",
+       "driver": "Depression",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I was unable to become enthusiastic about anything (depression)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      },
+      {
+       "id": "PSY1.9",
+       "number": "1.9",
+       "text": "I felt scared without good reason",
+       "line": 47,
+       "shortLabel": "Scared",
+       "driver": "Anxiety",
+       "design": "List",
+       "options": [
+        "Never",
+        "Sometimes",
+        "Often",
+        "Almost always"
+       ],
+       "hoverLabel": "I felt scared without any good reason (anxiety)",
+       "section": "psychological-health",
+       "scale": "frequency4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66.67,
+        33.33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I21",
+        "I22"
+       ]
+      }
+     ]
+    },
+    {
+     "number": "2",
+     "text": "To what degree do you agree/disagree with the following statements?",
+     "line": 48,
+     "questions": [
+      {
+       "id": "PSY2.1",
+       "number": "2.1",
+       "text": "I suffer from physical and/or mental health issues as a result of stress",
+       "line": 49,
+       "shortLabel": "Stress impact",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I suffer from physical and/or mental health issues as a result of stress",
+       "section": "psychological-health",
+       "scale": "agree5",
+       "scaleSource": "confirmed",
+       "scaleNote": "Not reversed, by decision (I12): it isn't scored, so it's shown as answered.",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "issues": [
+        "I12"
+       ]
+      },
+      {
+       "id": "PSY2.2",
+       "number": "2.2",
+       "text": "I use one or more strategies to cope with stress in my life (e.g. relaxations technique, exercise, hobby/interest, etc.)",
+       "line": 50,
+       "shortLabel": "Coping",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I use one or more strategies to cope with stress in my life",
+       "section": "psychological-health",
+       "scale": "agree5",
+       "scaleSource": "proposed",
+       "scaleNote": "Not in the scoring sheet's agreement list; the agreement scale is the obvious fit.",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": "3",
+     "text": "How well do each of the following statements apply to you?",
+     "line": 51,
+     "questions": [
+      {
+       "id": "PSY3.1",
+       "number": "3.1",
+       "text": "I adapt quickly when things change",
+       "line": 52,
+       "shortLabel": "Adaptable",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Absolutely yes",
+        "Very much so",
+        "Somewhat",
+        "More or less",
+        "Not really"
+       ],
+       "hoverLabel": "I adapt quickly when things change",
+       "section": "psychological-health",
+       "scale": "resilience5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY3.2",
+       "number": "3.2",
+       "text": "I am good at \"bouncing back\" from adversity",
+       "line": 53,
+       "shortLabel": "Bouncing back",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Absolutely yes",
+        "Very much so",
+        "Somewhat",
+        "More or less",
+        "Not really"
+       ],
+       "hoverLabel": "I am good at \"bouncing back\" from adversity",
+       "section": "psychological-health",
+       "scale": "resilience5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY3.3",
+       "number": "3.3",
+       "text": "I am strong; I hold up well under pressure",
+       "line": 54,
+       "shortLabel": "Strong",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Absolutely yes",
+        "Very much so",
+        "Somewhat",
+        "More or less",
+        "Not really"
+       ],
+       "hoverLabel": "I am strong; I hold up well under pressure",
+       "section": "psychological-health",
+       "scale": "resilience5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": "4",
+     "text": "Please rate the following work-related issues according to the degree of stress they cause you",
+     "line": 55,
+     "questions": [
+      {
+       "id": "PSY4.1",
+       "number": "4.1",
+       "text": "Workload/Working hours",
+       "line": 56,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY4.2",
+       "number": "4.2",
+       "text": "Working conditions",
+       "line": 57,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY4.3",
+       "number": "4.3",
+       "text": "Relationship/Conflict",
+       "line": 58,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY4.4",
+       "number": "4.4",
+       "text": "Career prospects",
+       "line": 59,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY4.5",
+       "number": "4.5",
+       "text": "Low-income",
+       "line": 60,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY4.6",
+       "number": "4.6",
+       "text": "Job security",
+       "line": 61,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": "5",
+     "text": "Please rate the following non-work related issues according to the degree of stress they cause you",
+     "line": 62,
+     "questions": [
+      {
+       "id": "PSY5.1",
+       "number": "5.1",
+       "text": "Relationship/Conflict (e.g. partner, child, sibling, parent, etc.)",
+       "line": 63,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful",
+        "N/A"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0,
+        "excluded"
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY5.2",
+       "number": "5.2",
+       "text": "Pressure of childcare",
+       "line": 64,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful",
+        "N/A"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0,
+        "excluded"
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY5.3",
+       "number": "5.3",
+       "text": "Financial pressure",
+       "line": 65,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY5.4",
+       "number": "5.4",
+       "text": "Personal wellbeing",
+       "line": 66,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      },
+      {
+       "id": "PSY5.5",
+       "number": "5.5",
+       "text": "Wellbeing of family member",
+       "line": 67,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Not stressful at all",
+        "A little stressful",
+        "Moderately stressful",
+        "Extremely stressful"
+       ],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "scale": "stress4",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        66,
+        33,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "PSY6",
+       "number": "6",
+       "text": "Are there any other sources of stress not mentioned here that affect you?",
+       "line": 68,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "psychological-health",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "life-outside-work",
+   "name": "Life Outside Work",
+   "kind": "explorer",
+   "code": "FOW",
+   "aka": "Factors Outside Work (scoring sheets)",
+   "fileHeading": "LIFE OUTSIDE WORK",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How much do the following activities strain your capacity to maintain good work-life balance?",
+     "line": 70,
+     "questions": [
+      {
+       "id": "FOW1.1",
+       "number": "1.1",
+       "text": "Home Duties (cooking, cleaning, lawn mowing etc.)",
+       "line": 71,
+       "shortLabel": "Home duties",
+       "driver": "Home duties",
+       "design": "List",
+       "options": [
+        "Severe strain",
+        "High strain",
+        "Moderate strain",
+        "Low strain",
+        "No strain",
+        "N/A"
+       ],
+       "hoverLabel": "How much do the following activities strain your capacity to maintain good work-life balance? Home duties (cook, clean, etc.)",
+       "section": "life-outside-work",
+       "scale": "strain5",
+       "scaleSource": "confirmed",
+       "scaleNote": "The survey's own five strain levels (the scoring sheet's FOW1 labels are out of date).",
+       "scores": [
+        0,
+        25,
+        50,
+        75,
+        100,
+        "excluded"
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I3"
+       ]
+      },
+      {
+       "id": "FOW1.2",
+       "number": "1.2",
+       "text": "Caring (childcare, eldercare, etc.)",
+       "line": 72,
+       "shortLabel": "Family care",
+       "driver": "Home duties",
+       "design": "List",
+       "options": [
+        "Severe strain",
+        "High strain",
+        "Moderate strain",
+        "Low strain",
+        "No strain",
+        "N/A"
+       ],
+       "hoverLabel": "How much do the following activities strain your capacity to maintain good work-life balance? Caring",
+       "section": "life-outside-work",
+       "scale": "strain5",
+       "scaleSource": "confirmed",
+       "scaleNote": "The survey's own five strain levels (the scoring sheet's FOW1 labels are out of date).",
+       "scores": [
+        0,
+        25,
+        50,
+        75,
+        100,
+        "excluded"
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I3"
+       ]
+      },
+      {
+       "id": "FOW1.3",
+       "number": "1.3",
+       "text": "Commuting (to and from work)",
+       "line": 73,
+       "shortLabel": "Commuting",
+       "driver": "Commuting",
+       "design": "List",
+       "options": [
+        "Severe strain",
+        "High strain",
+        "Moderate strain",
+        "Low strain",
+        "No strain",
+        "N/A"
+       ],
+       "hoverLabel": "How much do the following activities strain your capacity to maintain good work-life balance? Commuting",
+       "section": "life-outside-work",
+       "scale": "strain5",
+       "scaleSource": "confirmed",
+       "scaleNote": "The survey's own five strain levels (the scoring sheet's FOW1 labels are out of date).",
+       "scores": [
+        0,
+        25,
+        50,
+        75,
+        100,
+        "excluded"
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I3"
+       ]
+      },
+      {
+       "id": "FOW1.4",
+       "number": "1.4",
+       "text": "Hours worked from home before/after work, including being contactable by phone/email",
+       "line": 74,
+       "shortLabel": "Work at home",
+       "driver": "Work-life balance",
+       "design": "List",
+       "options": [
+        "Severe strain",
+        "High strain",
+        "Moderate strain",
+        "Low strain",
+        "No strain",
+        "N/A"
+       ],
+       "hoverLabel": "How much do the following activities strain your capacity to maintain good work-life balance? Hours worked from home before/after work",
+       "section": "life-outside-work",
+       "scale": "strain5",
+       "scaleSource": "confirmed",
+       "scaleNote": "The survey's own five strain levels (the scoring sheet's FOW1 labels are out of date).",
+       "scores": [
+        0,
+        25,
+        50,
+        75,
+        100,
+        "excluded"
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I3"
+       ]
+      },
+      {
+       "id": "FOW1.5",
+       "number": "1.5",
+       "text": "Are there any other activities that strain your capacity to maintain good work-life balance? If yes, please specify.",
+       "line": 75,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free-text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "life-outside-work",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "FOW2",
+       "number": "2",
+       "text": "How would you describe the balance between your work and non-work activities?",
+       "line": 76,
+       "shortLabel": "Balance",
+       "driver": "Work-life balance",
+       "design": "List",
+       "options": [
+        "Ideal",
+        "Satisfactory",
+        "Challenging",
+        "Extremely challenging",
+        "Unmanageable"
+       ],
+       "hoverLabel": "How would you describe the balance between your work and non-work activities?",
+       "section": "life-outside-work",
+       "scale": "balance5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "FOW3",
+       "number": "3",
+       "text": "I have a great support network of family and friends who help me in times of need",
+       "line": 77,
+       "shortLabel": "Support network",
+       "driver": "Support network",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "How would you categorise your \"support network\"?",
+       "section": "life-outside-work",
+       "scale": "agree5",
+       "scaleSource": "confirmed",
+       "scaleNote": "Agreement, as the survey asks (the scoring sheet's FOW3 labels are out of date).",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I4"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "job-satisfaction",
+   "name": "Job Satisfaction",
+   "kind": "explorer",
+   "code": "JS",
+   "fileHeading": "JOB SATISFACTION",
+   "groups": [
+    {
+     "number": "1",
+     "text": "On a scale of 1-5,",
+     "line": 79,
+     "questions": [
+      {
+       "id": "JS1.1",
+       "number": "1.1",
+       "text": "How would you rate your satisfaction with your job/role?",
+       "line": 80,
+       "shortLabel": "Satisfaction",
+       "driver": "Engaging role",
+       "design": "Numeric range 1-5",
+       "options": [],
+       "hoverLabel": "How would you rate your satisfaction with your job/role?",
+       "section": "job-satisfaction",
+       "scale": "oneFive",
+       "scaleSource": "file",
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "JS1.2",
+       "number": "1.2",
+       "text": "How would you rate the demands of your job/role?",
+       "line": 81,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Numeric range 1-5",
+       "options": [],
+       "hoverLabel": null,
+       "section": "job-satisfaction",
+       "scale": "oneFive",
+       "scaleSource": "file",
+       "status": "separate",
+       "statusSource": "file",
+       "issues": [
+        "I13"
+       ]
+      },
+      {
+       "id": "JS1.3",
+       "number": "1.3",
+       "text": "How much control do you have over your workflow and conditions?",
+       "line": 82,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Numeric range 1-5",
+       "options": [],
+       "hoverLabel": null,
+       "section": "job-satisfaction",
+       "scale": "oneFive",
+       "scaleSource": "file",
+       "status": "separate",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": "2",
+     "text": "How much do you agree with the following statements?",
+     "line": 83,
+     "questions": [
+      {
+       "id": "JS2.1",
+       "number": "2.1",
+       "text": "I have sufficient variety in my role",
+       "line": 84,
+       "shortLabel": "Variety",
+       "driver": "Engaging role",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I have sufficient variety in my role",
+       "section": "job-satisfaction",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "JS2.2",
+       "number": "2.2",
+       "text": "I find my role sufficiently challenging",
+       "line": 85,
+       "shortLabel": "Challenge",
+       "driver": "Engaging role",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I find my role sufficiently challenging",
+       "section": "job-satisfaction",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "JS2.3",
+       "number": "2.3",
+       "text": "My workload is manageable",
+       "line": 86,
+       "shortLabel": "Workload",
+       "driver": "Workload",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My workload is manageable",
+       "section": "job-satisfaction",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "JS2.4",
+       "number": "2.4",
+       "text": "I am provided with the resources I need to do my job",
+       "line": 87,
+       "shortLabel": "Resources",
+       "driver": "Resources",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I am provided with the resources I need to do my job",
+       "section": "job-satisfaction",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "JS2.5",
+       "number": "2.5",
+       "text": "There is a good fit between my skills/abilities and the demands of my position",
+       "line": 88,
+       "shortLabel": "Job/Ability fit",
+       "driver": "Engaging role",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "There is a good fit between my skills/abilities and the demands of my position",
+       "section": "job-satisfaction",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "JS3",
+       "number": "3",
+       "text": "Are there any other factors that diminish your satisfaction with your current role?",
+       "line": 89,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (no type given)",
+       "options": [],
+       "hoverLabel": null,
+       "section": "job-satisfaction",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "Free text: never scored (I10)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "employee-commitment",
+   "name": "Employee Commitment",
+   "kind": "explorer",
+   "code": "EC",
+   "fileHeading": "EMPLOYEE COMMITMENT",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How much do you agree with the following statements regarding your company?",
+     "line": 91,
+     "questions": [
+      {
+       "id": "EC1.1",
+       "number": "1.1",
+       "text": "I feel secure regarding my job and income",
+       "line": 92,
+       "shortLabel": "Job security",
+       "driver": "Job security",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I feel secure regarding my job and income",
+       "section": "employee-commitment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EC1.2",
+       "number": "1.2",
+       "text": "I feel that I am adequately rewarded (financial and non-financial benefits) for my work",
+       "line": 93,
+       "shortLabel": "Reward",
+       "driver": "R&R",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I feel that I am adequately rewarded (financial and non-financial benefits) for my work",
+       "section": "employee-commitment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EC1.3",
+       "number": "1.3",
+       "text": "I feel that I am recognised for my contribution to the organisation",
+       "line": 94,
+       "shortLabel": "Recognition",
+       "driver": "R&R",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I feel that I am recognised for my contribution to the organisation",
+       "section": "employee-commitment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EC1.4",
+       "number": "1.4",
+       "text": "I fit in well and feel accepted by the organisation and its people",
+       "line": 95,
+       "shortLabel": "Belonging",
+       "driver": "Belonging",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I fit in well and feel accepted by the organisation and its people",
+       "section": "employee-commitment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "issues": [
+        "I18"
+       ]
+      },
+      {
+       "id": "EC1.5",
+       "number": "1.5",
+       "text": "I have good career prospects within the company",
+       "line": 96,
+       "shortLabel": "Career prospects",
+       "driver": "Career prospects",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I have good career prospects within the company",
+       "section": "employee-commitment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EC1.6",
+       "number": "1.6",
+       "text": "I look forward to coming to work",
+       "line": 97,
+       "shortLabel": "Enthusiasm",
+       "driver": "Enthusiasm",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I look forward to coming to work",
+       "section": "employee-commitment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "issues": [
+        "I18"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "EC2",
+       "number": "2",
+       "text": "At work, do you feel safe from physical and/or psychological harm, bullying, and harassment?",
+       "line": 98,
+       "shortLabel": "Safety",
+       "driver": "Safety",
+       "design": "List",
+       "options": [
+        "Yes, very safe",
+        "Pretty safe",
+        "Unsure",
+        "Not that safe",
+        "Not safe at all"
+       ],
+       "hoverLabel": "At work, do you feel safe from physical and/or psychological harm, bullying, and harassment?",
+       "section": "employee-commitment",
+       "scale": "safety5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "EC3",
+       "number": "3",
+       "text": "Are there any other issues you feel affect your commitment to the organisation overall?",
+       "line": 99,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (no type given)",
+       "options": [],
+       "hoverLabel": null,
+       "section": "employee-commitment",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "Free text: never scored (I10)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "employee-engagement",
+   "name": "Employee Engagement",
+   "kind": "explorer",
+   "code": "EE",
+   "fileHeading": "EMPLOYEE ENGAGEMENT",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How much do you agree with the following statements?",
+     "line": 101,
+     "questions": [
+      {
+       "id": "EE1.1",
+       "number": "1.1",
+       "text": "I have good working relationships with those around me",
+       "line": 102,
+       "shortLabel": "Friend at work",
+       "driver": "Working relationships",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I enjoy good working relationships with those around me",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverInFile": "Coworker Dynamic",
+       "driverSource": "confirmed",
+       "driverNote": "Renamed from “Coworker Dynamic”, so it isn't confused with the Explorer (I17).",
+       "issues": [
+        "I17"
+       ]
+      },
+      {
+       "id": "EE1.2",
+       "number": "1.2",
+       "text": "My co-workers are committed to the success of the organisation",
+       "line": 103,
+       "shortLabel": "Committed colleagues",
+       "driver": "Working relationships",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My co-workers are committed to the success of the organisation",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverInFile": "Coworker Dynamic",
+       "driverSource": "confirmed",
+       "driverNote": "Renamed from “Coworker Dynamic” (I17).",
+       "issues": [
+        "I17"
+       ]
+      },
+      {
+       "id": "EE1.3",
+       "number": "1.3",
+       "text": "I have regular reviews in which my progress is discussed",
+       "line": 104,
+       "shortLabel": "Talked about progress",
+       "driver": "Growth and development",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I have regular reviews in which my progress is discussed",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EE1.4",
+       "number": "1.4",
+       "text": "I have access to training and development opportunities if required",
+       "line": 105,
+       "shortLabel": "Professional development",
+       "driver": "Growth and development",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I have access to training and development opportunities if required",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EE1.5",
+       "number": "1.5",
+       "text": "My role is important to my company",
+       "line": 106,
+       "shortLabel": "Role is important",
+       "driver": "Sense of importance",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My role is important to my company",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EE1.6",
+       "number": "1.6",
+       "text": "My input is valued by my company",
+       "line": 107,
+       "shortLabel": "Opinion matters",
+       "driver": "Sense of importance",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My input is valued by my company",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "EE1.7",
+       "number": "1.7",
+       "text": "I know what is expected of me (my job description, roles, and responsibilities are clear)",
+       "line": 108,
+       "shortLabel": "Know what's expected",
+       "driver": "Know what's expected",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I know what is expected of me (my job description, roles and responsibilities are clear)",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "issues": [
+        "I18"
+       ]
+      },
+      {
+       "id": "EE1.8",
+       "number": "1.8",
+       "text": "There is no person in my company whose attitudes and behaviour are harmful to company harmony",
+       "line": 109,
+       "shortLabel": "Company harmony",
+       "driver": "Working relationships",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "There is no person in my company whose attitudes and behaviors are harmful to company harmony",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverInFile": "Coworker Dynamic",
+       "driverSource": "confirmed",
+       "driverNote": "Renamed from “Coworker Dynamic” (I17).",
+       "issues": [
+        "I17"
+       ]
+      },
+      {
+       "id": "EE1.9",
+       "number": "1.9",
+       "text": "I experience a sense of fulfilment from the work I do",
+       "line": 110,
+       "shortLabel": "Intrinsic rewards",
+       "driver": "Sense of importance",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I experience a sense of fulfilment from the work I do",
+       "section": "employee-engagement",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "EE2",
+       "number": "2",
+       "text": "Are there any other issues that you feel impact your ability to engage with your team members and manager?",
+       "line": 111,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (no type given)",
+       "options": [],
+       "hoverLabel": null,
+       "section": "employee-engagement",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "Free text: never scored (I10)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "coworker-dynamic",
+   "name": "Coworker Dynamic",
+   "kind": "explorer",
+   "code": "CD",
+   "fileHeading": "COWORKER DYNAMIC",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How many of your coworkers are:",
+     "line": 113,
+     "questions": [
+      {
+       "id": "CD1.1",
+       "number": "1.1",
+       "text": "Hardworking",
+       "line": 114,
+       "shortLabel": "Hardworking",
+       "driver": "Hardworking",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are hardworking?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.2",
+       "number": "1.2",
+       "text": "Respectful",
+       "line": 115,
+       "shortLabel": "Respectful",
+       "driver": "Respectful",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are respectful?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.3",
+       "number": "1.3",
+       "text": "Positive in attitude",
+       "line": 116,
+       "shortLabel": "Optimistic attitude",
+       "driver": "Optimistic attitude",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers have a positive attitude?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.4",
+       "number": "1.4",
+       "text": "Open to new ideas",
+       "line": 117,
+       "shortLabel": "Open to new ideas",
+       "driver": "Open to new ideas",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are open to new ideas?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.5",
+       "number": "1.5",
+       "text": "Accepting of individual differences",
+       "line": 118,
+       "shortLabel": "Respecting differences",
+       "driver": "Respecting differences",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are accepting of individual differences?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.6",
+       "number": "1.6",
+       "text": "Supportive of each other",
+       "line": 119,
+       "shortLabel": "Supportive",
+       "driver": "Supportive",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are supportive?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.7",
+       "number": "1.7",
+       "text": "Flexible",
+       "line": 120,
+       "shortLabel": "Flexible",
+       "driver": "Flexible",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are flexible?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.8",
+       "number": "1.8",
+       "text": "Resourceful",
+       "line": 121,
+       "shortLabel": "Resourceful",
+       "driver": "Resourceful",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are resourceful?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.9",
+       "number": "1.9",
+       "text": "Timely and accurate in their communication",
+       "line": 122,
+       "shortLabel": "Good communication",
+       "driver": "Good communication",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are timely and accurate in their communication?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.10",
+       "number": "1.10",
+       "text": "Willing to tackle difficult issues",
+       "line": 123,
+       "shortLabel": "Confront difficult issues",
+       "driver": "Confront difficult issues",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are willing to tackle difficult issues?",
+       "renumbered": "1.1",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.11",
+       "number": "1.11",
+       "text": "Trustworthy",
+       "line": 124,
+       "shortLabel": "Trustworthy",
+       "driver": "Trustworthy",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are trustworthy?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      },
+      {
+       "id": "CD1.12",
+       "number": "1.12",
+       "text": "Adding value (to their team and/or company)",
+       "line": 125,
+       "shortLabel": "Adding value",
+       "driver": "Adding value",
+       "design": "List",
+       "options": [
+        "All",
+        "Most",
+        "About half",
+        "Some",
+        "None"
+       ],
+       "hoverLabel": "How many of your coworkers are adding value to their team and/or company?",
+       "section": "coworker-dynamic",
+       "scale": "coworkers5",
+       "scaleSource": "confirmed",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I5"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "CD2",
+       "number": "2",
+       "text": "Is there anything in particular you feel your coworkers could do to improve team performance and cohesion?",
+       "line": 126,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (no type given)",
+       "options": [],
+       "hoverLabel": null,
+       "section": "coworker-dynamic",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "Free text: never scored (I10)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "manager-style",
+   "name": "Manager Style",
+   "kind": "explorer",
+   "code": "MS",
+   "fileHeading": "MANAGER STYLE",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How often does your immediate manager {manager's name} use the following styles?",
+     "line": 128,
+     "questions": [
+      {
+       "id": "MS1.1",
+       "number": "1.1",
+       "text": "Directive - tells me what, when, and how. Mostly one-way communication",
+       "line": 129,
+       "shortLabel": "Situational Leadership",
+       "driver": "Situational Leadership",
+       "design": "List",
+       "options": [
+        "Most of the time",
+        "Often",
+        "Sometimes",
+        "Rarely",
+        "Never"
+       ],
+       "hoverLabel": "How well does your manager's style align with your professional competency?",
+       "section": "manager-style",
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I6",
+        "I19"
+       ]
+      },
+      {
+       "id": "MS1.2",
+       "number": "1.2",
+       "text": "Coaching - provides guidance, rather than spelling out the process. More two-way communication",
+       "line": 130,
+       "shortLabel": null,
+       "driver": "Situational Leadership",
+       "design": "List",
+       "options": [
+        "Most of the time",
+        "Often",
+        "Sometimes",
+        "Rarely",
+        "Never"
+       ],
+       "hoverLabel": null,
+       "section": "manager-style",
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "proposed",
+       "driverNote": "An input to Situational Leadership with Q1.1, 1.3, 1.4 and 2.1; its formula is still to come (I6).",
+       "issues": [
+        "I6"
+       ]
+      },
+      {
+       "id": "MS1.3",
+       "number": "1.3",
+       "text": "Supporting - lets me work somewhat independently, but available if needed",
+       "line": 131,
+       "shortLabel": null,
+       "driver": "Situational Leadership",
+       "design": "List",
+       "options": [
+        "Most of the time",
+        "Often",
+        "Sometimes",
+        "Rarely",
+        "Never"
+       ],
+       "hoverLabel": null,
+       "section": "manager-style",
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "proposed",
+       "driverNote": "An input to Situational Leadership (I6).",
+       "issues": [
+        "I6"
+       ]
+      },
+      {
+       "id": "MS1.4",
+       "number": "1.4",
+       "text": "Delegating - lets me decide how best to go about the task. Monitors progress",
+       "line": 132,
+       "shortLabel": null,
+       "driver": "Situational Leadership",
+       "design": "List",
+       "options": [
+        "Most of the time",
+        "Often",
+        "Sometimes",
+        "Rarely",
+        "Never"
+       ],
+       "hoverLabel": null,
+       "section": "manager-style",
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "proposed",
+       "driverNote": "An input to Situational Leadership (I6).",
+       "issues": [
+        "I6"
+       ]
+      }
+     ],
+     "textInFile": "How often does your immediate manager *manager x* use the following styles?"
+    },
+    {
+     "number": null,
+     "text": "Regarding your job/role under {manager's name}",
+     "line": 133,
+     "questions": [
+      {
+       "id": "MS2.1",
+       "number": "2.1",
+       "text": "In your current role, how would you rate your level of competence/proficiency?",
+       "line": 134,
+       "shortLabel": null,
+       "driver": "Situational Leadership",
+       "design": "List",
+       "options": [
+        "Low - I'm just learning the job",
+        "Moderate - I've been in the role a while, but still have plenty to learn",
+        "High - I'm very competent, but not quite perfect … yet",
+        "Very high - I'm at the top of my game!"
+       ],
+       "hoverLabel": null,
+       "section": "manager-style",
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "proposed",
+       "driverNote": "Your competence: the other input to Situational Leadership (I6).",
+       "issues": [
+        "I6"
+       ]
+      },
+      {
+       "id": "MS2.2",
+       "number": "2.2",
+       "text": "I am satisfied with the relationship I have with my immediate manager",
+       "line": 135,
+       "shortLabel": "Relationship - manager",
+       "driver": "Relationship with manager",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I am satisfied with the relationship I have with my immediate manager",
+       "section": "manager-style",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "MS2.3",
+       "number": "2.3",
+       "text": "My manager deals effectively with incompetent/underperforming employees",
+       "line": 136,
+       "shortLabel": "Handling incompetence",
+       "driver": "Handling incompetence",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My manager deals effectively with incompetent/underperforming employees",
+       "section": "manager-style",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "MS2.4",
+       "number": "2.4",
+       "text": "My manager and I agree on my roles and responsibilities",
+       "line": 137,
+       "shortLabel": "Role clarity",
+       "driver": "Role clarity",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My manager and I agree on my roles and responsibilities",
+       "section": "manager-style",
+       "scale": "agree5",
+       "scaleSource": "confirmed",
+       "scaleNote": "Role clarity, an agreement statement added after the scoring sheet was written (I7).",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I7"
+       ]
+      },
+      {
+       "id": "MS2.5",
+       "number": "2.5",
+       "text": "I believe my manager genuinely cares for me and would look after my interests",
+       "line": 138,
+       "shortLabel": "Manager cares",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I believe my manager genuinely cares for me and would look after my interests",
+       "section": "manager-style",
+       "scale": "agree5",
+       "scaleSource": "confirmed",
+       "scaleNote": "Agreement statement added after the scoring sheet was written (I7).",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Listed as non-scored; it has an agreement scale, so it can still be shown on its own.",
+       "issues": [
+        "I7"
+       ]
+      },
+      {
+       "id": "MS2.6",
+       "number": "2.6",
+       "text": "How effective do you feel your immediate manager is in communicating with you?",
+       "line": 139,
+       "shortLabel": "Comms - manager",
+       "driver": "Relationship with manager",
+       "design": "List",
+       "options": [
+        "Very effective",
+        "Somewhat effective",
+        "Not very effective",
+        "Poor"
+       ],
+       "hoverLabel": "How effective do you feel your immediate manager is in communicating with you?",
+       "section": "manager-style",
+       "scale": "effective4",
+       "scaleSource": "confirmed",
+       "scaleNote": "The scoring sheet calls this MS2.4; its numbering predates two added questions (I7).",
+       "scores": [
+        100,
+        67,
+        33,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "confirmed",
+       "statusNote": "Scored: it's the scoring sheet's MS2.4 (I7).",
+       "issues": [
+        "I7"
+       ]
+      },
+      {
+       "id": "MS2.7",
+       "number": "2.7",
+       "text": "Is there anything you would like to change in your relationship with your manager which could help you improve your performance?",
+       "line": 140,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "manager-style",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "Free text: never scored (I10)."
+      }
+     ],
+     "textInFile": "Regarding your job/role under *manager x*"
+    }
+   ]
+  },
+  {
+   "id": "corporate-culture",
+   "name": "Corporate Culture",
+   "kind": "explorer",
+   "code": "CC",
+   "fileHeading": "CORPORATE CULTURE",
+   "groups": [
+    {
+     "number": "1",
+     "text": "To what degree do you agree with the following statements about your company in general (not your team or manager)?",
+     "line": 142,
+     "questions": [
+      {
+       "id": "CC1.1",
+       "number": "1.1",
+       "text": "My company is true to its mission, vision, and values as demonstrated by the day-to-day actions of employees",
+       "line": 143,
+       "shortLabel": "Values alignment",
+       "driver": "Values",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company is true to its mission, vision and values as demonstrated by the day-to-day actions of employees",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.2",
+       "number": "1.2",
+       "text": "My company openly promotes diversity amongst employees",
+       "line": 144,
+       "shortLabel": "Diversity",
+       "driver": "Values",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company openly promotes diversity amongst employees",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.3",
+       "number": "1.3",
+       "text": "My company and its employees have \"zero-tolerance\" for intimidatory behaviour",
+       "line": 145,
+       "shortLabel": "Intimidation",
+       "driver": "Values",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company and its employees have \"zero-tolerance\" for intimidatory behaviour",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.4",
+       "number": "1.4",
+       "text": "The people with power use it constructively",
+       "line": 146,
+       "shortLabel": "Power",
+       "driver": "Leaders",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "The people with power use it constructively",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.5",
+       "number": "1.5",
+       "text": "Our leaders have a vision for the company which they communicate effectively to employees",
+       "line": 147,
+       "shortLabel": "Leaders",
+       "driver": "Leaders",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Our leaders have a vision for the company which they communicate effectively to employees",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.6",
+       "number": "1.6",
+       "text": "My company does an excellent job of remaining competitive in our industry",
+       "line": 148,
+       "shortLabel": "Adaptive",
+       "driver": "Leaders",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company does an excellent job of remaining competitive in our industry",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.7",
+       "number": "1.7",
+       "text": "I would feel comfortable taking an issue to my manager's manager",
+       "line": 149,
+       "shortLabel": "Reporting line",
+       "driver": "Empowerment",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I would feel comfortable taking an issue to my manager's manager",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.8",
+       "number": "1.8",
+       "text": "My company encourages employees to propose new and better ways of doing things",
+       "line": 150,
+       "shortLabel": "Open",
+       "driver": "Empowerment",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company encourages employees to propose new and better ways of doing things",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.9",
+       "number": "1.9",
+       "text": "My company acts on employee feedback",
+       "line": 151,
+       "shortLabel": "Democratic",
+       "driver": "Empowerment",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company acts on employee feedback",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.10",
+       "number": "1.10",
+       "text": "Employees are treated with respect and dignity at all times",
+       "line": 152,
+       "shortLabel": "Respect",
+       "driver": "Empowerment",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Employees are treated with respect and dignity at all times",
+       "renumbered": "1.1",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.11",
+       "number": "1.11",
+       "text": "My company provides a work environment that allows me to perform at my best",
+       "line": 153,
+       "shortLabel": "Self-actualising",
+       "driver": "Self-actualising",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company provides a work environment that allows me to perform at my best",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "issues": [
+        "I18"
+       ]
+      },
+      {
+       "id": "CC1.12",
+       "number": "1.12",
+       "text": "There is little confrontation and negativity",
+       "line": 154,
+       "shortLabel": "Oppositional",
+       "driver": "Collaboration",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "There is little confrontation and negativity",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.13",
+       "number": "1.13",
+       "text": "My company values collaboration rather than competition between employees",
+       "line": 155,
+       "shortLabel": "Competitive",
+       "driver": "Collaboration",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company values collaboration rather than competition between employees",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.14",
+       "number": "1.14",
+       "text": "My company has very low levels of toxic behaviours such as backstabbing, malicious gossip and hidden agendas",
+       "line": 156,
+       "shortLabel": "Toxicity",
+       "driver": "Collaboration",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company has very low levels of toxic behaviours such as backstabbing, malicious gossip and hidden agendas",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.15",
+       "number": "1.15",
+       "text": "The leave policies of my company cater for the various needs of employees",
+       "line": 157,
+       "shortLabel": "Leave",
+       "driver": "Policies and Practices",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "The leave policies of my company cater for the various needs of employees",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.16",
+       "number": "1.16",
+       "text": "Meetings follow a productive agenda",
+       "line": 158,
+       "shortLabel": "Meetings",
+       "driver": "Policies and Practices",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Meetings follow a productive agenda",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.17",
+       "number": "1.17",
+       "text": "My company has well-defined boundaries regarding what is acceptable/unacceptable behaviour",
+       "line": 159,
+       "shortLabel": "Boundaries",
+       "driver": "Policies and Practices",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My company has well defined boundaries regarding what is acceptable/unacceptable behaviour",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.18",
+       "number": "1.18",
+       "text": "When disciplinary action is needed, the company acts quickly and decisively",
+       "line": 160,
+       "shortLabel": "Permissiveness",
+       "driver": "Policies and Practices",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "When disciplinary action is needed, the company acts quickly and decisively",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.19",
+       "number": "1.19",
+       "text": "Employees generally comply with the company rules/policies",
+       "line": 161,
+       "shortLabel": "Compliance",
+       "driver": "Policies and Practices",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Employees generally comply with the company rules/policies",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.20",
+       "number": "1.20",
+       "text": "Status and reputation is earned through performance, rather than title",
+       "line": 162,
+       "shortLabel": "Status",
+       "driver": "Empowerment",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Status and reputation is earned through performance, rather than title",
+       "renumbered": "1.2",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC1.21",
+       "number": "1.21",
+       "text": "I like the décor and surroundings of my work environment",
+       "line": 163,
+       "shortLabel": "Décor",
+       "driver": "Décor",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree",
+        "N/A"
+       ],
+       "hoverLabel": "I like the décor and surroundings of my work environment",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0,
+        "excluded"
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "issues": [
+        "I18"
+       ]
+      },
+      {
+       "id": "CC1.22",
+       "number": "1.22",
+       "text": "The dress code is appropriate and allows me to be both productive and comfortable",
+       "line": 164,
+       "shortLabel": "Dress code",
+       "driver": "Dress code",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree",
+        "N/A"
+       ],
+       "hoverLabel": "The dress code is appropriate and allows me to be both productive and comfortable",
+       "section": "corporate-culture",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0,
+        "excluded"
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "issues": [
+        "I18"
+       ]
+      }
+     ]
+    },
+    {
+     "number": "2",
+     "text": "On a scale of 0-10 with 0 being very low, and 10 being very high,",
+     "line": 165,
+     "questions": [
+      {
+       "id": "CC2.1",
+       "number": "2.1",
+       "text": "how would you rate your morale?",
+       "line": 166,
+       "shortLabel": "My morale",
+       "driver": "Morale",
+       "design": "Numeric range 0-10",
+       "options": [],
+       "hoverLabel": "How would you rate your morale?",
+       "section": "corporate-culture",
+       "scale": "zeroTen",
+       "scaleSource": "file",
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC2.2",
+       "number": "2.2",
+       "text": "how would you rate the morale of your peers?",
+       "line": 167,
+       "shortLabel": "Morale - colleagues",
+       "driver": "Morale",
+       "design": "Numeric range 0-10",
+       "options": [],
+       "hoverLabel": "How would you rate the morale of your peers?",
+       "section": "corporate-culture",
+       "scale": "zeroTen",
+       "scaleSource": "file",
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "CC2.3",
+       "number": "2.3",
+       "text": "how likely are you to recommend your company to others as a place to work?",
+       "line": 168,
+       "shortLabel": "Great place to work",
+       "driver": "Pride",
+       "design": "Numeric range 0-10",
+       "options": [],
+       "hoverLabel": "I would recommend my company to others as a place to work",
+       "section": "corporate-culture",
+       "scale": "zeroTen",
+       "scaleSource": "file",
+       "status": "scored",
+       "statusSource": "file",
+       "issues": [
+        "I20"
+       ]
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "CC3",
+       "number": "3",
+       "text": "What’s one thing you would change about the company culture if you could?",
+       "line": 169,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "corporate-culture",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "business-essentials",
+   "name": "Business Essentials",
+   "kind": "explorer",
+   "code": "S",
+   "aka": "Business Fundamentals (scoring sheets)",
+   "fileHeading": "BUSINESS ESSENTIALS",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How would you rate the following aspects of your organisation?",
+     "line": 171,
+     "questions": [
+      {
+       "id": "S1.1",
+       "number": "1.1",
+       "text": "Systems (the right processes to get the job done - HR, IT, sales, marketing, operations, etc.)",
+       "line": 172,
+       "shortLabel": "Systems",
+       "driver": "Policies",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right processes to get the job done - HR, IT, sales, marketing, operations, etc.",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.2",
+       "number": "1.2",
+       "text": "Strategy (the right plan to build/maintain a competitive advantage)",
+       "line": 173,
+       "shortLabel": "Strategy",
+       "driver": "Policies",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right plan to build/maintain a competitive advantage",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.3",
+       "number": "1.3",
+       "text": "Structure (the right \"organisational structure\" - who reports to whom, roles and responsibilities)",
+       "line": 174,
+       "shortLabel": "Structure",
+       "driver": "Policies",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right \"organisational structure\" - who reports to whom, roles and responsibilities",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.4",
+       "number": "1.4",
+       "text": "Sustainability (is the business \"future proof\"?)",
+       "line": 175,
+       "shortLabel": "Sustainability",
+       "driver": "Policies",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "Is the business \"futureproof\"?",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.5",
+       "number": "1.5",
+       "text": "Shared values (the right culture and organisational values)",
+       "line": 176,
+       "shortLabel": "Shared values",
+       "driver": "People",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right culture and organisational values",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.6",
+       "number": "1.6",
+       "text": "Management Style (the right approach to managing the business and its people)",
+       "line": 177,
+       "shortLabel": "Management style",
+       "driver": "People",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right approach to managing the business and its people",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.7",
+       "number": "1.7",
+       "text": "Competitive Salaries (pay scales at or above industry norms)",
+       "line": 178,
+       "shortLabel": "Salaries",
+       "driver": "Policies",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "Pay scales at or above industry norms",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.8",
+       "number": "1.8",
+       "text": "Staff (the right people)",
+       "line": 179,
+       "shortLabel": "Staff",
+       "driver": "People",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right people",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.9",
+       "number": "1.9",
+       "text": "Skills (the right expertise and competencies of employees)",
+       "line": 180,
+       "shortLabel": "Skills",
+       "driver": "People",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "The right expertise and competencies of employees",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      },
+      {
+       "id": "S1.10",
+       "number": "1.10",
+       "text": "Support (adequate levels of support for staff - training, resources, and management support)",
+       "line": 181,
+       "shortLabel": "Support",
+       "driver": "People",
+       "design": "List",
+       "options": [
+        "Excellent",
+        "Good",
+        "Average",
+        "Poor",
+        "Very poor"
+       ],
+       "hoverLabel": "Adequate levels of support for staff - training, resources, and management support",
+       "section": "business-essentials",
+       "scale": "rating5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "S2",
+       "number": "2",
+       "text": "Are there any other factors you feel are compromising the organisation's overall performance?",
+       "line": 182,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text (no type given)",
+       "options": [],
+       "hoverLabel": null,
+       "section": "business-essentials",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "Free text: never scored (I10)."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "physical-work-environment",
+   "name": "Physical Work Environment",
+   "kind": "explorer",
+   "code": "PhysWE",
+   "fileHeading": "PHYSICAL WORK ENVIRONMENT",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How much do you agree/disagree with the following statements regarding working from office? (asked from WFO + WFH perspective separately given the user's status)",
+     "line": 184,
+     "questions": [
+      {
+       "id": "PhysWE1.1",
+       "number": "1.1",
+       "text": "The lighting is good",
+       "line": 185,
+       "shortLabel": "Lighting",
+       "driver": "Comfort",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "The lighting is good",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.2",
+       "number": "1.2",
+       "text": "The temperature is fine",
+       "line": 186,
+       "shortLabel": "Temperature",
+       "driver": "Comfort",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "The temperature is fine",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.3",
+       "number": "1.3",
+       "text": "Inside noise and chatter is not a problem",
+       "line": 187,
+       "shortLabel": "Noise/Chatter",
+       "driver": "Noise",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Inside noise and chatter is not a problem",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.4",
+       "number": "1.4",
+       "text": "Outside noise is not a problem",
+       "line": 188,
+       "shortLabel": "Outside noise",
+       "driver": "Noise",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Outside noise is not a problem",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.5",
+       "number": "1.5",
+       "text": "My workstation is ergonomically sound and comfortable",
+       "line": 189,
+       "shortLabel": "Ergonomics",
+       "driver": "Comfort",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My workstation is ergonomically sound and comfortable",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.6",
+       "number": "1.6",
+       "text": "General tidiness and hygiene are good",
+       "line": 190,
+       "shortLabel": "Cleanliness",
+       "driver": "General Quality",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "General tidiness and hygiene are good",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.7",
+       "number": "1.7",
+       "text": "I have all the equipment I need to do my job (phone, laptop, etc.)",
+       "line": 191,
+       "shortLabel": "Equipment",
+       "driver": "Equipment",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I have all the equipment I need to do my job (phone, laptop etc.)",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "driverSource": "confirmed",
+       "driverNote": "No Driver in the file: its short label is its Driver (I18).",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14",
+        "I18"
+       ]
+      },
+      {
+       "id": "PhysWE1.8",
+       "number": "1.8",
+       "text": "The overall quality of my workspace/workstation is great",
+       "line": 192,
+       "shortLabel": "Office quality",
+       "driver": "General Quality",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "The overall quality of my workspace/workstation is great",
+       "section": "physical-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "PhysWE1.9",
+       "number": "1.9",
+       "text": "Apart from the items above, what else do you feel could be done to improve your physical work environment?",
+       "line": 193,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "physical-work-environment",
+       "status": "unscored",
+       "statusSource": "file"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "soft-work-environment",
+   "name": "Soft Work Environment",
+   "kind": "explorer",
+   "code": "SoftWE",
+   "fileHeading": "SOFT WORK ENVIRONMENT",
+   "groups": [
+    {
+     "number": "1",
+     "text": "How much do you agree/disagree with the following statements regarding working from office? (asked from WFO + WFH perspective separately given the user's status)",
+     "line": 195,
+     "questions": [
+      {
+       "id": "SoftWE1.1",
+       "number": "1.1",
+       "text": "Work is flexible enough to accommodate my needs",
+       "line": 196,
+       "shortLabel": "Flexibility",
+       "driver": "Flexibility",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "Work is flexible enough to accommodate my needs",
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "SoftWE1.2",
+       "number": "1.2",
+       "text": "I am rarely disrupted by others",
+       "line": 197,
+       "shortLabel": "Disruptions",
+       "driver": "Distractions and disruptions",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I am rarely disrupted by others",
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "SoftWE1.3",
+       "number": "1.3",
+       "text": "I get all the IT assistance I need",
+       "line": 198,
+       "shortLabel": "IT assistance",
+       "driver": "IT",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I get all the IT assistance I need",
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "SoftWE1.4",
+       "number": "1.4",
+       "text": "My software is adequate and up to date",
+       "line": 199,
+       "shortLabel": "Quality of software",
+       "driver": "IT",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My software is adequate and up to date",
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "SoftWE1.5",
+       "number": "1.5",
+       "text": "I am not disrupted by non-work related phone calls and social media",
+       "line": 200,
+       "shortLabel": "Phone/PC distractions",
+       "driver": "Distractions and disruptions",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "I am not disrupted by non-work related phone calls and social media",
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14"
+       ]
+      },
+      {
+       "id": "SoftWE1.6",
+       "number": "1.6",
+       "text": "My internet connectivity is consistent and sufficiently fast",
+       "line": 201,
+       "shortLabel": "Internet connectivity",
+       "driver": "IT",
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": "My internet connectivity is consistent and sufficiently fast",
+       "section": "soft-work-environment",
+       "hoverInFile": "My internet connectivity is consistant and sufficiently fast",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "scored",
+       "statusSource": "file",
+       "combine": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+       "issues": [
+        "I14",
+        "I19"
+       ]
+      },
+      {
+       "id": "SoftWE1.7",
+       "number": "1.7",
+       "text": "Apart from the items above, what else do you feel could be done to improve your work environment?",
+       "line": 202,
+       "shortLabel": null,
+       "driver": null,
+       "design": "Free text",
+       "options": [],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "status": "unscored",
+       "statusSource": "confirmed",
+       "statusNote": "In both lists in the file; free text is never scored (I10).",
+       "issues": [
+        "I10"
+       ]
+      }
+     ]
+    },
+    {
+     "number": "2",
+     "text": "How much do you agree/disagree with the following statements regarding working from home? (additional questions for a WFH user)",
+     "line": 203,
+     "questions": [
+      {
+       "id": "SoftWE2.1",
+       "number": "2.1",
+       "text": "I always remain focussed and avoid distractions when working from home",
+       "line": 204,
+       "shortLabel": "Focus",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Non-scored (Q2), but the scoring sheet gives it the agreement scale: shown on its own.",
+       "audience": "People who work from home"
+      },
+      {
+       "id": "SoftWE2.2",
+       "number": "2.2",
+       "text": "I am self-disciplined and motivated to be productive",
+       "line": 205,
+       "shortLabel": "Motivation",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Non-scored (Q2), but the scoring sheet gives it the agreement scale: shown on its own.",
+       "audience": "People who work from home"
+      },
+      {
+       "id": "SoftWE2.3",
+       "number": "2.3",
+       "text": "I feel no negative impact being socially isolated from my coworkers",
+       "line": 206,
+       "shortLabel": "Isolation",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Non-scored (Q2), but the scoring sheet gives it the agreement scale: shown on its own.",
+       "audience": "People who work from home"
+      },
+      {
+       "id": "SoftWE2.4",
+       "number": "2.4",
+       "text": "I work well without face-to-face supervision",
+       "line": 207,
+       "shortLabel": "Supervision",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Non-scored (Q2), but the scoring sheet gives it the agreement scale: shown on its own.",
+       "audience": "People who work from home"
+      },
+      {
+       "id": "SoftWE2.5",
+       "number": "2.5",
+       "text": "I can collaborate and communicate effectively whilst working from home",
+       "line": 208,
+       "shortLabel": "Communication",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Non-scored (Q2), but the scoring sheet gives it the agreement scale: shown on its own.",
+       "audience": "People who work from home"
+      },
+      {
+       "id": "SoftWE2.6",
+       "number": "2.6",
+       "text": "The level of privacy I have while working from home is sufficient",
+       "line": 209,
+       "shortLabel": "Privacy",
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "file",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "file",
+       "statusNote": "Non-scored (Q2), but the scoring sheet gives it the agreement scale: shown on its own.",
+       "audience": "People who work from home"
+      },
+      {
+       "id": "SoftWE2.7",
+       "number": "2.7",
+       "text": "When working from home, approximately how many minutes per day do you save in commuting time?",
+       "line": 210,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "0 min -15 min",
+        "15 min - 30 min",
+        "30 min - 45 min",
+        "45 min -1 hr",
+        "1 hr - 1 hr 15 min",
+        "1 hr 15 min - 1 hr 30 min",
+        "1 hr 30 min - 1 hr 45 min",
+        "1 hr 45 min - 2 hr",
+        "2 hr - 2 hr 30 min",
+        "2 hr 30 min - 3 hr",
+        "More than 3 hrs"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "status": "unscored",
+       "statusSource": "file",
+       "audience": "People who work from home"
+      }
+     ]
+    },
+    {
+     "number": null,
+     "text": null,
+     "questions": [
+      {
+       "id": "SoftWE3",
+       "number": "3",
+       "text": "How would you rate your productivity when working from home compared to working from \"the office\"? (for users that do both - WFH + WFO)",
+       "line": 211,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Much more productive",
+        "More productive",
+        "About the same",
+        "Less productive",
+        "Much less productive"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "status": "unscored",
+       "statusSource": "file",
+       "audience": "People who work both from home and from the office"
+      }
+     ]
+    },
+    {
+     "number": "4",
+     "text": "How much do you agree/disagree with the following statements on managing employees that work from home? (for managers)",
+     "line": 212,
+     "questions": [
+      {
+       "id": "SoftWE4.1",
+       "number": "4.1",
+       "text": "I feel confident to effectively manage staff who work from home",
+       "line": 213,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "proposed",
+       "scaleNote": "Agreement statements for managers, not in the sheet's list (non-scored).",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "proposed",
+       "statusNote": "Non-scored (Q4); agreement statements, so they can be shown on their own.",
+       "audience": "Managers"
+      },
+      {
+       "id": "SoftWE4.2",
+       "number": "4.2",
+       "text": "I trust employees who work from home to put in a full day's work",
+       "line": 214,
+       "shortLabel": null,
+       "driver": null,
+       "design": "List",
+       "options": [
+        "Strongly agree",
+        "Agree",
+        "Neutral",
+        "Disagree",
+        "Strongly disagree"
+       ],
+       "hoverLabel": null,
+       "section": "soft-work-environment",
+       "scale": "agree5",
+       "scaleSource": "proposed",
+       "scaleNote": "Agreement statements for managers, not in the sheet's list (non-scored).",
+       "scores": [
+        100,
+        75,
+        50,
+        25,
+        0
+       ],
+       "status": "separate",
+       "statusSource": "proposed",
+       "statusNote": "Non-scored (Q4); agreement statements, so they can be shown on their own.",
+       "audience": "Managers"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "scales": {
+  "agree5": {
+   "id": "agree5",
+   "name": "Agreement (5)",
+   "appliesTo": "CC1.1-1.22, EE1.1-1.10, JS2.1-2.6, PWE1.1-1.6, MS2.2-2.3, EC1.1-1.6, PhysWE 1.1-1.8, SoftWE 1.1-1.6,2.1-2.6",
+   "options": [
+    {
+     "label": "Strongly agree",
+     "score": 100
+    },
+    {
+     "label": "Agree",
+     "score": 75
+    },
+    {
+     "label": "Neutral",
+     "score": 50
+    },
+    {
+     "label": "Disagree",
+     "score": 25
+    },
+    {
+     "label": "Strongly disagree",
+     "score": 0
+    }
+   ]
+  },
+  "zeroTen": {
+   "id": "zeroTen",
+   "name": "0 to 10",
+   "appliesTo": "CC2.1-2.3",
+   "options": [
+    {
+     "label": "0",
+     "score": 0
+    },
+    {
+     "label": "1",
+     "score": 10
+    },
+    {
+     "label": "2",
+     "score": 20
+    },
+    {
+     "label": "3",
+     "score": 30
+    },
+    {
+     "label": "4",
+     "score": 40
+    },
+    {
+     "label": "5",
+     "score": 50
+    },
+    {
+     "label": "6",
+     "score": 60
+    },
+    {
+     "label": "7",
+     "score": 70
+    },
+    {
+     "label": "8",
+     "score": 80
+    },
+    {
+     "label": "9",
+     "score": 90
+    },
+    {
+     "label": "10",
+     "score": 100
+    }
+   ]
+  },
+  "safety5": {
+   "id": "safety5",
+   "name": "Safety (5)",
+   "appliesTo": "EC2",
+   "options": [
+    {
+     "label": "Yes, very safe",
+     "score": 100
+    },
+    {
+     "label": "Pretty safe",
+     "score": 75
+    },
+    {
+     "label": "Unsure",
+     "score": 50
+    },
+    {
+     "label": "Not that safe",
+     "score": 25
+    },
+    {
+     "label": "Not safe at all",
+     "score": 0
+    }
+   ]
+  },
+  "oneFive": {
+   "id": "oneFive",
+   "name": "1 to 5 (smileys)",
+   "appliesTo": "JS1.1-1.3",
+   "options": [
+    {
+     "label": "1",
+     "score": 20
+    },
+    {
+     "label": "2",
+     "score": 40
+    },
+    {
+     "label": "3",
+     "score": 60
+    },
+    {
+     "label": "4",
+     "score": 80
+    },
+    {
+     "label": "5",
+     "score": 100
+    }
+   ],
+   "note": "Shown to people as five smileys: 5 is the biggest smile, so 5 is good (confirmed, I13)."
+  },
+  "strainFile": {
+   "id": "strainFile",
+   "name": "Strain (scoring sheet: 4 levels)",
+   "appliesTo": "FOW1.1-1.4",
+   "options": [
+    {
+     "label": "A lot",
+     "score": 0
+    },
+    {
+     "label": "A moderate amount",
+     "score": 33
+    },
+    {
+     "label": "A little",
+     "score": 66
+    },
+    {
+     "label": "Not at all",
+     "score": 100
+    }
+   ],
+   "note": "Out of date: the survey's own five strain levels are used instead (confirmed, I3)."
+  },
+  "balance5": {
+   "id": "balance5",
+   "name": "Balance (5)",
+   "appliesTo": "FOW2",
+   "options": [
+    {
+     "label": "Ideal",
+     "score": 100
+    },
+    {
+     "label": "Satisfactory",
+     "score": 75
+    },
+    {
+     "label": "Challenging",
+     "score": 50
+    },
+    {
+     "label": "Extremely challenging",
+     "score": 25
+    },
+    {
+     "label": "Unmanageable",
+     "score": 0
+    }
+   ]
+  },
+  "supportFile": {
+   "id": "supportFile",
+   "name": "Support network (scoring sheet: 4 levels)",
+   "appliesTo": "FOW3",
+   "options": [
+    {
+     "label": "Non-existent",
+     "score": 0
+    },
+    {
+     "label": "Minimal",
+     "score": 33
+    },
+    {
+     "label": "Sufficient",
+     "score": 66
+    },
+    {
+     "label": "Extensive",
+     "score": 100
+    }
+   ],
+   "note": "Out of date: the question is scored on the agreement scale (confirmed, I4)."
+  },
+  "fruitVeg": {
+   "id": "fruitVeg",
+   "name": "Fruit and vegetables",
+   "appliesTo": "PHYS1",
+   "options": [
+    {
+     "label": "None",
+     "score": 0
+    },
+    {
+     "label": "1",
+     "score": 17
+    },
+    {
+     "label": "2",
+     "score": 34
+    },
+    {
+     "label": "3",
+     "score": 51
+    },
+    {
+     "label": "4",
+     "score": 68
+    },
+    {
+     "label": "5 to 6",
+     "score": 85
+    },
+    {
+     "label": "7+",
+     "score": 100
+    }
+   ]
+  },
+  "exercise": {
+   "id": "exercise",
+   "name": "Exercise hours",
+   "appliesTo": "PHYS2",
+   "options": [
+    {
+     "label": "None",
+     "score": 0
+    },
+    {
+     "label": "Less than 0.5",
+     "score": 17
+    },
+    {
+     "label": "0.5 to 1",
+     "score": 34
+    },
+    {
+     "label": "1 to 2",
+     "score": 51
+    },
+    {
+     "label": "2 to 3",
+     "score": 68
+    },
+    {
+     "label": "3 to 4",
+     "score": 85
+    },
+    {
+     "label": "Greater than 4",
+     "score": 100
+    }
+   ]
+  },
+  "smoking": {
+   "id": "smoking",
+   "name": "Cigarettes a day",
+   "appliesTo": "PHYS3",
+   "options": [
+    {
+     "label": "None",
+     "score": 100
+    },
+    {
+     "label": "Less than 5",
+     "score": 67
+    },
+    {
+     "label": "5 to 20",
+     "score": 33
+    },
+    {
+     "label": "Greater than 20",
+     "score": 0
+    }
+   ]
+  },
+  "alcohol": {
+   "id": "alcohol",
+   "name": "Standard drinks a week",
+   "appliesTo": "PHYS4",
+   "options": [
+    {
+     "label": "0",
+     "score": 100
+    },
+    {
+     "label": "1 to 7",
+     "score": 100
+    },
+    {
+     "label": "8 to 14",
+     "score": 80
+    },
+    {
+     "label": "15 to 21",
+     "score": 60
+    },
+    {
+     "label": "22 to 28",
+     "score": 40
+    },
+    {
+     "label": "29 to 35",
+     "score": 20
+    },
+    {
+     "label": "36+",
+     "score": 0
+    }
+   ]
+  },
+  "frequency4": {
+   "id": "frequency4",
+   "name": "Frequency (4)",
+   "appliesTo": "PHYS5, PSY1.1-1.9",
+   "options": [
+    {
+     "label": "Never",
+     "score": 100
+    },
+    {
+     "label": "Sometimes",
+     "score": 66.67
+    },
+    {
+     "label": "Often",
+     "score": 33.33
+    },
+    {
+     "label": "Almost Always",
+     "score": 0
+    }
+   ]
+  },
+  "bmi": {
+   "id": "bmi",
+   "name": "BMI band",
+   "appliesTo": "PHYS6",
+   "options": [
+    {
+     "label": ">35",
+     "score": 0
+    },
+    {
+     "label": "33-35",
+     "score": 17
+    },
+    {
+     "label": "30-32",
+     "score": 34
+    },
+    {
+     "label": "27-29",
+     "score": 51
+    },
+    {
+     "label": "25-26",
+     "score": 68
+    },
+    {
+     "label": "24",
+     "score": 85
+    },
+    {
+     "label": "<24",
+     "score": 100
+    }
+   ]
+  },
+  "resilience5": {
+   "id": "resilience5",
+   "name": "Resilience (5)",
+   "appliesTo": "PSY3.1-3.3",
+   "options": [
+    {
+     "label": "Absolutely yes",
+     "score": 100
+    },
+    {
+     "label": "Very much so",
+     "score": 75
+    },
+    {
+     "label": "Somewhat",
+     "score": 50
+    },
+    {
+     "label": "More or less",
+     "score": 25
+    },
+    {
+     "label": "Not really",
+     "score": 0
+    }
+   ]
+  },
+  "stress4": {
+   "id": "stress4",
+   "name": "Stressfulness (4)",
+   "appliesTo": "PSY4 and 5",
+   "options": [
+    {
+     "label": "Not stressful at all",
+     "score": 100
+    },
+    {
+     "label": "A little stressful",
+     "score": 66
+    },
+    {
+     "label": "Moderately stressful",
+     "score": 33
+    },
+    {
+     "label": "Extremely stressful",
+     "score": 0
+    }
+   ]
+  },
+  "effective4": {
+   "id": "effective4",
+   "name": "Effectiveness (4)",
+   "appliesTo": "MS2.4",
+   "note": "The sheet's MS2.4 is the survey's MS2.6 (confirmed, I7).",
+   "options": [
+    {
+     "label": "Very effective",
+     "score": 100
+    },
+    {
+     "label": "Somewhat effective",
+     "score": 67
+    },
+    {
+     "label": "Not very effective",
+     "score": 33
+    },
+    {
+     "label": "Poor",
+     "score": 0
+    }
+   ]
+  },
+  "level5": {
+   "id": "level5",
+   "name": "Very low to very high",
+   "appliesTo": "SR1.1,1.3,1.5 (MS)",
+   "options": [
+    {
+     "label": "Very low",
+     "score": 0
+    },
+    {
+     "label": "Low",
+     "score": 25
+    },
+    {
+     "label": "Average",
+     "score": 50
+    },
+    {
+     "label": "High",
+     "score": 75
+    },
+    {
+     "label": "Very high",
+     "score": 100
+    }
+   ],
+   "note": "No question in the survey uses these options. Probably the Situational Leadership result, which isn't asked directly (open, I6)."
+  },
+  "rating5": {
+   "id": "rating5",
+   "name": "Rating (5)",
+   "appliesTo": "S1.1-1.10",
+   "options": [
+    {
+     "label": "Excellent",
+     "score": 100
+    },
+    {
+     "label": "Good",
+     "score": 75
+    },
+    {
+     "label": "Average",
+     "score": 50
+    },
+    {
+     "label": "Poor",
+     "score": 25
+    },
+    {
+     "label": "Very poor",
+     "score": 0
+    }
+   ]
+  },
+  "strain5": {
+   "id": "strain5",
+   "name": "Strain (5)",
+   "confirmed": true,
+   "options": [
+    {
+     "label": "Severe strain",
+     "score": 0
+    },
+    {
+     "label": "High strain",
+     "score": 25
+    },
+    {
+     "label": "Moderate strain",
+     "score": 50
+    },
+    {
+     "label": "Low strain",
+     "score": 75
+    },
+    {
+     "label": "No strain",
+     "score": 100
+    }
+   ],
+   "note": "Not in the file; confirmed by the product owner (I3). N/A is left out of the average."
+  },
+  "coworkers5": {
+   "id": "coworkers5",
+   "name": "How many coworkers (5)",
+   "confirmed": true,
+   "options": [
+    {
+     "label": "All",
+     "score": 100
+    },
+    {
+     "label": "Most",
+     "score": 75
+    },
+    {
+     "label": "About half",
+     "score": 50
+    },
+    {
+     "label": "Some",
+     "score": 25
+    },
+    {
+     "label": "None",
+     "score": 0
+    }
+   ],
+   "note": "Not in the file; confirmed by the product owner (I5)."
+  },
+  "hpq": {
+   "id": "hpq",
+   "name": "HPQ 0 to 10",
+   "options": [
+    {
+     "label": "0",
+     "score": 0
+    },
+    {
+     "label": "1",
+     "score": 10
+    },
+    {
+     "label": "2",
+     "score": 20
+    },
+    {
+     "label": "3",
+     "score": 30
+    },
+    {
+     "label": "4",
+     "score": 40
+    },
+    {
+     "label": "5",
+     "score": 50
+    },
+    {
+     "label": "6",
+     "score": 60
+    },
+    {
+     "label": "7",
+     "score": 70
+    },
+    {
+     "label": "8",
+     "score": 80
+    },
+    {
+     "label": "9",
+     "score": 90
+    },
+    {
+     "label": "10",
+     "score": 100
+    }
+   ],
+   "note": "Health and Work Performance Questionnaire. Not part of the SHAPE score; read on its own (absolute performance = Q16.3 × 10)."
+  }
+ },
+ "scoredList": [
+  [
+   "Physical Health",
+   "1-6"
+  ],
+  [
+   "Psychological Health",
+   "1"
+  ],
+  [
+   "Factors Outside Work",
+   "1.1-1.4, 2-3"
+  ],
+  [
+   "Coworker Dynamic",
+   "1"
+  ],
+  [
+   "Employee Commitment",
+   "1-2"
+  ],
+  [
+   "Employee Engagement",
+   "1"
+  ],
+  [
+   "Job Satisfaction",
+   "1.1, 2"
+  ],
+  [
+   "Manager Style",
+   "1, 2.1-2.4"
+  ],
+  [
+   "Corporate Culture",
+   "1-2"
+  ],
+  [
+   "Business Fundamentals",
+   "1"
+  ],
+  [
+   "Physical Work Environment",
+   "1.1-1.8"
+  ],
+  [
+   "Soft Work Environment",
+   "1.1-1.7"
+  ]
+ ],
+ "nonScoredList": [
+  [
+   "Physical Health",
+   "7"
+  ],
+  [
+   "Physical Health",
+   "8"
+  ],
+  [
+   "Psychological Health",
+   "2"
+  ],
+  [
+   "Psychological Health",
+   "3"
+  ],
+  [
+   "Psychological Health",
+   "4"
+  ],
+  [
+   "Psychological Health",
+   "5"
+  ],
+  [
+   "Psychological Health",
+   "6"
+  ],
+  [
+   "Factors Outside Work",
+   "1.5"
+  ],
+  [
+   "Job Satisfaction",
+   "1.2"
+  ],
+  [
+   "Job Satisfaction",
+   "1.3"
+  ],
+  [
+   "Manager Style",
+   "2.5"
+  ],
+  [
+   "Corporate Culture",
+   "3"
+  ],
+  [
+   "Physical Work Environment",
+   "1.9"
+  ],
+  [
+   "Soft Work Environment",
+   "1.7"
+  ],
+  [
+   "Soft Work Environment",
+   "2"
+  ],
+  [
+   "Soft Work Environment",
+   "3"
+  ],
+  [
+   "Soft Work Environment",
+   "4"
+  ]
+ ],
+ "drivers": [
+  {
+   "name": "Nutrition",
+   "explorers": [
+    "physical-health"
+   ],
+   "questions": [
+    "PHYS1",
+    "PHYS6"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Exercise",
+   "explorers": [
+    "physical-health"
+   ],
+   "questions": [
+    "PHYS2"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Smoking",
+   "explorers": [
+    "physical-health"
+   ],
+   "questions": [
+    "PHYS3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Alcohol",
+   "explorers": [
+    "physical-health"
+   ],
+   "questions": [
+    "PHYS4"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Sleep",
+   "explorers": [
+    "physical-health"
+   ],
+   "questions": [
+    "PHYS5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Stress",
+   "explorers": [
+    "psychological-health"
+   ],
+   "questions": [
+    "PSY1.1",
+    "PSY1.3",
+    "PSY1.5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Depression",
+   "explorers": [
+    "psychological-health"
+   ],
+   "questions": [
+    "PSY1.2",
+    "PSY1.6",
+    "PSY1.8"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Anxiety",
+   "explorers": [
+    "psychological-health"
+   ],
+   "questions": [
+    "PSY1.4",
+    "PSY1.7",
+    "PSY1.9"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Home duties",
+   "explorers": [
+    "life-outside-work"
+   ],
+   "questions": [
+    "FOW1.1",
+    "FOW1.2"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Commuting",
+   "explorers": [
+    "life-outside-work"
+   ],
+   "questions": [
+    "FOW1.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Work-life balance",
+   "explorers": [
+    "life-outside-work"
+   ],
+   "questions": [
+    "FOW1.4",
+    "FOW2"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Support network",
+   "explorers": [
+    "life-outside-work"
+   ],
+   "questions": [
+    "FOW3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Engaging role",
+   "explorers": [
+    "job-satisfaction"
+   ],
+   "questions": [
+    "JS1.1",
+    "JS2.1",
+    "JS2.2",
+    "JS2.5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Workload",
+   "explorers": [
+    "job-satisfaction"
+   ],
+   "questions": [
+    "JS2.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Resources",
+   "explorers": [
+    "job-satisfaction"
+   ],
+   "questions": [
+    "JS2.4"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Job security",
+   "explorers": [
+    "employee-commitment"
+   ],
+   "questions": [
+    "EC1.1"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "R&R",
+   "explorers": [
+    "employee-commitment"
+   ],
+   "questions": [
+    "EC1.2",
+    "EC1.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Belonging",
+   "explorers": [
+    "employee-commitment"
+   ],
+   "questions": [
+    "EC1.4"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Career prospects",
+   "explorers": [
+    "employee-commitment"
+   ],
+   "questions": [
+    "EC1.5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Enthusiasm",
+   "explorers": [
+    "employee-commitment"
+   ],
+   "questions": [
+    "EC1.6"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Safety",
+   "explorers": [
+    "employee-commitment"
+   ],
+   "questions": [
+    "EC2"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Working relationships",
+   "explorers": [
+    "employee-engagement"
+   ],
+   "questions": [
+    "EE1.1",
+    "EE1.2",
+    "EE1.8"
+   ],
+   "source": "confirmed",
+   "nameInFile": "Coworker Dynamic"
+  },
+  {
+   "name": "Growth and development",
+   "explorers": [
+    "employee-engagement"
+   ],
+   "questions": [
+    "EE1.3",
+    "EE1.4"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Sense of importance",
+   "explorers": [
+    "employee-engagement"
+   ],
+   "questions": [
+    "EE1.5",
+    "EE1.6",
+    "EE1.9"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Know what's expected",
+   "explorers": [
+    "employee-engagement"
+   ],
+   "questions": [
+    "EE1.7"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Hardworking",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.1"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Respectful",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.2"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Optimistic attitude",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Open to new ideas",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.4"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Respecting differences",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Supportive",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.6"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Flexible",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.7"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Resourceful",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.8"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Good communication",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.9"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Confront difficult issues",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.10"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Trustworthy",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.11"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Adding value",
+   "explorers": [
+    "coworker-dynamic"
+   ],
+   "questions": [
+    "CD1.12"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Situational Leadership",
+   "explorers": [
+    "manager-style"
+   ],
+   "questions": [
+    "MS1.1",
+    "MS1.2",
+    "MS1.3",
+    "MS1.4",
+    "MS2.1"
+   ],
+   "source": "proposed"
+  },
+  {
+   "name": "Relationship with manager",
+   "explorers": [
+    "manager-style"
+   ],
+   "questions": [
+    "MS2.2",
+    "MS2.6"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Handling incompetence",
+   "explorers": [
+    "manager-style"
+   ],
+   "questions": [
+    "MS2.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Role clarity",
+   "explorers": [
+    "manager-style"
+   ],
+   "questions": [
+    "MS2.4"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Values",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.1",
+    "CC1.2",
+    "CC1.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Leaders",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.4",
+    "CC1.5",
+    "CC1.6"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Empowerment",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.7",
+    "CC1.8",
+    "CC1.9",
+    "CC1.10",
+    "CC1.20"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Self-actualising",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.11"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Collaboration",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.12",
+    "CC1.13",
+    "CC1.14"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Policies and Practices",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.15",
+    "CC1.16",
+    "CC1.17",
+    "CC1.18",
+    "CC1.19"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Décor",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.21"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Dress code",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC1.22"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Morale",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC2.1",
+    "CC2.2"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Pride",
+   "explorers": [
+    "corporate-culture"
+   ],
+   "questions": [
+    "CC2.3"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Policies",
+   "explorers": [
+    "business-essentials"
+   ],
+   "questions": [
+    "S1.1",
+    "S1.2",
+    "S1.3",
+    "S1.4",
+    "S1.7"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "People",
+   "explorers": [
+    "business-essentials"
+   ],
+   "questions": [
+    "S1.5",
+    "S1.6",
+    "S1.8",
+    "S1.9",
+    "S1.10"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Comfort",
+   "explorers": [
+    "physical-work-environment"
+   ],
+   "questions": [
+    "PhysWE1.1",
+    "PhysWE1.2",
+    "PhysWE1.5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Noise",
+   "explorers": [
+    "physical-work-environment"
+   ],
+   "questions": [
+    "PhysWE1.3",
+    "PhysWE1.4"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "General Quality",
+   "explorers": [
+    "physical-work-environment"
+   ],
+   "questions": [
+    "PhysWE1.6",
+    "PhysWE1.8"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Equipment",
+   "explorers": [
+    "physical-work-environment"
+   ],
+   "questions": [
+    "PhysWE1.7"
+   ],
+   "source": "confirmed"
+  },
+  {
+   "name": "Flexibility",
+   "explorers": [
+    "soft-work-environment"
+   ],
+   "questions": [
+    "SoftWE1.1"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "Distractions and disruptions",
+   "explorers": [
+    "soft-work-environment"
+   ],
+   "questions": [
+    "SoftWE1.2",
+    "SoftWE1.5"
+   ],
+   "source": "file"
+  },
+  {
+   "name": "IT",
+   "explorers": [
+    "soft-work-environment"
+   ],
+   "questions": [
+    "SoftWE1.3",
+    "SoftWE1.4",
+    "SoftWE1.6"
+   ],
+   "source": "file"
+  }
+ ],
+ "derived": [
+  {
+   "id": "driver",
+   "name": "Driver score",
+   "source": "confirmed",
+   "rule": "The mean of its scored questions' scores (0 to 100). An N/A answer is left out.",
+   "from": "scored questions with that Driver"
+  },
+  {
+   "id": "explorer",
+   "name": "Explorer score",
+   "source": "confirmed",
+   "rule": "The mean of its scored questions' scores (I2). An N/A answer is left out. Shown separately and unscored questions never count.",
+   "from": "scored questions in the Explorer"
+  },
+  {
+   "id": "overall",
+   "name": "SHAPE score (overall)",
+   "source": "proposed",
+   "rule": "The mean of the 12 Explorer scores, so each Explorer counts equally. The mean is confirmed (I2); averaging Explorers rather than every question is the choice made for now.",
+   "from": "the 12 Explorer scores"
+  },
+  {
+   "id": "qlb",
+   "name": "Question level breakdown (QLB)",
+   "source": "confirmed",
+   "rule": "Not a score: a chart of an Explorer broken down question by question (I2).",
+   "from": "each scored question's mean"
+  },
+  {
+   "id": "status",
+   "name": "Status",
+   "source": "file",
+   "rule": "Struggling 0 to 59, Striving 60 to 79, Flourishing 80 to 100 (the product's scale, lib/bands.js).",
+   "from": "any score"
+  },
+  {
+   "id": "workModel",
+   "name": "Work model",
+   "source": "confirmed",
+   "rule": "Office if every contracted hour is at the office, Home if every hour is at home, Hybrid if both (I16). Not asked directly.",
+   "from": "Your Profile Q12 (office and home hours)"
+  },
+  {
+   "id": "age",
+   "name": "Age",
+   "source": "file",
+   "rule": "Years since the date of birth, on the day the round closes.",
+   "from": "Your Profile Q3"
+  },
+  {
+   "id": "enps",
+   "name": "eNPS",
+   "source": "confirmed",
+   "rule": "Promoters answer 9 or 10, Passives 7 or 8, Detractors 0 to 6. eNPS = % Promoters − % Detractors (−100 to 100). Only from Corporate Culture 2.3 (I20); it also counts in Corporate Culture as a 0 to 100 score.",
+   "from": "CC2.3"
+  },
+  {
+   "id": "mentalWellbeing",
+   "name": "Mental well-being",
+   "source": "confirmed",
+   "rule": "Three measures from the nine DASS questions (the short form is intentional, I21): Feeling Low = Depression (PSY1.2, PSY1.6, PSY1.8); Feeling Stressed = Stress (PSY1.1, PSY1.3, PSY1.5); Feeling Anxious = Anxiety (PSY1.4, PSY1.7, PSY1.9). Each falls into one of five levels: Normal, Mild, Moderate, Severe, Extremely Severe.",
+   "from": "PSY1.1 to 1.9"
+  },
+  {
+   "id": "severityCutoffs",
+   "name": "Mental well-being levels",
+   "source": "proposed",
+   "rule": "On each measure's 0 to 100 score (100 = Never): Normal 80+, Mild 60 to 79, Moderate 40 to 59, Severe 20 to 39, Extremely Severe under 20. The product's current assumption; the real cut-offs for the 9-item form are still to come (I22).",
+   "from": "the three measures"
+  },
+  {
+   "id": "hpq",
+   "name": "HPQ performance",
+   "source": "proposed",
+   "rule": "Standard HPQ scoring: absolute performance = Q16.3 × 10 (0 to 100); relative performance = Q16.3 ÷ Q16.1. Never part of the SHAPE score; Time & Money reads it.",
+   "from": "Your Profile Q16.1 to 16.3"
+  },
+  {
+   "id": "hybrid",
+   "name": "Work environment for Hybrid people",
+   "source": "confirmed",
+   "rule": "Asked twice for Hybrid people, once for the office and once for home. The two answers are averaged, weighted by their contracted office and home hours (Your Profile Q12). For now (I14).",
+   "from": "PhysWE1.1-1.8, SoftWE1.1-1.6 and Your Profile Q12"
+  }
+ ],
+ "enps": [
+  [
+   "1.23",
+   "I would recommend my company to friends and family as a place to work",
+   "",
+   "List"
+  ],
+  [
+   "",
+   "Option 1",
+   "Option 2",
+   ""
+  ],
+  [
+   "2",
+   "On a scale of 1-10 with 1 being very low, and 10 being very high, how would you rate",
+   "On a scale of 0-10 with 0 being very low, and 10 being very high,",
+   ""
+  ],
+  [
+   "2.1",
+   "your morale?",
+   "how would you rate your morale?",
+   "Numeric range 0-10"
+  ],
+  [
+   "2.2",
+   "the morale of your peers?",
+   "how would you rate the morale of your peers?",
+   "Numeric range 0-10"
+  ],
+  [
+   "3",
+   "On a scale of 0-10 with 0 being very low, and 10 being very high, how likely are you to recommend this company to others as a place to work?",
+   "how likely are you to recommend this company to others as a place to work?",
+   "Numeric range 0-10"
+  ]
+ ],
+ "issues": [
+  {
+   "kind": "naming",
+   "state": "resolved",
+   "title": "Two Explorer names differ between sheets",
+   "qs": [],
+   "detail": "The survey says Life Outside Work and Business Essentials; ScoredNonscored says Factors Outside Work and Business Fundamentals.",
+   "answer": "Life Outside Work and Business Essentials are the right names.",
+   "id": "I1"
+  },
+  {
+   "kind": "gap",
+   "state": "resolved",
+   "title": "How scores are calculated isn't in the file",
+   "qs": [],
+   "detail": "The file says which questions are scored and what each answer is worth, but not how they're combined. ScoredNonscored also mentions a “QLB calculation”.",
+   "answer": "The mean, for now. QLB is the question level breakdown: a chart of an Explorer question by question, not a calculation. Averaging Explorers (not every question) for the overall score is the choice made for now.",
+   "id": "I2"
+  },
+  {
+   "kind": "conflict",
+   "state": "resolved",
+   "title": "Life Outside Work Q1: the strain scale doesn't match",
+   "qs": [
+    "FOW1.1",
+    "FOW1.2",
+    "FOW1.3",
+    "FOW1.4"
+   ],
+   "detail": "The survey offers Severe / High / Moderate / Low / No strain and N/A. The scoring sheet scores A lot / A moderate amount / A little / Not at all.",
+   "answer": "Use the five strain levels: Severe 0, High 25, Moderate 50, Low 75, No strain 100. N/A is left out.",
+   "id": "I3"
+  },
+  {
+   "kind": "conflict",
+   "state": "resolved",
+   "title": "Life Outside Work Q3 (support network): the scale doesn't match",
+   "qs": [
+    "FOW3"
+   ],
+   "detail": "The survey asks for agreement; the scoring sheet scores Non-existent / Minimal / Sufficient / Extensive.",
+   "answer": "Agreement (Strongly agree to Strongly disagree) is correct.",
+   "id": "I4"
+  },
+  {
+   "kind": "gap",
+   "state": "resolved",
+   "title": "Coworker Dynamic has no scoring scale",
+   "qs": [
+    "CD1.1",
+    "CD1.2",
+    "CD1.3",
+    "CD1.4",
+    "CD1.5",
+    "CD1.6",
+    "CD1.7",
+    "CD1.8",
+    "CD1.9",
+    "CD1.10",
+    "CD1.11",
+    "CD1.12"
+   ],
+   "detail": "All 12 questions are scored, but the scoring sheet has no values for All / Most / About half / Some / None.",
+   "answer": "All 100, Most 75, About half 50, Some 25, None 0.",
+   "id": "I5"
+  },
+  {
+   "kind": "gap",
+   "state": "open",
+   "title": "Situational Leadership has no formula",
+   "qs": [
+    "MS1.1",
+    "MS1.2",
+    "MS1.3",
+    "MS1.4",
+    "MS2.1"
+   ],
+   "detail": "Manager Style Q1 (how often the manager uses each of four styles) and Q2.1 (your competence) are scored, and Q1.1's Driver is Situational Leadership. The file has no formula; its “SR1.1, 1.3, 1.5 (MS)” scale matches no question.",
+   "answer": "There may be discrepancies; how it's scored is to come.",
+   "proposal": "Until then the five questions are grouped as Situational Leadership with no score. A likely formula: match the style the person's competence calls for (Low → Directive, Moderate → Coaching, High → Supporting, Very high → Delegating) and score how often the manager uses it.",
+   "id": "I6"
+  },
+  {
+   "kind": "conflict",
+   "state": "resolved",
+   "title": "Manager Style numbering is out of date in the scoring sheets",
+   "qs": [
+    "MS2.4",
+    "MS2.5",
+    "MS2.6"
+   ],
+   "detail": "The scoring sheet's MS2.4 (Very effective … Poor) is now Q2.6. Role clarity (2.4) and Manager cares (2.5) were added later.",
+   "answer": "The scoring sheet is out of date here: its 2.4 is the survey's 2.6. Scored: 1, 2.1-2.4 and 2.6; 2.5 shown separately.",
+   "id": "I7"
+  },
+  {
+   "kind": "gap",
+   "state": "open",
+   "title": "Smoking: “Ex Smoker” has no score",
+   "qs": [
+    "PHYS3"
+   ],
+   "detail": "The survey offers Ex Smoker; the scoring sheet doesn't score it.",
+   "answer": "Keep it 100 for now; to be clarified.",
+   "id": "I8"
+  },
+  {
+   "kind": "wording",
+   "state": "open",
+   "title": "BMI scores underweight as the best band",
+   "qs": [
+    "PHYS6"
+   ],
+   "detail": "Under 24 scores 100, so a BMI of 16 scores the same as 22.",
+   "answer": "A real finding: the team is discussing it. Kept as the file has it for now.",
+   "id": "I9"
+  },
+  {
+   "kind": "conflict",
+   "state": "resolved",
+   "title": "Soft Work Environment 1.7 is in both lists",
+   "qs": [
+    "SoftWE1.7"
+   ],
+   "detail": "Scored range says 1.1-1.7; the non-scored list has 1.7. It's a free-text question.",
+   "answer": "Free text is never scored.",
+   "id": "I10"
+  },
+  {
+   "kind": "conflict",
+   "state": "resolved",
+   "title": "The agreement scale's list names questions that don't exist",
+   "qs": [],
+   "detail": "It lists EE1.1-1.10, JS2.1-2.6 and “PWE1.1-1.6”.",
+   "answer": "Out of date. EE1.1-1.9 and JS2.1-2.5 are correct. PWE was an old Explorer (Personal Work Ethic) that has been removed.",
+   "id": "I11"
+  },
+  {
+   "kind": "wording",
+   "state": "resolved",
+   "title": "A reverse-worded statement",
+   "qs": [
+    "PSY2.1"
+   ],
+   "detail": "“I suffer from physical and/or mental health issues as a result of stress”: agreeing is the bad answer.",
+   "answer": "Don't reverse it: it isn't scored.",
+   "id": "I12"
+  },
+  {
+   "kind": "wording",
+   "state": "resolved",
+   "title": "Job Satisfaction 1.2 (demands) has no clear direction",
+   "qs": [
+    "JS1.2"
+   ],
+   "detail": "“How would you rate the demands of your job?” 1 to 5: is a high number good or bad?",
+   "answer": "Job Satisfaction Q1 is shown as smileys: 5 is the biggest smile, so 5 is good.",
+   "id": "I13"
+  },
+  {
+   "kind": "gap",
+   "state": "for-now",
+   "title": "Work environment questions asked twice for Hybrid people",
+   "qs": [
+    "PhysWE1.1",
+    "PhysWE1.2",
+    "PhysWE1.3",
+    "PhysWE1.4",
+    "PhysWE1.5",
+    "PhysWE1.6",
+    "PhysWE1.7",
+    "PhysWE1.8",
+    "SoftWE1.1",
+    "SoftWE1.2",
+    "SoftWE1.3",
+    "SoftWE1.4",
+    "SoftWE1.5",
+    "SoftWE1.6"
+   ],
+   "detail": "“Asked from WFO + WFH perspective separately given the user's status.” How the two answers combine wasn't stated.",
+   "answer": "Weight the office and home answers by the contracted office and home hours (Your Profile Q12). A better answer may follow.",
+   "id": "I14"
+  },
+  {
+   "kind": "gap",
+   "state": "open",
+   "title": "Lists not in the file",
+   "qs": [
+    "PRO6",
+    "PRO7",
+    "PRO9",
+    "PRO15"
+   ],
+   "detail": "Country (“all countries with a few exceptions”), ethnicity (depends on country), site codes (set per client) and annual salary (“separate algorithm”) have no options in the file.",
+   "answer": "A full country list for now; the annual salary bands depend on the country picked. The exceptions, the ethnicity lists and the salary bands are still to come.",
+   "id": "I15"
+  },
+  {
+   "kind": "gap",
+   "state": "resolved",
+   "title": "Work model isn't asked directly",
+   "qs": [
+    "PRO12"
+   ],
+   "detail": "The survey asks contracted hours at the office and at home, not a work model.",
+   "answer": "All office hours = Office, all home hours = Home, both = Hybrid. The product's “Onsite” and “Remote” labels become Office and Home.",
+   "id": "I16"
+  },
+  {
+   "kind": "naming",
+   "state": "resolved",
+   "title": "Driver names that collide",
+   "qs": [
+    "EE1.1",
+    "EE1.2",
+    "EE1.8"
+   ],
+   "detail": "“Coworker Dynamic” is both an Explorer and a Driver inside Employee Engagement. (Flexible / Flexibility and Policies / Policies and Practices are also pairs, but they're different things and stay as they are.)",
+   "answer": "Rename the Employee Engagement Driver. It's now “Working relationships”.",
+   "id": "I17"
+  },
+  {
+   "kind": "gap",
+   "state": "resolved",
+   "title": "Scored questions without a Driver",
+   "qs": [
+    "EC1.4",
+    "EC1.6",
+    "EE1.7",
+    "CC1.11",
+    "CC1.21",
+    "CC1.22",
+    "PhysWE1.7"
+   ],
+   "detail": "Some scored questions count towards their Explorer but name no Driver.",
+   "answer": "Each is its own Driver, named by its short label. (Manager Style 1.2-1.4 and 2.1 have no short label: they're grouped under Situational Leadership, I6.)",
+   "noDriver": true,
+   "id": "I18"
+  },
+  {
+   "kind": "wording",
+   "state": "resolved",
+   "title": "Small fixes in the text",
+   "qs": [
+    "SoftWE1.6",
+    "MS1.1"
+   ],
+   "detail": "“consistant” (hover label, Soft Work Environment 1.6). “*manager x*” is a placeholder for the manager's name.",
+   "answer": "Fixed: “consistent”, and the placeholder is now a {manager's name} slot. The file's text is kept beside each.",
+   "id": "I19"
+  },
+  {
+   "kind": "gap",
+   "state": "resolved",
+   "title": "eNPS: three wordings on the eNPS sheet",
+   "qs": [
+    "CC2.3"
+   ],
+   "detail": "The eNPS sheet offers a list version and 1-10 or 0-10 versions.",
+   "answer": "eNPS comes from Corporate Culture 2.3 only, the standard 0 to 10 question.",
+   "id": "I20"
+  },
+  {
+   "kind": "gap",
+   "state": "resolved",
+   "title": "Psychological Health uses 9 DASS questions",
+   "qs": [
+    "PSY1.1",
+    "PSY1.2",
+    "PSY1.3",
+    "PSY1.4",
+    "PSY1.5",
+    "PSY1.6",
+    "PSY1.7",
+    "PSY1.8",
+    "PSY1.9"
+   ],
+   "detail": "Three each for stress, depression and anxiety (the full DASS-21 has seven each).",
+   "answer": "Intentional. They feed the Mental Well-Being widgets: Depression → Feeling Low, Stress → Feeling Stressed, Anxiety → Feeling Anxious, each in five levels (Normal, Mild, Moderate, Severe, Extremely Severe).",
+   "id": "I21"
+  },
+  {
+   "kind": "gap",
+   "state": "open",
+   "title": "Mental well-being level cut-offs",
+   "qs": [
+    "PSY1.1",
+    "PSY1.2",
+    "PSY1.3",
+    "PSY1.4",
+    "PSY1.5",
+    "PSY1.6",
+    "PSY1.7",
+    "PSY1.8",
+    "PSY1.9"
+   ],
+   "detail": "The five levels are confirmed, but not where one ends and the next begins for this 9-question form.",
+   "answer": null,
+   "proposal": "On each measure's 0 to 100 score: Normal 80+, Mild 60 to 79, Moderate 40 to 59, Severe 20 to 39, Extremely Severe under 20 (the product's current assumption).",
+   "id": "I22"
+  }
+ ],
+ "decisions": {
+  "by": "Product owner",
+  "on": "2026-10-20"
+ },
+ "checks": {
+  "unscoredOptions": [],
+  "unknownStatus": []
+ }
+}

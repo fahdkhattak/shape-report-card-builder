@@ -4,6 +4,7 @@ import { Menu, MoreHorizontal, ChevronRight, ChevronLeft, Plus, Signal, Wifi, Ba
 import { T, font, radius } from "../../lib/tokens.js";
 import { CELL, GAP } from "./gridLayout.js";
 import WidgetCard from "./WidgetCard.jsx";
+import { isHeadline } from "./gridLayout.js";
 import ExplorerRingCard from "./ExplorerRingCard.jsx";
 import ScopePanel from "../scope/ScopePanel.jsx";
 import { MobileReport } from "./MobileReport.jsx";
@@ -239,7 +240,7 @@ function DuoPreview({ pose, scrollMemo, ...rest }) {
     : layer ? { icon: ChevronLeft, title: `Back to ${rest.report.reportType}`, onClick: layer.onExit } : null;
   const contentW = display.w - BAR_W;
   // Nothing picked yet: the inner display's detail pane shows the "Start here" widget's Scope (never a half-empty display).
-  const detail = scopeWidget || rest.items.find((w) => w.familyId === "org-score") || null;
+  const detail = scopeWidget || rest.items.find(isHeadline) || null;
   return (
     <div style={{ width: display.w, height: display.h, borderRadius: 40, overflow: "hidden", background: T.gray50, display: "flex", position: "relative", flexShrink: 0 }}>
       <div style={{ width: contentW, height: "100%", position: "relative", display: "flex" }}>

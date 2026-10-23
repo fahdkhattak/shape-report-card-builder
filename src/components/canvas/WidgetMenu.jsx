@@ -64,7 +64,7 @@ function Row({ icon, label, onClick, danger, topRule }) {
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.12 }}
-      style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", boxSizing: "border-box", border: "none", borderTop: topRule ? `${dsBorder.sm}px solid ${ds.border.secondary}` : "none", background: hover ? (danger ? ds.button.destructive.ghost.bg.hover : ds.surface.general.cardHover) : ds.surface.general.card, transition: "background 100ms ease", cursor: "pointer", fontFamily: font, textAlign: "left", ...dsText("Text sm"), color: fg }}
+      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", boxSizing: "border-box", border: "none", borderTop: topRule ? `${dsBorder.sm}px solid ${ds.border.secondary}` : "none", background: hover ? (danger ? ds.button.destructive.ghost.bg.hover : ds.surface.general.cardHover) : ds.surface.general.card, transition: "background 100ms ease", cursor: "pointer", fontFamily: font, textAlign: "left", ...dsText("Text sm"), color: fg }}
     >
       {icon}
       <span style={{ flex: 1, minWidth: 0 }}>{label}</span>

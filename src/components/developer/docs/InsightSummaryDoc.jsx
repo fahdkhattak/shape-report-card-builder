@@ -10,6 +10,7 @@ import { SUMMARY_HEADLINE, STORIES } from "../../widgetbuilder/storyCatalog.jsx"
 import { ContrastTable, SpecTable, SimpleTable, T, Fact, Limit, Two, List, card_ } from "../docParts.jsx";
 import { Section, Prose, Callout, Variant, Anatomy, StoryStage, PropsTable, CodeBlock, FileBadge, FigmaParity, Swatch, lightHexOf, StatusPill } from "../docKit.jsx";
 import { FLOURISHING_AT, STRIVING_AT, RANGES, statusName } from "../../../lib/bands.js";
+import DataNeeds from "../DataNeeds.jsx";
 
 export const meta = {
   id: "insight-summary", name: "Insight Summary", group: "Stories", kind: "Insight Summary",
@@ -21,7 +22,7 @@ export const toc = {
   developer: [
     { id: "overview", label: "Overview" }, { id: "playground", label: "Try it" }, { id: "anatomy", label: "Anatomy" }, { id: "spec", label: "Specification" },
     { id: "states", label: "States & variants" }, { id: "edges", label: "Sizes & edge cases" }, { id: "content", label: "Content & voice" }, { id: "a11y", label: "Accessibility" },
-    { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
+    { id: "data", label: "Data it needs" }, { id: "props", label: "Props & usage" }, { id: "done", label: "Done checklist" }, { id: "owner", label: "For the design owner" },
   ],
   researcher: [
     { id: "story", label: "The data story" }, { id: "glance", label: "At a glance" }, { id: "shows", label: "What it can show" }, { id: "made", label: "How the sentence is made" },
@@ -288,6 +289,7 @@ function DeveloperView({ style }) {
         <Callout tone="warn" title="Known gap">The Striving number is below 4.5:1 on a white card, and the Struggling number is just below it in Dark. The darker text tokens in the table are the fix. It's a one-line change in <FileBadge>STATUS_TEXT</FileBadge> once the colour is decided.</Callout>
       </Section>
 
+      <DataNeeds id="insight-summary" />
       <Section id="props" title="Props & usage">
         <PropsTable rows={[
           { name: "headline", type: "string", required: true, desc: "The headline sentence. Rendered as the Story title: Text lg / Bold in Current, 20px in Refined." },

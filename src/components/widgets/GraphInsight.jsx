@@ -70,7 +70,7 @@ export function GraphLine({ series, labels, size = "1x1", benchmark }) {
           return (
             <g key={li}>
               <polyline points={l.points.map((p, i) => `${x(i)},${y(p)}`).join(" ")} fill="none" stroke={c} strokeWidth="1" strokeLinejoin="miter" strokeLinecap="round" />
-              {l.points.map((p, i) => <circle key={i} cx={x(i)} cy={y(p)} r={on === i ? 5 : 4} fill={c} stroke="#fff" strokeWidth="1" />)}
+              {l.points.map((p, i) => <circle key={i} cx={x(i)} cy={y(p)} r={on === i ? 5 : 4} fill={c} stroke={ds.surface.general.card} strokeWidth="1" />)}
             </g>
           );
         })}
@@ -112,7 +112,7 @@ export default function GraphInsight({ series, labels, size = "1x1", delta, benc
           ))}
         </div>
       )}
-      {big && evidence && <p style={{ margin: "auto 0 0", paddingTop: dsSpace[4], fontSize: 14, lineHeight: 1.4, color: ds.text.secondary, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{evidence}</p>}
+      {big && evidence && <p data-part="caption" style={{ margin: "auto 0 0", paddingTop: dsSpace[4], fontSize: 14, lineHeight: 1.4, color: ds.text.secondary, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{evidence}</p>}
     </div>
   );
 }

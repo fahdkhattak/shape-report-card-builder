@@ -3,7 +3,7 @@ import { T, font, band } from "../../lib/tokens.js";
 import {
   TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, StatusRing, StatusRipple, RadarChart, polar, ScoreDial,
 } from "./primitives.jsx";
-import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
+import { Index, IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, Footnote, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
 import { FLOURISHING_AT, STRIVING_AT, statusName, nextLine } from "../../lib/bands.js";
 import { ds } from "../../lib/ds.js";
@@ -21,25 +21,25 @@ const col = (extra) => ({ flex: 1, display: "flex", flexDirection: "column", min
 
 function BandSentence({ noun, f, s, t }) {
   return (
-    <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
-      Across the <b style={{ color: T.gray900 }}>{f + s + t}</b> {noun}s, <b style={{ color: T.greenStrong }}>{f}</b> are Flourishing, <b style={{ color: T.amberStrong }}>{s}</b> are Striving, and <b style={{ color: T.redStrong }}>{t}</b> are Struggling.
+    <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
+      Across the <b style={{ color: ds.text.primary }}>{f + s + t}</b> {noun}s, <b style={{ color: ds.status.success.textIndicator }}>{f}</b> are Flourishing, <b style={{ color: ds.status.warning.textIndicator }}>{s}</b> are Striving, and <b style={{ color: ds.status.error.textIndicator }}>{t}</b> are Struggling.
     </span>
   );
 }
 
 const pts = (n) => `${n} point${n === 1 ? "" : "s"}`;
-const B = ({ children, c }) => <b style={{ color: c || T.gray900 }}>{children}</b>;
+const B = ({ children, c }) => <b style={{ color: c || ds.text.primary }}>{children}</b>;
 
 /* ---- Score ---------------------------------------------------------------- */
 function Score({ p, size }) {
   const bar = p.people ? p.people : p.parts ? { f: p.parts.f, s: p.parts.s, t: p.parts.t } : null;
   // The whole organisation: the Library's Org Score card — headcount and participation, no status chip.
   if (p.org) {
-    const hc = (labelled) => <Headcount labelled={labelled} label="Employees" count={p.org.employees} rate={p.org.rate} tone={T.orgBlue} />;
+    const hc = (labelled) => <Headcount labelled={labelled} label="Employees" count={p.org.employees} rate={p.org.rate} tone={ds.utility.graphColors.main.orgBlue} />;
     if (size === "1x1") {
       return (
         <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 52 : 64} compact /></div>
+          <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={date11}>{fmtDate(p.date)}</span>{hc(false)}</div>
         </div>
       );
@@ -58,7 +58,7 @@ function Score({ p, size }) {
   if (size === "1x1") {
     return (
       <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 52 : 64} compact /></div>
+        <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={date11}>{fmtDate(p.date)}</span>
           <StatusChip status={p.status} />
@@ -77,7 +77,7 @@ function Score({ p, size }) {
         {bar && <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />}
         {p.people ? <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} /> : p.parts ? <BandSentence noun={p.partNoun} {...p.parts} /> : null}
         {p.strongest && p.weakest && (
-          <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
+          <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
             <B>{p.strongest[0]}</B> is strongest at <B c={band(p.strongest[1]).cs}>{p.strongest[1]}</B>; <B>{p.weakest[0]}</B> is lowest at <B c={band(p.weakest[1]).cs}>{p.weakest[1]}</B>.
           </span>
         )}
@@ -94,8 +94,8 @@ function GaugeForm({ p, size }) {
     <div style={col({ justifyContent: "space-between" })}>
       <div style={{ display: "flex", justifyContent: "flex-end" }}><TrendPill delta={p.delta} /></div>
       <div style={{ display: "flex", justifyContent: "center" }}><ScoreDial value={p.value} size={190} stroke={18} numberSize={50} wordSize={13} /></div>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
-        {next ? <><B c={band(p.value).cs}>{pts(next.at - p.value)}</B> from <B>{next.name}</B> (a score of {next.at}).</> : <>Above the Flourishing line of <B>{FLOURISHING_AT}</B> by <B c={T.greenStrong}>{pts(p.value - FLOURISHING_AT)}</B>.</>}
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
+        {next ? <><B c={band(p.value).cs}>{pts(next.at - p.value)}</B> from <B>{next.name}</B> (a score of {next.at}).</> : <>Above the Flourishing line of <B>{FLOURISHING_AT}</B> by <B c={ds.status.success.textIndicator}>{pts(p.value - FLOURISHING_AT)}</B>.</>}
       </span>
     </div>
   );
@@ -106,7 +106,7 @@ function StatusForm({ p, size }) {
   const bar = p.people ? { f: p.people.f, s: p.people.s, t: p.people.t } : p.parts;
   if (size === "1x1") {
     return (
-      <div style={col({ justifyContent: "center", gap: 10 })}>
+      <div style={col({ justifyContent: "center", gap: 8 })}>
         <StatusRing status={p.status} />
         {bar && <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />}
       </div>
@@ -133,9 +133,9 @@ function historyCaption(points) {
   const n = points.length, last = points[n - 1], prev = points[n - 2], d = last - prev;
   if (d > 0) {
     const dipped = n >= 3 && points[n - 2] < points[n - 3];
-    return <>{dipped ? <>After dipping in <B>R{n - 1}</B>, the score increased by </> : <>The score increased by </>}<B c={T.greenStrong}>+{d} points</B>{!dipped && <> since <B>R{n - 1}</B></>}, reaching <B>{last}</B> in the latest round.</>;
+    return <>{dipped ? <>After dipping in <B>R{n - 1}</B>, the score increased by </> : <>The score increased by </>}<B c={ds.status.success.textIndicator}>+{d} points</B>{!dipped && <> since <B>R{n - 1}</B></>}, reaching <B>{last}</B> in the latest round.</>;
   }
-  if (d < 0) return <>The score fell by <B c={T.redStrong}>{-d} points</B> since <B>R{n - 1}</B>, to <B>{last}</B> in the latest round.</>;
+  if (d < 0) return <>The score fell by <B c={ds.status.error.textIndicator}>{-d} points</B> since <B>R{n - 1}</B>, to <B>{last}</B> in the latest round.</>;
   return <>The score held at <B>{last}</B> since <B>R{n - 1}</B>.</>;
 }
 function HistoryForm({ p, size }) {
@@ -173,9 +173,9 @@ function PartsForm({ p, size }) {
 
 /* ---- People ---------------------------------------------------------------- */
 const PEOPLE_ROWS = (q) => [
-  ["Flourishing", q.f, q.pf, T.green, T.greenStrong, true],
-  ["Striving", q.s, q.ps, T.amber, T.amberStrong, true],
-  ["Struggling", q.t, q.pt, T.red, T.redStrong, false],
+  ["Flourishing", q.f, q.pf, ds.status.success.text, ds.status.success.textIndicator, true],
+  ["Striving", q.s, q.ps, ds.status.warning.text, ds.status.warning.textIndicator, true],
+  ["Struggling", q.t, q.pt, ds.status.error.text, ds.status.error.textIndicator, false],
 ];
 function PeopleForm({ p, size }) {
   const q = p.people;
@@ -183,7 +183,7 @@ function PeopleForm({ p, size }) {
     return (
       <div style={col({ justifyContent: "space-between" })}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 2 }}>
-          <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: -0.9, lineHeight: 1, color: T.greenStrong }}>{q.f}</span>
+          <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: ds.status.success.textIndicator }}>{q.f}</span>
           <span style={muted11}>Flourishing of {q.total} people</span>
         </div>
         <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
@@ -193,21 +193,21 @@ function PeopleForm({ p, size }) {
   return (
     <div style={col({ gap: 24 })}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>How the <B>{q.total}</B> people who answered are spread across the three statuses.</span>
+        <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>How the <B>{q.total}</B> people who answered are spread across the three statuses.</span>
         <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {PEOPLE_ROWS(q).map(([label, n, prev, c, cs, higherBetter]) => {
           const pct = Math.round((n / (q.total || 1)) * 100), prevPct = Math.round((prev / (q.total || 1)) * 100), d = pct - prevPct;
           return (
             <div key={label} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, borderLeft: `2px solid ${c}`, paddingLeft: 6 }}>
-                <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: T.gray900 }}>{label}</span>
-                <span style={{ fontSize: 11, color: T.gray500 }}>{n} {n === 1 ? "person" : "people"}</span>
-                {d !== 0 && <span style={{ fontSize: 11, fontWeight: 600, color: (d > 0) === higherBetter ? T.greenStrong : T.redStrong }}>{d > 0 ? "+" : "−"}{Math.abs(d)}</span>}
+                <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: ds.text.primary }}>{label}</span>
+                <span style={{ fontSize: 11, color: ds.text.tertiary }}>{n} {n === 1 ? "person" : "people"}</span>
+                {d !== 0 && <span style={{ fontSize: 11, fontWeight: 700, color: (d > 0) === higherBetter ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{d > 0 ? "+" : "−"}{Math.abs(d)}</span>}
                 <span style={{ fontSize: 16, fontWeight: 700, color: cs, minWidth: 40, textAlign: "right" }}>{pct}%</span>
               </div>
-              <div style={{ height: 6, borderRadius: 4, background: T.gray50 }}><div style={{ height: 6, width: `${pct}%`, borderRadius: 4, background: c }} /></div>
+              <div style={{ height: 6, borderRadius: 4, background: ds.bg.primary }}><div style={{ height: 6, width: `${pct}%`, borderRadius: 4, background: c }} /></div>
             </div>
           );
         })}
@@ -252,10 +252,10 @@ function FocusForm({ p, size }) {
       <div style={col({ justifyContent: "space-between" })}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ ...muted11, fontSize: 10 }}>{g.axis}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.gray900, lineHeight: "16px" }}>{g.group}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: ds.text.primary, lineHeight: "16px" }}>{g.group}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: -0.9, lineHeight: 1, color: b.cs }}>{g.score}</span>
+          <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: b.cs }}>{g.score}</span>
           <span style={{ ...muted11, fontSize: 10 }}>{g.struggling} of {g.n} struggling</span>
         </div>
       </div>
@@ -263,7 +263,7 @@ function FocusForm({ p, size }) {
   }
   return (
     <div style={col({ gap: 12 })}>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>The lowest-scoring groups across your organisation.</span>
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>The lowest-scoring groups across your organisation.</span>
       {rows.map((g) => <FocusRow key={`${g.axis}-${g.group}`} name={g.group} value={g.score} tag={g.axis} delta={g.change ?? undefined} sub={`${g.struggling} of ${g.n} people are struggling`} />)}
       <Footnote>Groups under 5 people are never shown.</Footnote>
     </div>
@@ -280,8 +280,8 @@ function MoversForm({ p, size }) {
     return (
       <div style={col({ justifyContent: "space-between" })}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: up ? T.greenStrong : T.redStrong }}>{up ? "Biggest rise" : "Biggest drop"}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.gray900, lineHeight: "16px" }}>{top.label}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: up ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{up ? "Biggest rise" : "Biggest drop"}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: ds.text.primary, lineHeight: "16px" }}>{top.label}</span>
         </div>
         <ScoreHeadline value={top.value} delta={top.d} size={44} compact />
       </div>
@@ -294,9 +294,9 @@ function MoversForm({ p, size }) {
     </div>
   );
   return (
-    <div style={col({ gap: 18 })}>
-      {list("Biggest gains", T.greenStrong, gains, "Nothing has risen.")}
-      {list("Biggest drops", T.redStrong, drops, "Nothing has dropped.")}
+    <div style={col({ gap: 16 })}>
+      {list("Biggest gains", ds.status.success.textIndicator, gains, "Nothing has risen.")}
+      {list("Biggest drops", ds.status.error.textIndicator, drops, "Nothing has dropped.")}
       <Footnote>Change in score since the last round, by {p.noun.toLowerCase()}.</Footnote>
     </div>
   );
@@ -307,9 +307,9 @@ function SpreadForm({ p }) {
   const rows = p.bins.map((b) => ({ label: String(b.from), tipLabel: `Scored ${b.from}–${b.to}`, value: b.n, text: `${b.n} ${b.n === 1 ? "person" : "people"}`, color: band(b.from + 5).c }));
   return (
     <div style={col({ justifyContent: "space-between" })}>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>How many of the <B>{p.total}</B> people scored in each band of ten points.</span>
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>How many of the <B>{p.total}</B> people scored in each band of ten points.</span>
       <VBars rows={rows} size="2x2" />
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>Half of people score between <B>{p.p25}</B> and <B>{p.p75}</B>. The middle score is <B c={band(p.median).cs}>{p.median}</B>.</span>
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>Half of people score between <B>{p.p25}</B> and <B>{p.p75}</B>. The middle score is <B c={band(p.median).cs}>{p.median}</B>.</span>
     </div>
   );
 }
@@ -318,9 +318,9 @@ function SpreadForm({ p }) {
 function Track({ value, target, h = 8 }) {
   return (
     <div style={{ position: "relative", height: h + 12, marginTop: 4 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 6, height: h, borderRadius: h, background: T.gray75 }} />
+      <div style={{ position: "absolute", left: 0, right: 0, top: 6, height: h, borderRadius: h, background: ds.bg.secondary }} />
       <div style={{ position: "absolute", left: 0, top: 6, width: `${value}%`, height: h, borderRadius: h, background: band(value).c }} />
-      <div title={`Target ${target}`} style={{ position: "absolute", left: `${target}%`, top: 0, width: 2, height: h + 12, marginLeft: -1, background: T.gray900 }} />
+      <div title={`Target ${target}`} style={{ position: "absolute", left: `${target}%`, top: 0, width: 2, height: h + 12, marginLeft: -1, background: ds.bg.inverse }} />
     </div>
   );
 }
@@ -330,7 +330,7 @@ function GoalForm({ p, size }) {
     return (
       <div style={col({ justifyContent: "space-between" })}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 2 }}>
-          <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: -0.9, lineHeight: 1, color: reached ? T.greenStrong : band(p.value).cs }}>{reached ? "✓" : p.gap}</span>
+          <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: reached ? ds.status.success.textIndicator : band(p.value).cs }}>{reached ? "✓" : p.gap}</span>
           <span style={muted11}>{reached ? `above the target of ${p.target}` : `${p.gap === 1 ? "point" : "points"} to reach ${p.target}`}</span>
         </div>
         <Track value={p.value} target={p.target} />
@@ -345,16 +345,16 @@ function GoalForm({ p, size }) {
   );
   return (
     <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ display: "flex", gap: 28 }}>
+      <div style={{ display: "flex", gap: 24 }}>
         {stat("Now", p.value, band(p.value).cs)}
-        {stat("Target", p.target, T.gray900)}
-        {stat(reached ? "Ahead by" : "Gap", Math.abs(p.gap), reached ? T.greenStrong : band(p.value).cs)}
+        {stat("Target", p.target, ds.text.primary)}
+        {stat(reached ? "Ahead by" : "Gap", Math.abs(p.gap), reached ? ds.status.success.textIndicator : band(p.value).cs)}
       </div>
       <div>
         <Track value={p.value} target={p.target} h={10} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.gray300, marginTop: 2 }}><span>0</span><span>100</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.quaternary, marginTop: 2 }}><span>0</span><span>100</span></div>
       </div>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
         {reached ? <>Already at or above <B>{p.target}</B>.</>
           : p.rounds == null ? <>The score has not been rising across {p.nRounds} rounds, so there is no pace to project.</>
           : p.rounds > 12 ? <>At the pace of past rounds (<B>{p.pace > 0 ? "+" : ""}{p.pace}</B> a round) this would take <B>more than 12 rounds</B> — a smaller target may be a better next step.</>
@@ -368,11 +368,11 @@ function GoalForm({ p, size }) {
 /* ================================================================== */
 /* The overall picture, and cases with a point of view                  */
 /* ================================================================== */
-const BG = { Flourishing: T.greenBg, Striving: T.amberBg, Struggling: T.redBg };
-const tint = (v) => (v >= FLOURISHING_AT ? T.greenBg : v >= STRIVING_AT ? T.amberBg : T.redBg);
+const BG = { Flourishing: ds.status.success.bg, Striving: ds.status.warning.bg, Struggling: ds.status.error.bg };
+const tint = (v) => (v >= FLOURISHING_AT ? ds.status.success.bg : v >= STRIVING_AT ? ds.status.warning.bg : ds.status.error.bg);
 const IDENT = [T.teamBlue, T.hotPink]; // identity colours for "this vs that" — categories, never status
-const hair = { height: 1, background: T.gray75, flexShrink: 0 };
-const eyebrow = { fontSize: 10, fontWeight: 600, color: T.gray500, letterSpacing: "0.3px", textTransform: "uppercase" };
+const hair = { height: 1, background: ds.bg.secondary, flexShrink: 0 };
+const eyebrow = { fontSize: 10, fontWeight: 500, color: ds.text.tertiary, letterSpacing: "0.3px", textTransform: "uppercase" };
 
 /* ---- Story (3x3) ---------------------------------------------------------- */
 function StoryForm({ p }) {
@@ -382,13 +382,13 @@ function StoryForm({ p }) {
   return (
     <div style={col({ gap: 16 })}>
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
           <ScoreHeadline value={p.value} delta={p.delta} size={76} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}><StatusChip status={p.status} /><span style={date11}>{fmtDate(p.date)}</span></div>
         </div>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 17, fontWeight: 600, lineHeight: "22px", color: T.gray900, textWrap: "balance" }}>{p.headline}</span>
-          <span style={{ fontSize: 12, color: T.gray500, lineHeight: "17px" }}>{d > 0 ? `Up ${d}` : d < 0 ? `Down ${-d}` : "No change"} since the last round.</span>
+          <span style={{ fontSize: 16, fontWeight: 500, lineHeight: "22px", color: ds.text.primary, textWrap: "balance" }}>{p.headline}</span>
+          <span style={{ fontSize: 12, color: ds.text.tertiary, lineHeight: "17px" }}>{d > 0 ? `Up ${d}` : d < 0 ? `Down ${-d}` : "No change"} since the last round.</span>
           {bar && <><EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} /><StatusBreakdown flourishing={bar.f} striving={bar.s} struggling={bar.t} /></>}
         </div>
       </div>
@@ -411,10 +411,10 @@ function StoryForm({ p }) {
           <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
             <span style={eyebrow}>{f.label}</span>
             <span style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: T.gray900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.value}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: ds.text.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.value}</span>
               {f.num != null && <span style={{ fontSize: 14, fontWeight: 700, color: band(f.num).cs }}>{f.num}</span>}
             </span>
-            <span style={{ ...muted11, fontSize: 10.5 }}>{f.sub}</span>
+            <span style={{ ...muted11, fontSize: 11 }}>{f.sub}</span>
           </div>
         ))}
       </div>
@@ -424,7 +424,9 @@ function StoryForm({ p }) {
 
 /* ---- Index ---------------------------------------------------------------- */
 function IndexForm({ p, size }) {
-  return <div style={col({ justifyContent: "center", overflow: "hidden" })}>{p.dimension ? <DimensionIndex dimension={p.dimension} /> : <IndexRing variant={size} overall={p.value} />}</div>;
+  // Older specs carried `dimension` (the retired "Explorer Index" form) instead of their own parts.
+  const ring = p.wedges ? <Index wedges={p.wedges} center={p.value} size={p.layers >= 2 ? size : "2x2"} /> : p.dimension ? <DimensionIndex dimension={p.dimension} /> : <IndexRing variant={size} overall={p.value} />;
+  return <div style={col({ justifyContent: "center", overflow: "hidden" })}>{ring}</div>;
 }
 
 /* ---- Team ---------------------------------------------------------------- */
@@ -435,10 +437,10 @@ function TeamForm({ p, size }) {
   if (size === "1x1") {
     return (
       <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 52 : 64} compact /></div>
+        <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={date11}>{p.n} people</span>
-          <span style={{ ...muted11, fontSize: 10, lineHeight: "13px" }}><b style={{ color: vs >= 0 ? T.greenStrong : T.redStrong }}>{vs > 0 ? "+" : vs < 0 ? "−" : ""}{Math.abs(vs)}</b> vs Org</span>
+          <span style={{ ...muted11, fontSize: 10, lineHeight: "13px" }}><b style={{ color: vs >= 0 ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{vs > 0 ? "+" : vs < 0 ? "−" : ""}{Math.abs(vs)}</b> vs Org</span>
         </div>
       </div>
     );
@@ -453,7 +455,7 @@ function TeamForm({ p, size }) {
         </div>
         <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
         <StatusBreakdown flourishing={q.f} striving={q.s} struggling={q.t} />
-        <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>This is <B c={vs >= 0 ? T.greenStrong : T.redStrong}>{vsText}</B>, which scores <B c={band(p.org).cs}>{p.org}</B>.</span>
+        <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>This is <B c={vs >= 0 ? ds.status.success.textIndicator : ds.status.error.textIndicator}>{vsText}</B>, which scores <B c={band(p.org).cs}>{p.org}</B>.</span>
       </div>
     </div>
   );
@@ -464,8 +466,8 @@ function Side({ g, color, align }) {
   const b = band(g.value);
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: align }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: T.gray900, maxWidth: "100%" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span></span>
-      <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: b.cs }}>{g.value}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: ds.text.primary, maxWidth: "100%" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span></span>
+      <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: b.cs }}>{g.value}</span>
       <span style={{ display: "flex", alignItems: "center", gap: 6 }}><TrendPill delta={g.delta} compact /><span style={muted11}>{g.n} people</span></span>
     </div>
   );
@@ -473,17 +475,17 @@ function Side({ g, color, align }) {
 function VersusForm({ p }) {
   const hi = p.gap >= 0 ? p.a : p.b, lo = p.gap >= 0 ? p.b : p.a, gap = Math.abs(p.gap);
   return (
-    <div style={col({ gap: 14, justifyContent: "space-between" })}>
+    <div style={col({ gap: 12, justifyContent: "space-between" })}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
         <Side g={p.a} color={IDENT[0]} align="flex-start" />
         <div style={{ alignSelf: "center", textAlign: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: 10, color: T.gray300, fontWeight: 600 }}>VS</div>
-          <div style={{ fontSize: 22, fontWeight: 700, lineHeight: "26px", color: gap === 0 ? T.gray500 : T.gray900 }}>{gap}</div>
-          <div style={{ fontSize: 9, color: T.gray500 }}>{gap === 1 ? "point" : "points"}</div>
+          <div style={{ fontSize: 10, color: ds.text.quaternary, fontWeight: 500 }}>VS</div>
+          <div style={{ fontSize: 20, fontWeight: 700, lineHeight: "26px", color: gap === 0 ? ds.text.tertiary : ds.text.primary }}>{gap}</div>
+          <div style={{ fontSize: 10, color: ds.text.tertiary }}>{gap === 1 ? "point" : "points"}</div>
         </div>
         <Side g={p.b} color={IDENT[1]} align="flex-end" />
       </div>
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
         {gap === 0 ? <>Both score the same.</> : <><B>{hi.name}</B> scores <B>{gap} {gap === 1 ? "point" : "points"}</B> higher than <B>{lo.name}</B> ({p.axisLabel.toLowerCase()}).</>}
       </span>
       {p.rows && (
@@ -491,15 +493,15 @@ function VersusForm({ p }) {
           <span style={eyebrow}>Where they differ most</span>
           {p.rows.map((r) => (
             <div key={r.label} style={{ display: "grid", gridTemplateColumns: "104px minmax(0, 1fr)", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 10.5, color: T.gray700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+              <span style={{ fontSize: 11, color: ds.text.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
               <div style={{ position: "relative", height: 14 }}>
-                <span style={{ position: "absolute", left: 0, right: 0, top: 6, height: 2, background: T.gray75 }} />
-                <span style={{ position: "absolute", left: `${Math.min(r.a, r.b)}%`, width: `${Math.abs(r.a - r.b)}%`, top: 6, height: 2, background: T.gray300 }} />
-                {[[r.a, IDENT[0]], [r.b, IDENT[1]]].map(([v, c], i) => <span key={i} title={`${i ? p.b.name : p.a.name}: ${v}`} style={{ position: "absolute", top: 1, left: `${v}%`, width: 12, height: 12, marginLeft: -6, borderRadius: "50%", background: c, boxShadow: `0 0 0 2px ${T.white}` }} />)}
+                <span style={{ position: "absolute", left: 0, right: 0, top: 6, height: 2, background: ds.bg.secondary }} />
+                <span style={{ position: "absolute", left: `${Math.min(r.a, r.b)}%`, width: `${Math.abs(r.a - r.b)}%`, top: 6, height: 2, background: ds.icon.tertiary }} />
+                {[[r.a, IDENT[0]], [r.b, IDENT[1]]].map(([v, c], i) => <span key={i} title={`${i ? p.b.name : p.a.name}: ${v}`} style={{ position: "absolute", top: 1, left: `${v}%`, width: 12, height: 12, marginLeft: -6, borderRadius: "50%", background: c, boxShadow: `0 0 0 2px ${ds.bg.white}` }} />)}
               </div>
             </div>
           ))}
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.gray300, paddingLeft: 112 }}><span>0</span><span>50</span><span>100</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.quaternary, paddingLeft: 112 }}><span>0</span><span>50</span><span>100</span></div>
         </div>
       )}
     </div>
@@ -513,14 +515,14 @@ function DuelChart({ items, labels, w = 312, h = 126 }) {
   const y = (v) => top + plotH - (v / 100) * plotH;
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display: "block", overflow: "visible" }}>
-      {[0, 25, 50, 75, 100].map((g) => <g key={g}><line x1={gx} x2={w} y1={y(g)} y2={y(g)} stroke={T.gray75} /><text x="0" y={y(g) + 3} fontSize="8" fill={T.gray300}>{g}</text></g>)}
+      {[0, 25, 50, 75, 100].map((g) => <g key={g}><line x1={gx} x2={w} y1={y(g)} y2={y(g)} stroke={ds.bg.secondary} /><text x="0" y={y(g) + 3} fontSize="8" fill={ds.text.quaternary}>{g}</text></g>)}
       {items.map((it, k) => (
         <g key={it.label}>
           <path d={it.points.map((v, i) => `${i ? "L" : "M"}${x(i)} ${y(v)}`).join(" ")} fill="none" stroke={IDENT[k]} strokeWidth="2" />
-          {it.points.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={i === it.points.length - 1 ? 4 : 2.5} fill={IDENT[k]} stroke={T.white} strokeWidth="1.5" />)}
+          {it.points.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={i === it.points.length - 1 ? 4 : 2.5} fill={IDENT[k]} stroke={ds.surface.general.card} strokeWidth="1.5" />)}
         </g>
       ))}
-      {labels.map((l, i) => <text key={l} x={x(i)} y={h - 2} fontSize="9" textAnchor="middle" fill={T.gray300}>{l}</text>)}
+      {labels.map((l, i) => <text key={l} x={x(i)} y={h - 2} fontSize="10" textAnchor="middle" fill={ds.text.quaternary}>{l}</text>)}
     </svg>
   );
 }
@@ -532,16 +534,16 @@ function DuelForm({ p }) {
       <div style={{ display: "flex", gap: 12 }}>
         {p.items.map((it, k) => (
           <div key={it.label} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: T.gray900 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: IDENT[k], flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span></span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: ds.text.primary }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: IDENT[k], flexShrink: 0 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.label}</span></span>
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: -0.9, lineHeight: 1, color: band(it.value).cs }}>{it.value}</span>
+              <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: band(it.value).cs }}>{it.value}</span>
               <TrendPill delta={it.delta} compact />
             </span>
           </div>
         ))}
       </div>
       <DuelChart items={p.items} labels={p.labels} />
-      <span style={{ fontSize: 11, color: T.gray500, lineHeight: "16px" }}>
+      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
         {gap === 0 ? <>Both score the same today.</> : <><B>{hi.label}</B> is <B>{gap} {gap === 1 ? "point" : "points"}</B> above <B>{lo.label}</B>.</>}{" "}
         People who score high on one {p.r >= 0 ? "tend to score high on the other" : "tend to score low on the other"} — a <B>{strength}</B> link (r = {p.r}). A link, not a cause.
       </span>
@@ -550,23 +552,23 @@ function DuelForm({ p }) {
 }
 
 /* ---- Health check ------------------------------------------------------------- */
-const CHECK_STYLE = { pass: { bg: T.greenBg, c: T.greenStrong, Icon: Check }, warn: { bg: T.amberBg, c: T.amberStrong, Icon: AlertTriangle }, fail: { bg: T.redBg, c: T.redStrong, Icon: X } };
+const CHECK_STYLE = { pass: { bg: ds.status.success.bg, c: ds.status.success.textIndicator, Icon: Check }, warn: { bg: ds.status.warning.bg, c: ds.status.warning.textIndicator, Icon: AlertTriangle }, fail: { bg: ds.status.error.bg, c: ds.status.error.textIndicator, Icon: X } };
 function CheckForm({ p }) {
   const ratio = p.passed / p.checks.length;
-  const c = ratio >= 0.8 ? T.greenStrong : ratio >= 0.5 ? T.amberStrong : T.redStrong;
+  const c = ratio >= 0.8 ? ds.status.success.textIndicator : ratio >= 0.5 ? ds.status.warning.textIndicator : ds.status.error.textIndicator;
   return (
-    <div style={col({ gap: 14 })}>
+    <div style={col({ gap: 12 })}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <span style={{ fontSize: 44, fontWeight: 700, letterSpacing: -0.9, lineHeight: 1, color: c }}>{p.passed}<span style={{ fontSize: 22, color: T.gray300 }}>/{p.checks.length}</span></span>
-        <span style={{ fontSize: 12, color: T.gray500 }}>checks passing</span>
+        <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: c }}>{p.passed}<span style={{ fontSize: 20, color: ds.text.quaternary }}>/{p.checks.length}</span></span>
+        <span style={{ fontSize: 12, color: ds.text.tertiary }}>checks passing</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         {p.checks.map((k, i) => {
           const s = CHECK_STYLE[k.state];
           return (
-            <div key={k.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: i ? `1px solid ${T.gray50}` : "none" }}>
+            <div key={k.label} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderTop: i ? `1px solid ${ds.bg.primary}` : "none" }}>
               <span style={{ width: 20, height: 20, borderRadius: "50%", background: s.bg, color: s.c, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><s.Icon size={12} strokeWidth={2.6} /></span>
-              <span style={{ flex: 1, fontSize: 12, color: T.gray900, minWidth: 0 }}>{k.label}</span>
+              <span style={{ flex: 1, fontSize: 12, color: ds.text.primary, minWidth: 0 }}>{k.label}</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: s.c, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{k.detail}</span>
             </div>
           );
@@ -580,25 +582,25 @@ function CheckForm({ p }) {
 function WhatIfForm({ p }) {
   const b0 = band(p.value), b1 = band(p.after), gain = p.after - p.value;
   return (
-    <div style={col({ gap: 14, justifyContent: "space-between" })}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+    <div style={col({ gap: 12, justifyContent: "space-between" })}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={eyebrow}>Now</span><span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: b0.cs }}>{p.value}</span></div>
-        <ArrowRight size={22} color={T.gray300} />
+        <ArrowRight size={22} color={ds.text.quaternary} />
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={eyebrow}>If lifted</span><span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: b1.cs }}>{p.after}</span></div>
         <div style={{ marginLeft: "auto", alignSelf: "flex-start" }}>{gain !== 0 ? <TrendPill delta={gain} numberOnly /> : null}</div>
       </div>
       {p.lifted.length === 0 ? (
-        <span style={{ fontSize: 12, color: T.gray500 }}>Every {p.noun.toLowerCase()} is already at 70 or more, so there is nothing to lift.</span>
+        <span style={{ fontSize: 12, color: ds.text.tertiary }}>Every {p.noun.toLowerCase()} is already at 70 or more, so there is nothing to lift.</span>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={eyebrow}>The {p.lift === 1 ? "weakest" : `${p.lifted.length} weakest`} {p.noun.toLowerCase()}{p.lifted.length === 1 ? "" : "s"}, brought to 70</span>
           {p.lifted.map((r) => (
             <div key={r.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: T.gray900 }}>{r.label}</span>
-                <span style={{ fontSize: 12, color: T.gray500 }}><b style={{ color: band(r.from).cs }}>{r.from}</b> → <b style={{ color: band(r.to).cs }}>{r.to}</b></span>
+                <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: ds.text.primary }}>{r.label}</span>
+                <span style={{ fontSize: 12, color: ds.text.tertiary }}><b style={{ color: band(r.from).cs }}>{r.from}</b> → <b style={{ color: band(r.to).cs }}>{r.to}</b></span>
               </div>
-              <div style={{ position: "relative", height: 6, borderRadius: 4, background: T.gray50 }}>
+              <div style={{ position: "relative", height: 6, borderRadius: 4, background: ds.bg.primary }}>
                 <span style={{ position: "absolute", left: 0, width: `${r.to}%`, top: 0, height: 6, borderRadius: 4, background: band(r.to).c, opacity: 0.28 }} />
                 <span style={{ position: "absolute", left: 0, width: `${r.from}%`, top: 0, height: 6, borderRadius: 4, background: band(r.from).c }} />
               </div>
@@ -624,13 +626,13 @@ function HeatForm({ p }) {
     <div style={col({ gap: 4, minHeight: 0, overflow: "hidden" })}>
       <div style={{ display: "grid", gridTemplateColumns: `minmax(0, 1fr) repeat(${p.labels.length}, 44px)`, gap: 4, paddingBottom: 2 }}>
         <span />
-        {p.labels.map((l) => <span key={l} style={{ fontSize: 10, color: T.gray500, textAlign: "center" }}>{l}</span>)}
+        {p.labels.map((l) => <span key={l} style={{ fontSize: 10, color: ds.text.tertiary, textAlign: "center" }}>{l}</span>)}
       </div>
       {rows.map(([label, vals]) => (
         <div key={label} style={{ display: "grid", gridTemplateColumns: `minmax(0, 1fr) repeat(${p.labels.length}, 44px)`, gap: 4, alignItems: "center", height: rowH }}>
-          <span style={{ fontSize: 11, color: T.gray900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+          <span style={{ fontSize: 11, color: ds.text.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
           {vals.map((v, i) => (
-            <span key={i} title={`${label}, ${p.labels[i]}: ${v}`} style={{ height: rowH - 4, borderRadius: 5, background: tint(v), color: band(v).cs, fontSize: 11, fontWeight: i === vals.length - 1 ? 700 : 500, display: "flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums" }}>{v}</span>
+            <span key={i} title={`${label}, ${p.labels[i]}: ${v}`} style={{ height: rowH - 4, borderRadius: 4, background: tint(v), color: band(v).cs, fontSize: 11, fontWeight: i === vals.length - 1 ? 700 : 500, display: "flex", alignItems: "center", justifyContent: "center", fontVariantNumeric: "tabular-nums" }}>{v}</span>
           ))}
         </div>
       ))}
@@ -641,7 +643,7 @@ function HeatForm({ p }) {
 
 /* ---- Momentum -------------------------------------------------------------------- */
 const sgn = (d) => (d > 0 ? `+${d}` : d < 0 ? `−${-d}` : "0");
-const dcol = (d) => (d > 0 ? T.greenStrong : d < 0 ? T.redStrong : T.gray500);
+const dcol = (d) => (d > 0 ? ds.status.success.textIndicator : d < 0 ? ds.status.error.textIndicator : ds.text.tertiary);
 function MomentumForm({ p, size }) {
   const run = p.streak >= 2 ? `Rising ${p.streak} rounds in a row` : p.fall >= 2 ? `Falling ${p.fall} rounds in a row` : p.streak === 1 ? "Up on the last round" : p.fall === 1 ? "Down on the last round" : "Flat on the last round";
   if (size === "1x1") {
@@ -651,34 +653,34 @@ function MomentumForm({ p, size }) {
           <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: dcol(p.change) }}>{sgn(p.change)}</span>
           <span style={muted11}>since the first round</span>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 600, color: dcol(p.streak ? 1 : p.fall ? -1 : 0), lineHeight: "14px" }}>{run}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: dcol(p.streak ? 1 : p.fall ? -1 : 0), lineHeight: "14px" }}>{run}</span>
       </div>
     );
   }
   const maxAbs = Math.max(4, ...p.steps.map((s) => Math.abs(s.d)));
   return (
     <div style={col({ gap: 16, justifyContent: "space-between" })}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-        <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: -1.2, lineHeight: 1, color: dcol(p.change) }}>{sgn(p.change)}</span>
-        <span style={{ fontSize: 12, color: T.gray500, lineHeight: "16px" }}>points since the first round<br /><b style={{ color: T.gray900 }}>{p.first}</b> → <b style={{ color: band(p.value).cs }}>{p.value}</b></span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: dcol(p.change) }}>{sgn(p.change)}</span>
+        <span style={{ fontSize: 12, color: ds.text.tertiary, lineHeight: "16px" }}>points since the first round<br /><b style={{ color: ds.text.primary }}>{p.first}</b> → <b style={{ color: band(p.value).cs }}>{p.value}</b></span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={eyebrow}>Round on round</span>
         {p.steps.map((s) => (
           <div key={s.label} style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr) 30px", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 11, color: T.gray500 }}>{s.label}</span>
+            <span style={{ fontSize: 11, color: ds.text.tertiary }}>{s.label}</span>
             <div style={{ position: "relative", height: 8 }}>
-              <span style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: T.gray100 }} />
-              <span style={{ position: "absolute", top: 1, height: 6, borderRadius: 3, background: s.d >= 0 ? T.green : T.red, ...(s.d >= 0 ? { left: "50%", width: `${(s.d / maxAbs) * 50}%` } : { right: "50%", width: `${(-s.d / maxAbs) * 50}%` }) }} />
+              <span style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: ds.bg.quaternary }} />
+              <span style={{ position: "absolute", top: 1, height: 6, borderRadius: 4, background: s.d >= 0 ? ds.status.success.bgStrong : ds.status.error.text, ...(s.d >= 0 ? { left: "50%", width: `${(s.d / maxAbs) * 50}%` } : { right: "50%", width: `${(-s.d / maxAbs) * 50}%` }) }} />
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, color: dcol(s.d), textAlign: "right" }}>{sgn(s.d)}</span>
           </div>
         ))}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: dcol(p.streak ? 1 : p.fall ? -1 : 0) }}>{run}</span>
-        {p.riser && p.riser.d > 0 && <span style={{ fontSize: 11, color: T.gray500 }}>Most improved: <B>{p.riser.label}</B> <B c={T.greenStrong}>{sgn(p.riser.d)}</B></span>}
-        {p.faller && p.faller.d < 0 && <span style={{ fontSize: 11, color: T.gray500 }}>Furthest down: <B>{p.faller.label}</B> <B c={T.redStrong}>{sgn(p.faller.d)}</B></span>}
+        <span style={{ fontSize: 12, fontWeight: 700, color: dcol(p.streak ? 1 : p.fall ? -1 : 0) }}>{run}</span>
+        {p.riser && p.riser.d > 0 && <span style={{ fontSize: 11, color: ds.text.tertiary }}>Most improved: <B>{p.riser.label}</B> <B c={ds.status.success.textIndicator}>{sgn(p.riser.d)}</B></span>}
+        {p.faller && p.faller.d < 0 && <span style={{ fontSize: 11, color: ds.text.tertiary }}>Furthest down: <B>{p.faller.label}</B> <B c={ds.status.error.textIndicator}>{sgn(p.faller.d)}</B></span>}
       </div>
     </div>
   );

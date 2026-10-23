@@ -459,3 +459,136 @@ function LegendItem({ fill, dot, children }) {
     </span>
   );
 }
+
+/* ---- How People Moved (Sankey of levels, round to round) ------------------------------------------------------------
+   Same people every round (a cohort), so every band is a real group: e.g. 6 people went from Mild in Nov 2025 to Moderate
+   in Mar 2026. One column per round with the five levels stacked, Normal on top; bands join each level to the levels those
+   people were at in the next round, widths to scale. Colour by Level (the band takes its starting level's colour) or by
+   Change (better green, same grey, worse red), the second being the point of the chart. Hover a band or a level (tap on a
+   phone) for the count; the line under the chart totals better / same / worse for the latest move. Table View lists every
+   from → to pair per move.
+   measures: [{ label, nodes: number[round][level], links: number[move][from][to] }]; cohort: people in every round. */
+const MOVE = { better: ds.status.success.graph, same: ds.border.secondary, worse: ds.status.error.graph };
+const moveOf = (from, to) => (to < from ? "better" : to > from ? "worse" : "same");
+function moves(links) {
+  const m = { better: 0, same: 0, worse: 0 };
+  links.forEach((row, f) => row.forEach((n, t) => { m[moveOf(f, t)] += n; }));
+  return m;
+}
+export function FlowOverTime({ title = "How People Moved", line, rounds, measures, cohort, levels = LEVELS }) {
+  const [view, setView] = useView();
+  const [tab, setTab] = useState(measures[0].label);
+  const [colourBy, setColourBy] = useState("Change");
+  const [over, setOver] = useState(null); // mouse: { kind: "link", t, f, to } | { kind: "node", r, l }
+  const [tapped, setTapped] = useState(null); // touch: the same shape, stays until tapped again
+  const hover = over || tapped;
+  const tip = useChartTip();
+  const box = useRef(null);
+  const W = useElementWidth(box, 776);
+  const compact = W < 520;
+  const m = measures.find((x) => x.label === tab) || measures[0];
+  const R = rounds.length, L = levels.length;
+
+  // Geometry: node columns at both edges and spread between; labels outside the first and last column when there's room.
+  const labelW = compact ? 0 : 118, nodeW = compact ? 10 : 14, gap = compact ? 4 : 6, H = compact ? 220 : 280;
+  const colX = (i) => labelW + (i * (W - 2 * labelW - nodeW)) / Math.max(1, R - 1);
+  const scale = (H - gap * (L - 1)) / Math.max(1, cohort);
+  const nodeY = m.nodes.map((col) => { let y = 0; return col.map((n) => { const top = y; y += n * scale + gap; return { top, h: n * scale }; }); });
+  // Bands: leave each level in target order, arrive in source order, so bands never cross inside a node.
+  const bands = [];
+  m.links.forEach((mat, t) => {
+    const out = nodeY[t].map((nd) => nd.top);
+    mat.forEach((row, f) => row.forEach((n, to) => {
+      if (!n) return;
+      const h = n * scale, y0 = out[f];
+      out[f] += h;
+      bands.push({ t, f, to, n, h, y0, y1: 0 });
+    }));
+    // second pass for arrival order: by source level within each target
+    const arr = nodeY[t + 1].map((nd) => nd.top);
+    bands.filter((b) => b.t === t).sort((a, b) => a.to - b.to || a.f - b.f).forEach((b) => { b.y1 = arr[b.to]; arr[b.to] += b.h; });
+  });
+  const x0 = (t) => colX(t) + nodeW, x1 = (t) => colX(t + 1);
+  const path = (b) => {
+    const a = x0(b.t), c = x1(b.t), mx = (a + c) / 2;
+    return `M${a},${b.y0} C${mx},${b.y0} ${mx},${b.y1} ${c},${b.y1} L${c},${b.y1 + b.h} C${mx},${b.y1 + b.h} ${mx},${b.y0 + b.h} ${a},${b.y0 + b.h} Z`;
+  };
+  const lit = (b) => !hover || (hover.kind === "link" ? hover.t === b.t && hover.f === b.f && hover.to === b.to : (hover.r === b.t && hover.l === b.f) || (hover.r === b.t + 1 && hover.l === b.to));
+  const bandColour = (b) => (colourBy === "Level" ? LEVEL_FILL[b.f] : MOVE[moveOf(b.f, b.to)]);
+  const pct = (n) => `${Math.round((n / Math.max(1, cohort)) * 100)}%`;
+  const linkTip = (b) => ({ head: `${rounds[b.t].label} → ${rounds[b.t + 1].label}`, rows: [{ label: `${levels[b.f]} → ${levels[b.to]}`, value: b.n, text: `${b.n} ${b.n === 1 ? "person" : "people"}`, color: bandColour(b) }], note: b.f === b.to ? "Stayed at the same level" : b.to < b.f ? "Moved to a better level" : "Moved to a worse level" });
+  const nodeTip = (r, l) => ({ head: rounds[r].label, rows: [{ label: levels[l], value: m.nodes[r][l], text: `${m.nodes[r][l]} people · ${pct(m.nodes[r][l])}`, color: LEVEL_FILL[l] }] });
+  const pick = (h) => (e) => { if (e.pointerType !== "mouse") setTapped((c) => (c && JSON.stringify(c) === JSON.stringify(h) ? null : h)); };
+  const enter = (h, content) => (e) => { if (e.pointerType && e.pointerType !== "mouse") return; setOver(h); tip.bind(content).onMouseEnter(e); };
+  const last = moves(m.links[m.links.length - 1]);
+  const first = rounds[0].label, prevLabel = rounds[R - 2].label, latest = rounds[R - 1].label;
+  const pinnedBand = tapped?.kind === "link" ? bands.find((b) => b.t === tapped.t && b.f === tapped.f && b.to === tapped.to) : null;
+  const pinned = tapped ? (pinnedBand ? linkTip(pinnedBand) : tapped.kind === "node" ? nodeTip(tapped.r, tapped.l) : null) : null;
+
+  // Table View: every from → to pair, a column per move.
+  const columns = [{ key: "from", label: "From" }, { key: "to", label: "To" }, ...m.links.map((_, t) => ({ key: `t${t}`, label: `${rounds[t].label} → ${rounds[t + 1].label}`, short: `Move ${t + 1}`, align: "right" }))];
+  const rows = [];
+  levels.forEach((lf, f) => levels.forEach((lt, to) => { const v = m.links.map((mat) => mat[f][to]); if (v.some(Boolean)) rows.push({ from: lf, to: lt, ...Object.fromEntries(v.map((n, t) => [`t${t}`, n])) }); }));
+
+  return (
+    <StoryCard title={title} line={line ?? `The same ${cohort} people in every round, by level. Bands show where each level's people were at the next round.`} data-story="trend-flow"
+      controls={[
+        <PillTabs key="m" label="Measure" tone="default" tabs={measures.map((x) => x.label)} value={m.label} onChange={(v) => { setTab(v); setOver(null); setTapped(null); }} />,
+        view === "chart" && <PillTabs key="c" label="Colour by" tone="default" tabs={["Change", "Level"]} value={colourBy} onChange={setColourBy} />,
+        <ViewSwitch key="v" view={view} onChange={setView} />,
+        view === "table" && <CopyTable key="cp" getText={() => tableText(columns, rows)} />,
+      ]}>
+      <EvidenceSection style={{ padding: dsSpace[16] }}>
+        {view === "table" ? <DataTable columns={columns} rows={rows} /> : (
+          <div ref={box} style={{ display: "flex", flexDirection: "column", gap: dsSpace[12] }}>
+            {/* Round headings over their columns. */}
+            <div style={{ position: "relative", height: 18 }}>
+              {rounds.map((r, i) => (
+                <span key={r.label} style={{ position: "absolute", left: colX(i) + nodeW / 2, transform: i === 0 && compact ? "none" : i === R - 1 && compact ? "translateX(-100%)" : "translateX(-50%)", ...dsText("Text 2xs", r.latest ? 600 : 400), color: r.latest ? ds.text.primary : ds.text.tertiary, textTransform: r.latest ? "uppercase" : "none", whiteSpace: "nowrap" }}>{r.label}</span>
+              ))}
+            </div>
+            <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${m.label}: how ${cohort} people moved between levels from ${first} to ${latest}. Latest move: ${last.better} better, ${last.same} the same, ${last.worse} worse.`} style={{ display: "block", overflow: "visible", touchAction: "pan-y" }}>
+              {bands.map((b, i) => (
+                <path key={i} d={path(b)} data-part="flow-band" style={{ fill: bandColour(b), opacity: lit(b) ? (hover ? 0.85 : 0.55) : 0.12, transition: "opacity 120ms ease", cursor: "pointer" }}
+                  {...tip.bind(linkTip(b))} onMouseEnter={enter({ kind: "link", t: b.t, f: b.f, to: b.to }, linkTip(b))} onMouseLeave={() => { setOver(null); tip.bind(null).onMouseLeave(); }}
+                  onPointerDown={pick({ kind: "link", t: b.t, f: b.f, to: b.to })} />
+              ))}
+              {m.nodes.map((col, r) => col.map((n, l) => n > 0 && (
+                <g key={`${r}-${l}`}>
+                  <rect x={colX(r)} y={nodeY[r][l].top} width={nodeW} height={Math.max(1, nodeY[r][l].h)} rx="2" data-part="flow-node" style={{ fill: LEVEL_FILL[l], cursor: "pointer", opacity: !hover || (hover.kind === "node" && hover.r === r && hover.l === l) || (hover.kind === "link" && ((hover.t === r && hover.f === l) || (hover.t + 1 === r && hover.to === l))) ? 1 : 0.5 }}
+                    {...tip.bind(nodeTip(r, l))} onMouseEnter={enter({ kind: "node", r, l }, nodeTip(r, l))} onMouseLeave={() => { setOver(null); tip.bind(null).onMouseLeave(); }} onPointerDown={pick({ kind: "node", r, l })} />
+                  {!compact && (r === 0 || r === R - 1) && nodeY[r][l].h >= 9 && (
+                    <text x={r === 0 ? colX(r) - 8 : colX(r) + nodeW + 8} y={nodeY[r][l].top + nodeY[r][l].h / 2 + 4} textAnchor={r === 0 ? "end" : "start"} style={{ fill: ds.text.secondary, fontFamily: font, fontSize: 11 }}>
+                      {levels[l]} <tspan style={{ fill: ds.text.primary, fontWeight: 700 }}>{n}</tspan>
+                    </text>
+                  )}
+                </g>
+              )))}
+            </svg>
+            {/* Key (always on a phone, where the side labels go). */}
+            {(compact || colourBy === "Change") && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: `${dsSpace[4]}px ${dsSpace[12]}px` }}>
+                {colourBy === "Change"
+                  ? [["Better", MOVE.better], ["Same level", MOVE.same], ["Worse", MOVE.worse]].map(([k, c]) => <Key key={k} colour={c} label={k} />)
+                  : null}
+                {compact && levels.map((l, k) => <Key key={l} colour={LEVEL_FILL[k]} label={l} square />)}
+              </div>
+            )}
+            {pinned && (
+              <div role="status" style={{ ...dsText("Text xs"), color: ds.text.secondary, background: ds.surface.general.cardWithinCard, borderRadius: dsRadius.md, padding: `${dsSpace[8]}px ${dsSpace[12]}px` }}>
+                <b style={{ color: ds.text.primary }}>{pinned.head}</b> · {pinned.rows[0].label}: {pinned.rows[0].text}{pinned.note ? ` · ${pinned.note}` : ""}
+              </div>
+            )}
+            <p style={{ ...noteText, margin: 0 }}>
+              {prevLabel} to {latest}: <b style={{ color: ds.status.success.textIndicator }}>{last.better} moved to a better level</b>, {last.same} stayed, <b style={{ color: ds.status.error.text }}>{last.worse} moved to a worse level</b>.
+            </p>
+          </div>
+        )}
+      </EvidenceSection>
+      {tip.node}
+    </StoryCard>
+  );
+}
+function Key({ colour, label, square }) {
+  return <span style={{ display: "inline-flex", alignItems: "center", gap: dsSpace[6], ...dsText("Text 2xs"), color: ds.text.secondary }}><i style={{ width: square ? 8 : 14, height: 8, borderRadius: square ? 2 : 4, background: colour, display: "inline-block" }} />{label}</span>;
+}
