@@ -11,6 +11,7 @@ import WidgetBody from "../widgets/WidgetBody.jsx";
 import { cardSurface } from "../../lib/families.js";
 import SegmentedControl from "../ui/SegmentedControl.jsx";
 import LibraryRefined from "./LibraryRefined.jsx";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* LIBRARY — every widget, in one place (Figma 984qJvMt7fCHASYHRwgrab,   */
@@ -114,7 +115,7 @@ function WidgetInfo({ entry, onClose }) {
             <div style={{ display: "flex", gap: 32, marginTop: 28, alignItems: "flex-start" }}>
               <div style={{ width: box, height: box, borderRadius: 24, background: T.gray50, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <div style={{ width: shown, height: shown, position: "relative", overflow: "hidden", borderRadius: radius.widget * (shown / native) }}>
-                  <div style={{ width: native, height: native, transform: `scale(${shown / native})`, transformOrigin: "top left", background: surface.background || T.white, border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ width: native, height: native, transform: `scale(${shown / native})`, transformOrigin: "top left", background: surface.background || T.white, border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
                     <Header title={entry.title} />
                     <WidgetBody familyId={entry.familyId} formIndex={entry.formIndex} />
                   </div>

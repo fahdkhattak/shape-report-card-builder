@@ -6,11 +6,13 @@ import { ds, dsShadow } from "../../lib/ds.js";
 import { familyById, formTitle, cardSurface, nextFormIndex } from "../../lib/families.js";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
-import { Header } from "../widgets/primitives.jsx";
+import { Header, Sections, Insight } from "../widgets/primitives.jsx";
 import { sizeToSpan, pxForSpan } from "./gridLayout.js";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 import { DotsButton, WidgetMenu } from "./WidgetMenu.jsx";
 import { ShapeWidgetBody, shapeTitle, shapeSize } from "../shape/shapeWidgets.jsx";
 import ScoreCard from "../widgets/ScoreCard.jsx";
+import StatusCard from "../widgets/StatusCard.jsx";
 import { Index } from "../widgets/RingIndex.jsx";
 
 /* ================================================================== */
@@ -39,8 +41,8 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
   const isLib = widget.kind === "library";
   const family = isLib ? familyById(widget.familyId) : null;
   const isShape = widget.kind === "shape"; // the SHAPE report's widgets, from the new survey dataset (components/shape/)
-  // The Score card and the Index for any subject (lib/scoreWidget.js): { kind: "score" | "index", size, title, … }.
-  const isSubject = widget.kind === "score" || widget.kind === "index";
+  // The Score card, the Status card and the Index for any subject (lib/scoreWidget.js): { kind: "score" | "status" | "index", size, title, … }.
+  const isSubject = widget.kind === "score" || widget.kind === "status" || widget.kind === "index";
   const size = isSubject ? widget.size : isShape ? shapeSize(widget) : isLib ? family.forms[widget.formIndex].size : widget.spec.size;
   const span = sizeToSpan(size);
   const defaultTitle = isSubject ? widget.title : isShape ? shapeTitle(widget) : isLib ? formTitle(widget.familyId, widget.formIndex) : widget.spec.title;
@@ -57,6 +59,8 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
     >
       <motion.div
         ref={setCardEl}
+        data-widget-card
+        data-size={size}
         // When the report changes its column count (a Scope opening or closing), each card glides from its old cell to
         // its new one instead of jumping. Only then: `layoutKey` changes with the column count and the card's place.
         layout="position"
@@ -75,7 +79,7 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
           boxShadow: raised ? dsShadow("md") : "0 0 0 rgba(0,0,0,0)",
           transition: "box-shadow 200ms ease, border-color 200ms ease",
           borderRadius: radius.widget,
-          padding: 16,
+          padding: SHELL_PADDING, // 1px border + 15 = the board's 16
           display: "flex",
           flexDirection: "column",
           gap: 12,
@@ -104,7 +108,8 @@ export default function WidgetCard({ widget, onChangeForm, onEdit, onRemove, onR
         )}
 
         {widget.kind === "score" ? <ScoreCard size={widget.size} who={widget.who} what={widget.what} data={widget.data} show={widget.show} />
-          : widget.kind === "index" ? <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0, overflow: "hidden" }}><Index wedges={widget.wedges} center={widget.center} size={widget.size} title={widget.title} /></div>
+          : widget.kind === "status" ? <StatusCard size={widget.size} who={widget.who} what={widget.what} data={widget.data} />
+          : widget.kind === "index" ? <Sections size={widget.size}><Insight center><Index wedges={widget.wedges} center={widget.center} size={widget.size} title={widget.title} /></Insight></Sections>
           : isShape ? <ShapeWidgetBody widget={widget} /> : isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
 
         <DotsButton open={menuOpen} visible={hover} onToggle={() => setMenuOpen((v) => !v)} />

@@ -1,5 +1,5 @@
 /* ================================================================== */
-/* THE SCORE WIDGET AND THE INDEX — one widget each, for any subject.    */
+/* THE SCORE, STATUS AND INDEX WIDGETS — one widget each, any subject.   */
 /*                                                                      */
 /* Product direction: there is ONE Score widget. The same card shows the */
 /* organisation's score, a team's, a group's (a department, an age band, */
@@ -25,7 +25,7 @@
    people split across the statuses can be shown. `invites`: whether the number invited is usually known. */
 export const WHO = [
   { id: "org", name: "Organisation", title: "Org", people: true, invites: "always", note: "Everyone who was invited." },
-  { id: "team", name: "Team", title: "Team", people: true, invites: "always", note: "A manager's team. Not in the prototype's data yet (the data has no reporting lines)." },
+  { id: "team", name: "Team", title: "Team", people: true, invites: "always", note: "A manager's team: the people who report to them." },
   { id: "group", name: "Group", title: "{group} Group", people: true, invites: "when the invite list carries the grouping", note: "People who share a profile answer: department, site, age band, tenure, work model, job level and so on." },
   { id: "person", name: "Person", title: "Your", people: false, invites: "never", note: "One person's own answers. Nothing about anyone else." },
 ];
@@ -70,14 +70,42 @@ export function defaultElements(whoId, whatId, size) {
 }
 
 /* The card's title: who + what. "Org Score", "Your Score", "IT Group Score", "Physical Health Score",
-   "Your Sleep Score", "IT Group · Sleep Score". */
-export function scoreTitle(whoId, whatId, { name, group } = {}) {
+   "Your Sleep Score", "IT Group · Sleep Score". `noun` names the widget ("Score", "Status", "Index"). */
+export function scoreTitle(whoId, whatId, { name, group } = {}, noun = "Score") {
   const who = whoById(whoId);
   const whoWord = who.title.replace("{group}", group || "Group");
-  if (whatId === "overall") return `${whoWord} Score`;
-  if (whoId === "org") return `${name} Score`;
-  if (whoId === "person") return `Your ${name} Score`;
-  return `${whoWord} · ${name} Score`;
+  if (whatId === "overall") return `${whoWord} ${noun}`;
+  if (whoId === "org") return `${name} ${noun}`;
+  if (whoId === "person") return `Your ${name} ${noun}`;
+  return `${whoWord} · ${name} ${noun}`;
+}
+export const statusTitle = (whoId, whatId, opts) => scoreTitle(whoId, whatId, opts, "Status");
+
+/* ---- the Status widget ------------------------------------------------- */
+/* ONE Status widget too, for the same subjects as the Score: it shows the band a score puts its subject in
+   (Flourishing, Striving or Struggling) and, under it, a breakdown bar of what sits in each band.
+   - A population (the organisation, a team, a group): the bar is always its PEOPLE, whatever the score.
+   - One person: there are no people to split, so the bar is the score's PARTS: the Explorers of the overall score,
+     the Drivers of an Explorer or a cluster.
+   There is no Status widget for a Driver (statusBlocked). 1x1: the status face and word over the bar. 2x2: the status
+   illustration and word; the Evidence holds the bar and, for a population, the count in each band, or for one person,
+   "Across the 12 Explorers, 5 are Flourishing…" 6px under it. */
+export function statusBreakdown(whoId, whatId) {
+  if (whoById(whoId)?.people) return "people";
+  return whatById(whatId)?.parts ? "parts" : null;
+}
+/* Which scores have a Status widget. Not a Driver: Drivers have no page of their own in the product, so no status widget. */
+export const statusWhats = () => WHAT.filter((w) => w.id !== "driver");
+export const statusBlocked = (whatId) => (whatId === "driver" ? "A Driver has no Status widget: Drivers have no page of their own." : null);
+export const STATUS_ELEMENTS = [
+  { id: "status", name: "Status", can: () => true, note: "Always. The face (1x1) or illustration (2x2) and the status word, from the score." },
+  { id: "bar", name: "Breakdown bar", can: () => true, note: "People per band for a population; parts per band for one person." },
+  { id: "people", name: "People in each band", can: (who) => (who.people ? true : "One person has one status"), note: "2x2. Flourishing, Striving and Struggling with a headcount each." },
+  { id: "parts", name: "Parts in each band", can: (who) => (who.people ? "A population's bar is its people" : true), note: "2x2. “Across the 12 Explorers, 5 are Flourishing, 3 Striving, and 4 Struggling.”" },
+];
+export function statusElements(whoId, whatId) {
+  const who = whoById(whoId), what = whatById(whatId);
+  return STATUS_ELEMENTS.map((e) => { const r = e.can(who, what); return { ...e, ok: r === true, why: r === true ? null : r }; });
 }
 
 /* Groups and teams smaller than this never show a score (the survey's privacy rule). */

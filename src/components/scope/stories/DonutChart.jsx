@@ -15,8 +15,9 @@ import { AxisIcon } from "./diagnosticParts.jsx";
 /* Hover or tap a segment to select it; the Story says what it is in its   */
 /* footer line, so the ring itself never changes size or moves.            */
 /* ================================================================== */
-const ORDER = ["lavenderViolet", "amberOrange", "mintGreen", "goldenYellow", "coralRed", "teal", "purple", "turquoise", "hotPink", "orangeCoral"];
-const BY_AXIS = { workModel: ["personalBlue", "orgBlue", "mintGreen"], impactTime: ["personalBlue", "orgBlue"], impactMoney: ["personalBlue", "orgBlue", "teal", "lavenderViolet"] };
+const ORDER = ["lavenderViolet", "amberOrange", "mintGreen", "goldenYellow", "coralRed", "teal", "purple", "turquoise", "hotPink", "orangeCoral", "limeGreen", "magenta", "oliveGreen", "cyanGlow", "neonLime"];
+// Composition widgets (the design's Gender / Work / Time / Money Composition cards) keep their own colours per group.
+const BY_AXIS = { gender: ["personalBlue", "hotPink", "goldenYellow", "slateGray"], workModel: ["personalBlue", "orgBlue", "mintGreen"], impactTime: ["personalBlue", "teamBlue"], impactMoney: ["personalBlue", "teamBlue", "teal", "lavenderViolet"] };
 export const segmentColor = (axisKey, i) => { const keys = BY_AXIS[axisKey] || ORDER; return ds.graph[keys[i % keys.length]]; };
 
 const BOX = 176, C = BOX / 2, RO = 80, RI = 56;

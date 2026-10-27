@@ -21,6 +21,7 @@ import { WidgetBuilderVersions } from "./WidgetBuilderVersions.jsx";
 import { StoryStyleToggle } from "./StoryStyleToggle.jsx";
 import { PreviewWidthToggle, PreviewFrame } from "./PreviewWidth.jsx";
 import { useStoryStyle, StoryMetaContext } from "../scope/stories/storyStyle.js";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* WIDGET BUILDER — Create → Widget Builder. A separate flow from the    */
@@ -124,7 +125,7 @@ function ChatColumn({ messages, typing, onSend }) {
 function WidgetPreview({ spec }) {
   const px = spec.size === "3x3" ? 524 : spec.size === "2x2" ? 344 : 164;
   return (
-    <div style={{ width: px, height: px, flexShrink: 0, background: T.white, border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ width: px, height: px, flexShrink: 0, background: T.white, border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
       <Header title={spec.title} estimated={spec.real === false} />
       <GeneratedBody spec={spec} />
     </div>

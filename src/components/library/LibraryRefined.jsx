@@ -10,6 +10,7 @@ import { Header } from "../widgets/primitives.jsx";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import { nativeForSize } from "./MiniWidgetPreview.jsx";
 import { useElementWidth } from "../scope/stories/storyWidth.js";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* LIBRARY · REFINED — a redesign of the Library page (the Current one,  */
@@ -44,7 +45,7 @@ function Thumb({ entry }) {
   return (
     <div aria-hidden="true" style={{ height: 200, background: ds.bg.primary, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: `${dsRadius.lg}px ${dsRadius.lg}px 0 0`, overflow: "hidden" }}>
       <div style={{ width: shown, height: shown, position: "relative" }}>
-        <div style={{ width: native, height: native, transform: `scale(${s})`, transformOrigin: "top left", position: "absolute", inset: 0, background: surface.background || ds.surface.general.card, border: `1px solid ${surface.borderColor || ds.border.secondary}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, boxShadow: dsShadow("sm"), overflow: "hidden", pointerEvents: "none" }}>
+        <div style={{ width: native, height: native, transform: `scale(${s})`, transformOrigin: "top left", position: "absolute", inset: 0, background: surface.background || ds.surface.general.card, border: `1px solid ${surface.borderColor || ds.border.secondary}`, borderRadius: radius.widget, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, boxShadow: dsShadow("sm"), overflow: "hidden", pointerEvents: "none" }}>
           <Header title={entry.title} />
           <WidgetBody familyId={entry.familyId} formIndex={entry.formIndex} />
         </div>

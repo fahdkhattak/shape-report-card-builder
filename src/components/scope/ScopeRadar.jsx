@@ -1,3 +1,4 @@
+import { TipBox } from "../widgets/ChartTip.jsx";
 import { useRef, useState } from "react";
 import { font } from "../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsShadow } from "../../lib/ds.js";
@@ -213,34 +214,16 @@ export default function ScopeRadar({ items, series }) {
         </svg>
 
         {!compact && hovered && (
-          <div
-            style={{
-              position: "absolute", left: `${(hx / W) * 100}%`, top: `${(hy / H) * 100}%`, width: 240, boxSizing: "border-box", pointerEvents: "none",
-              transform: `translate(${hx < 130 ? "-12%" : hx > W - 130 ? "-88%" : "-50%"}, ${below ? "18px" : "calc(-100% - 18px)"})`,
-              background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, display: "flex", flexDirection: "column", gap: dsSpace[8], zIndex: 2,
-              boxShadow: dsShadow("sm"),
-            }}
-          >
-            {series ? <SeriesRows label={hovered.label} series={series} i={hover} /> : <>
-            <div style={{ display: "flex", alignItems: "center", gap: dsSpace[12], borderLeft: `2px solid ${b.c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-              <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{hovered.label}</span>
-              {hovered.delta != null && hovered.delta !== 0 && <TrendPill delta={hovered.delta} numberOnly />}
-              <span style={{ ...dsText("Text md", 700), color: b.cs }}>{hovered.value}</span>
-            </div>
-            {hovered.prevLabel && (
-              <p style={{ margin: 0, ...dsText("Text 2xs"), color: ds.text.secondary }}>
-                {hovered.prevLabel}: <b>{hovered.prev}</b> → now <b>{hovered.value}</b>
-              </p>
-            )}
-            {hovered.blurb && <p style={{ margin: 0, ...dsText("Text xs"), color: ds.text.primary }}>{hovered.blurb}</p>}
-            </>}
-          </div>
+          <TipBox
+            content={radarTip(hovered, series, hover, b)}
+            style={{ position: "absolute", left: `${(hx / W) * 100}%`, top: `${(hy / H) * 100}%`, width: 240, zIndex: 2, transform: `translate(${hx < 130 ? "-12%" : hx > W - 130 ? "-88%" : "-50%"}, ${below ? "18px" : "calc(-100% - 18px)"})` }}
+          />
         )}
       </div>
 
       {compact && (
         <>
-          {hovered && keyHover == null && (series ? <div data-part="detail" role="status" style={{ background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}><SeriesRows label={hovered.label} series={series} i={hover} /></div> : <DetailCard row={{ ...hovered }} refName={hovered.prevLabel} />)}
+          {hovered && keyHover == null && (series ? <TipBox flat data-part="detail" content={radarTip(hovered, series, hover)} /> : <DetailCard row={{ ...hovered }} refName={hovered.prevLabel} />)}
           <NumberedList rows={series ? items.map((it, i) => ({ ...it, series: series.map((s) => ({ color: s.color, value: s.values[i] })) })) : items} active={hover} onPick={setHover} hoverable onHover={setKeyHover} />
         </>
       )}
@@ -250,16 +233,12 @@ export default function ScopeRadar({ items, series }) {
 }
 
 /* Every series at one spoke: the spoke name, then a row per series with its colour, name and score. */
-function SeriesRows({ label, series, i }) {
-  return (
-    <>
-      <span style={{ ...dsText("Text xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{label}</span>
-      {series.map((s) => (
-        <div key={s.id} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${s.color}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-          <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{s.label}</span>
-          <span style={{ ...dsText("Text md", 700), color: dsBand(s.values[i]).cs }}>{s.values[i]}</span>
-        </div>
-      ))}
-    </>
-  );
+/* The tooltip's content (the standard tooltip, widgets/ChartTip.jsx): one spoke's score, or every series' at that spoke. */
+function radarTip(hovered, series, i, b) {
+  if (series) return { head: hovered.label, rows: series.map((s) => ({ label: s.label, value: s.values[i], score: true, color: s.color })) };
+  return {
+    rows: [{ label: hovered.label, value: hovered.value, delta: hovered.delta, score: true, color: b?.c }],
+    note: hovered.prevLabel ? <>{hovered.prevLabel}: <b>{hovered.prev}</b> → now <b>{hovered.value}</b></> : null,
+    body: hovered.blurb,
+  };
 }

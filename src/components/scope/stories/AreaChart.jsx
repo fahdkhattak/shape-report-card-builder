@@ -1,3 +1,4 @@
+import { TipBox } from "../../widgets/ChartTip.jsx";
 import { useRef, useState } from "react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsShadow } from "../../../lib/ds.js";
@@ -128,20 +129,9 @@ function Tip({ plotRef, hover, n, h, b, refName, y: py }) {
   const left = box.offsetLeft + ((hover + 0.5) / n) * box.offsetWidth;
   const top = box.offsetTop + py;
   return (
-    <div
-      style={{
-        position: "absolute", left, top, pointerEvents: "none", zIndex: 2, width: 190, boxSizing: "border-box",
-        transform: `translate(${hover < 1 ? "-12%" : hover > n - 2 ? "-88%" : "-50%"}, calc(-100% - 14px))`,
-        background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font,
-        boxShadow: dsShadow("sm"),
-      }}
-    >
-      <span style={{ ...dsText("Text xs", 600), color: ds.text.secondary }}>{h.label}</span>
-      <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${b.c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-        <span style={{ flex: 1, ...dsText("Text xs", 600), color: ds.text.primary }}>Your Score</span>
-        <span style={{ ...dsText("Text md", 700), color: b.cs }}>{h.value}</span>
-      </div>
-      {h.prev != null && refName && <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{refName}: <b>{h.prev}</b> → now <b>{h.value}</b></span>}
-    </div>
+    <TipBox
+      style={{ position: "absolute", left, top, zIndex: 2, width: 200, transform: `translate(${hover < 1 ? "-12%" : hover > n - 2 ? "-88%" : "-50%"}, calc(-100% - 14px))` }}
+      content={{ head: h.label, rows: [{ label: "Your Score", value: h.value, score: true, color: b.c }], note: h.prev != null && refName ? <>{refName}: <b>{h.prev}</b> → now <b>{h.value}</b></> : null }}
+    />
   );
 }

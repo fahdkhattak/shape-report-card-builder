@@ -1,3 +1,4 @@
+import { TipBox } from "../../widgets/ChartTip.jsx";
 import { useState } from "react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace, dsBorder, dsShadow } from "../../../lib/ds.js";
@@ -255,11 +256,8 @@ function PriorityChart({ rows, medianLink, noun }) {
         ))}
       </svg>
       {h && (
-        <div style={{ position: "absolute", left: `${(x(h.score) / W) * 100}%`, top: `${(y(h.link) / H) * 100}%`, pointerEvents: "none", zIndex: 3, width: 200, boxSizing: "border-box", transform: `translate(${h.score > 70 ? "-100%" : "0"}, -110%)`, background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, display: "flex", flexDirection: "column", gap: dsSpace[4], fontFamily: font, boxShadow: dsShadow("sm") }}>
-          <span style={{ ...dsText("Text xs", 700), color: ds.text.primary }}>{h.label}</span>
-          <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>Score <b style={{ color: dsBand(h.score).cs }}>{h.score}</b> · link {h.link.toFixed(2)}</span>
-          <span style={{ ...dsText("Text 2xs", 700), color: quadColor(h.quad) }}>{QUAD[h.quad].name}</span>
-        </div>
+        <TipBox style={{ position: "absolute", left: `${(x(h.score) / W) * 100}%`, top: `${(y(h.link) / H) * 100}%`, width: 220, transform: `translate(${h.score > 70 ? "-100%" : "0"}, -110%)` }}
+          content={{ rows: [{ label: h.label, value: h.score, score: true }], note: <>Link to the overall score {h.link.toFixed(2)} · <b style={{ color: quadColor(h.quad) }}>{QUAD[h.quad].name}</b></> }} />
       )}
       <span className="sr-only" style={{ display: "none" }}>{noun}</span>
     </div>

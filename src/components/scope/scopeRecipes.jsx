@@ -17,6 +17,8 @@ import { PARTS, TIME_PARTS, MONEY_PARTS, impactSeries, samplePerson, fmtMoney } 
 import { ImpactSplitStory, GainLadderStory, GainByGroupStory, ImpactMethodStory } from "./stories/ImpactStories.jsx";
 import { FLOURISHING_AT, STRIVING_AT } from "../../lib/bands.js";
 import { groupHistory, keepFor, groupingLabel } from "../../lib/heatMap.js";
+import { familyById } from "../../lib/families.js";
+import { driversOnPage } from "../../lib/driversWidget.js";
 
 /* ================================================================== */
 /* SCOPE RECIPES — which Stories fill each widget's Scope, in order.    */
@@ -142,19 +144,27 @@ function ExplorersRecipe() {
   );
 }
 
-function FactorsRecipe() {
-  const ranked = driverRankedRows();
-  const weak = weakestDrivers(3);
+/* The Drivers widget's Scope: the Drivers of the page it sits on (lib/driversWidget.js): every Driver on a report, an
+   Explorer's own on its page, a cluster's on the cluster's page. */
+function DriversRecipe({ formIndex = 0 }) {
+  const page = familyById("factors").forms[formIndex]?.page || { level: "report" };
+  const names = new Set(driversOnPage(page));
+  const ranked = driverRankedRows().filter((r) => names.has(r[0]));
+  const weak = [...ranked].reverse().slice(0, 3).map((r) => r[0]);
+  const items = driverItems().filter((d) => names.has(d.label));
+  const all = page.level === "report";
   return (
     <>
       <InsightSummaryStory headline="Here's how each Driver is doing.">
-        <SummaryP>Drivers are the specific things the survey measures. The {DRIVERS.length} of them roll up into your {DIMENSIONS.length} Explorers. The lowest-scoring are the best place to start.</SummaryP>
+        <SummaryP>{all
+          ? <>Drivers are the specific things the survey measures. The {DRIVERS.length} of them roll up into your {DIMENSIONS.length} Explorers. The lowest-scoring are the best place to start.</>
+          : <>These are the {ranked.length} Drivers in {page.name}. The lowest-scoring are the best place to start.</>}</SummaryP>
       </InsightSummaryStory>
-      <BreakdownStory title="What's Behind Your Explorers" variant="bars" noun="Driver" items={driverItems()} limit={8} line="Every Driver, ranked from strongest to weakest." />
+      <BreakdownStory title={all ? "What's Behind Your Explorers" : `What's Behind ${page.name}`} variant="bars" noun="Driver" items={items} limit={8} line="Every Driver, ranked from strongest to weakest." />
       <StrongestWeakestStory actionsCta noun="Driver" strongest={{ label: ranked[0][0], value: ranked[0][1] }} weakest={{ label: ranked[ranked.length - 1][0], value: ranked[ranked.length - 1][1] }} />
-      <WithinReachStory items={driverItems()} noun="Driver" />
+      <WithinReachStory items={items} noun="Driver" />
       <ScoreOverTimeRows title="Weakest Drivers Over Time" line="The three lowest-scoring Drivers, round by round." rounds={ROUNDS_LIVE()} rows={weak.map((d) => ({ label: d, values: driverSeries(d) }))} />
-      <ActionsStoryBar drivers={weakestDrivers(6)} />
+      <ActionsStoryBar drivers={[...ranked].reverse().slice(0, 6).map((r) => r[0])} />
       <MethodologyStory kind="score" />
     </>
   );
@@ -220,6 +230,22 @@ export function GapSummary({ axisKey, noun }) {
       <SummaryP>Among {noun} groups with 5 or more people, <b>{hi.group}</b> averages <Strong c={statusText(hi.score)}>{hi.score}</Strong> and <b>{lo.group}</b> averages <Strong c={statusText(lo.score)}>{lo.score}</Strong>, a gap of <b>{hi.score - lo.score}</b> points.</SummaryP>
     </InsightSummaryStory>
   );
+}
+
+/* Score by Group (a score per group): the gap, who is in each group, each group's score round by round. */
+const AXIS_TAB = { gender: "People", department: "Organisation", jobLevel: "Organisation", employmentStatus: "Employment", tenure: "Employment", workModel: "Employment", location: "Locations" };
+const AXIS_NOUN = { gender: "Gender", department: "Department", jobLevel: "Job Level", employmentStatus: "Employment Status", tenure: "Tenure", workModel: "Work Model", location: "Location" };
+function ScoreByGroupRecipe({ familyId, formIndex = 0 }) {
+  const axis = familyById(familyId).forms[formIndex]?.axis || "gender";
+  return <CompositionRecipe axisKey={axis} tab={AXIS_TAB[axis]} noun={AXIS_NOUN[axis]} />;
+}
+/* Composition (who is in each group): who is where, then (for people) how each group scores. Time and money open their
+   impact Scopes. */
+function CompositionWidgetRecipe({ formIndex = 0 }) {
+  const axis = familyById("composition").forms[formIndex]?.comp.axis;
+  if (axis === "impactTime") return <TimeImpactRecipe />;
+  if (axis === "impactMoney") return <MoneyImpactRecipe />;
+  return <CompositionStory initialTab={AXIS_TAB[axis] || "People"} title="Who Is in Each Group" line="How many people are in each group, and how each group scores." />;
 }
 
 function CompositionRecipe({ axisKey, tab, noun }) {
@@ -336,12 +362,13 @@ const RECIPES = {
   index: OverallRecipe,
   "org-status": OrgStatusRecipe,
   explorers: ExplorersRecipe,
-  factors: FactorsRecipe,
+  factors: DriversRecipe,
   "score-history": ScoreHistoryRecipe,
   enps: EnpsRecipe,
   "areas-focus": AreasFocusRecipe,
-  "avg-gender": () => <CompositionRecipe axisKey="gender" tab="People" noun="Gender" />,
-  "avg-work-model": () => <CompositionRecipe axisKey="workModel" tab="Employment" noun="Work Model" />,
+  "avg-gender": ScoreByGroupRecipe,
+  "avg-work-model": ScoreByGroupRecipe,
+  composition: CompositionWidgetRecipe,
   "time-impact": TimeImpactRecipe,
   "money-composition": MoneyImpactRecipe,
   "time-gain": TimeGainRecipe,
@@ -351,9 +378,9 @@ const RECIPES = {
    Composition have no data behind them) — ScopePanel falls back to its
    generic placeholder Scope for those. */
 export const hasRecipe = (familyId) => familyId in RECIPES;
-export default function ScopeRecipe({ familyId }) {
+export default function ScopeRecipe({ familyId, formIndex = 0 }) {
   const Recipe = RECIPES[familyId];
-  return Recipe ? <Recipe /> : null;
+  return Recipe ? <Recipe familyId={familyId} formIndex={formIndex} /> : null;
 }
 
 /* ---- A group of people, opened from the Heat Map (Figma flow 15299:47644) ------------------------------------------------

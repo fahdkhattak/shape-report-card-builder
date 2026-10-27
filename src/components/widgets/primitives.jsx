@@ -1,4 +1,4 @@
-import { useRef, useState, useLayoutEffect } from "react";
+import { useRef, useState, useLayoutEffect, createContext, useContext } from "react";
 import { Users } from "lucide-react";
 import { ds } from "../../lib/ds.js";
 import { T, font, band, rand } from "../../lib/tokens.js";
@@ -9,6 +9,34 @@ import rippleStriving from "../../assets/status-illustrations/striving.svg";
 import rippleStruggling from "../../assets/status-illustrations/struggling.svg";
 import { FLOURISHING_AT, STRIVING_AT, statusName } from "../../lib/bands.js";
 import { HEADER_RULE } from "../../lib/widgetTypeSystem.js";
+import { STRUCTURE } from "../../lib/widgetStructure.js";
+
+/* ---- THE WIDGET SECTIONS (lib/widgetStructure.js; Figma "Compatible Widget Template", 15463:2092) -------------------
+   Every widget body is <Sections size> holding, in order: <Insight> (fills the space left), then optionally <Evidence>
+   (24px Evidence Bar on a 1x1, 68px Evidence Section on a 2x2 or 3x3) and/or <ActionBar> (24px, content to the right).
+   12px between sections; the card's shell supplies the 16px padding and the Header. A 1x1 has room for one of Evidence or
+   Action Bar, not both. Content that doesn't fit is the widget's problem to solve (fewer rows, "N more"), never a
+   section's height. */
+const SectionSize = createContext("2x2");
+export const useWidgetSize = () => useContext(SectionSize);
+export function Sections({ size = "2x2", children, style }) {
+  return (
+    <SectionSize.Provider value={size}>
+      <div data-part="sections" data-size={size} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: STRUCTURE.gap, ...style }}>{children}</div>
+    </SectionSize.Provider>
+  );
+}
+export function Insight({ children, style, center = false }) {
+  return <div data-part="section-insight" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: center ? "center" : "flex-start", position: "relative", ...style }}>{children}</div>;
+}
+/* Its content sits at the foot of the bar (the board's examples). */
+export function Evidence({ children, style }) {
+  const size = useContext(SectionSize);
+  return <div data-part="section-evidence" style={{ height: STRUCTURE.evidence[size], flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, minWidth: 0, ...style }}>{children}</div>;
+}
+export function ActionBar({ children, style }) {
+  return <div data-part="section-action" style={{ height: STRUCTURE.action, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, ...style }}>{children}</div>;
+}
 
 /* ================================================================== */
 /* SHARED WIDGET PRIMITIVES                                            */
@@ -45,9 +73,7 @@ export function Header({ title, estimated, selected = false }) {
     const head = ref.current, card = head?.parentElement;
     if (!card) return undefined;
     let frame = 0;
-    const check = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
+    const measure = () => {
         const cs = getComputedStyle(card);
         const inner = card.getBoundingClientRect().bottom - parseFloat(cs.paddingBottom || 0) - parseFloat(cs.borderBottomWidth || 0);
         let lowest = -Infinity;
@@ -57,18 +83,30 @@ export function Header({ title, estimated, selected = false }) {
           if (r.width && r.height) lowest = Math.max(lowest, r.bottom);
         }
         if (lowest === -Infinity) return;
-        const over = lowest - inner;
+        // A section's content running past its own bottom counts too: an overfull Insight runs into the Evidence below it,
+        // not past the card, so the card edge alone can't see it.
+        let sectionOver = -Infinity;
+        for (const sec of card.querySelectorAll('[data-part^="section-"]')) {
+          const sb = sec.getBoundingClientRect().bottom;
+          for (const el of sec.querySelectorAll("*")) { const r = el.getBoundingClientRect(); if (r.width && r.height) sectionOver = Math.max(sectionOver, r.bottom - sb); }
+        }
+        const over = Math.max(lowest - inner, sectionOver);
         const text = head.firstChild;
         // Would the title actually use a second line? On one line it's truncated (wider than its box); on two, taller than one trimmed line (~8px).
         const wantsTwo = text && (head.dataset.lines === "1" ? text.scrollWidth > text.clientWidth + 1 : text.scrollHeight > 11 + 2);
         setLines((l) => (l === 2 && over > 1 ? 1 : l === 1 && wantsTwo && over < -(TITLE_LINE + 2) ? 2 : l));
-      });
     };
+    // Resizes are batched into the next frame; the first check, the one after fonts load and a late one run directly,
+    // so the title settles even where frames are throttled (a background tab, an embedded preview).
+    const check = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     check();
+    document.fonts?.ready?.then(measure);
+    const late = setTimeout(measure, 400);
     const ro = new ResizeObserver(check);
     ro.observe(card);
     [...card.children].forEach((c) => c !== head && ro.observe(c));
-    return () => { ro.disconnect(); cancelAnimationFrame(frame); };
+    card.querySelectorAll('[data-part^="section-"] > *').forEach((c) => ro.observe(c));
+    return () => { ro.disconnect(); cancelAnimationFrame(frame); clearTimeout(late); };
   }, [title]);
   return (
     // The box (Figma): 12px tall with the text centred for one line, 22px for two (first cap top to second baseline:
@@ -541,11 +579,27 @@ function wrapLabel(label, max = 12) {
   if (cur) lines.push(cur);
   return lines.slice(0, 2);
 }
+/* Width of a line of 11px IBM Plex Sans, measured with the real font (a canvas), so labels can be fitted, not guessed. */
+let measureCtx;
+const labelWidth = (text, size = 11) => {
+  if (typeof document === "undefined") return text.length * size * 0.56;
+  measureCtx = measureCtx || document.createElement("canvas").getContext("2d");
+  measureCtx.font = `400 ${size}px "IBM Plex Sans", sans-serif`;
+  return measureCtx.measureText(text).width;
+};
 export function RadarChart({ items, size = 286 }) {
   const n = items.length;
   const W = 312, H = size;
   const cx = W / 2, cy = H / 2;
-  const R = 78;
+  // The rings shrink (78 down to 56) until every side label fits inside the widget: a label on the left or right starts
+  // 14px past the ring and can't wrap a single long word ("Empowerment").
+  const fits = items.map((it, i) => {
+    const sin = Math.abs(Math.sin(((i * 360) / n) * Math.PI / 180));
+    if (sin < 0.2) return 78; // top and bottom labels are centred, so they don't run sideways
+    const w = Math.max(...wrapLabel(it.label).map((l) => labelWidth(l)));
+    return (W / 2 - 2 - w) / sin - 14; // the label starts (R + 14) · sin from the centre and must end inside the widget
+  });
+  const R = Math.max(56, Math.min(78, ...fits));
   const step = 360 / n;
   const grey = ds.border.secondary;
   const at = (i, v) => polar(cx, cy, (Math.max(0, Math.min(100, v)) / 100) * R, i * step);

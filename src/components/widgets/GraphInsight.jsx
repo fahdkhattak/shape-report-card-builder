@@ -1,9 +1,10 @@
 import { useRef } from "react";
 import { font } from "../../lib/tokens.js";
 import { ds, dsText, dsSpace } from "../../lib/ds.js";
-import { TrendPill } from "./primitives.jsx";
+import { TrendPill, Sections, Insight, Evidence } from "./primitives.jsx";
 import { useElementWidth } from "../scope/stories/storyWidth.js";
 import { GRAPH_LIMITS } from "../../lib/insightRules.js";
+import { bandKind } from "../../lib/bands.js";
 import { useChartTip } from "./ChartTip.jsx";
 
 /* ================================================================== */
@@ -79,11 +80,31 @@ export function GraphLine({ series, labels, size = "1x1", benchmark }) {
           const left = i === 0 ? 0 : (x(i - 1) + x(i)) / 2, right = i === n - 1 ? plotW : (x(i) + x(i + 1)) / 2;
           return <rect key={`hit-${i}`} x={left} y="0" width={Math.max(0, right - left)} height={PAD_TOP + plotH + X_LABEL_GAP} fill="transparent" {...tip.bind({ i, head: xs[i], rows: lines.map((l, li) => ({ label: l.label || "Score", value: l.points[i], delta: i > 0 ? l.points[i] - l.points[i - 1] : null, color: LINE_COLOURS[li], score: true })) })} />;
         })}
-        {xs.map((l, i) => <text key={i} x={x(i)} y={PAD_TOP + plotH + X_LABEL_GAP + 11} textAnchor="middle" fontSize="11" fontWeight="500" fontFamily={font} fill={ds.text.quaternary}>{l}</text>)}
+        {/* The end labels align to the plot's edges (centred on a point 8px in, a month label would run past the widget). */}
+        {xs.map((l, i) => { const end = n > 1 && i === n - 1, start = n > 1 && i === 0; return <text key={i} x={end ? plotW : start ? 0 : x(i)} y={PAD_TOP + plotH + X_LABEL_GAP + 11} textAnchor={end ? "end" : start ? "start" : "middle"} fontSize="11" fontWeight="500" fontFamily={font} fill={ds.text.quaternary}>{l}</text>; })}
       </svg>
       {tip.node}
     </div>
   );
+}
+
+/* The 2x2 history caption (the design's Score History card): how the score moved, naming rounds as the axis does.
+   Text 3xs / Regular (11 / 16) in text/secondary; the round and "latest round" bold in the same grey; the change bold
+   in green (up) or red (down) and the latest score bold in its band's status colour. */
+export function HistoryCaption({ points, labels, noun = "the score" }) {
+  const n = points.length, last = points[n - 1], prev = points[n - 2], d = last - prev;
+  const was = labels?.[labels.length - 2] ?? `R${n - 1}`;
+  const B = ({ children, c }) => <b style={{ fontWeight: 700, color: c || ds.text.secondary }}>{children}</b>;
+  const Noun = noun.charAt(0).toUpperCase() + noun.slice(1);
+  const score = <B c={ds.status[bandKind(last)].text}>{last}</B>;
+  if (d > 0) {
+    const dipped = n >= 3 && points[n - 2] < points[n - 3];
+    return dipped
+      ? <>After dipping in <B>{was}</B>, {noun} increased by <B c={ds.status.success.text}>+{d} {d === 1 ? "point" : "points"},</B> reaching {score} in the <B>latest round</B>.</>
+      : <>{Noun} increased by <B c={ds.status.success.text}>+{d} {d === 1 ? "point" : "points"}</B> since <B>{was}</B>, reaching {score} in the <B>latest round</B>.</>;
+  }
+  if (d < 0) return <>{Noun} fell by <B c={ds.status.error.text}>{-d} {d === -1 ? "point" : "points"}</B> since <B>{was}</B>, to {score} in the <B>latest round</B>.</>;
+  return <>{Noun} held at {score} since <B>{was}</B>.</>;
 }
 
 /* The whole widget body: change pill, the graph, and (2x2) an evidence sentence and a legend for several lines. */
@@ -91,7 +112,8 @@ export default function GraphInsight({ series, labels, size = "1x1", delta, benc
   const big = size === "2x2";
   const several = series.length > 1;
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: big ? dsSpace[12] : dsSpace[8], minHeight: 0, justifyContent: big ? "flex-start" : "flex-end" }}>
+    <Sections size={size}>
+    <Insight style={{ gap: big ? dsSpace[12] : dsSpace[8], justifyContent: big ? "flex-start" : "flex-end" }}>
       {big && delta != null && <div style={{ display: "flex", justifyContent: "center" }}><TrendPill delta={delta} /></div>}
       {/* 1x1: the graph's height is fixed by the rules and a two-line title leaves no room for a pill row, so the caret
           pill sits inside the plot's right corner, above the latest point — at the bottom instead when that point is
@@ -112,7 +134,9 @@ export default function GraphInsight({ series, labels, size = "1x1", delta, benc
           ))}
         </div>
       )}
-      {big && evidence && <p data-part="caption" style={{ margin: "auto 0 0", paddingTop: dsSpace[4], fontSize: 14, lineHeight: 1.4, color: ds.text.secondary, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{evidence}</p>}
-    </div>
+    </Insight>
+    {/* 2x2: the sentence is the Evidence Section (68px, three lines at most), set from its top as the design draws it. */}
+    {big && evidence && <Evidence style={{ justifyContent: "flex-start" }}><p data-part="caption" style={{ margin: 0, fontSize: 11, lineHeight: "16px", fontWeight: 400, color: ds.text.secondary, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{evidence}</p></Evidence>}
+    </Sections>
   );
 }

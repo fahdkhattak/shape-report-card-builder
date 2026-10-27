@@ -12,8 +12,8 @@ export const { meta, toc, Page } = makeWidgetDoc({
   source: "components/widgets/WidgetBody.jsx (RankedList) · widgets/primitives.jsx (DriverGroupedList, DriverRow)",
   purpose: {
     does: "answers “which areas are strong and which are holding us back?” by ranking the overall score's children and grouping them by band.",
-    boundary: "the first level only (Factors is the same widget for the level below). It ranks; it doesn't explain or compare groups of people.",
-    where: "the Org report, and the Library's “Explorers & Factors” group. The same component draws Factors.",
+    boundary: "the first level only (the Drivers widget is the same pattern for the level below). It ranks; it doesn't explain or compare groups of people.",
+    where: "the Org report, and the Library's “Explorers & Drivers” group. The same component draws the Drivers widget.",
   },
   forms: ["Up to two rows from each tier (strongest Great, middle Average, weakest Poor), each with its change, then “N more Explorers”.", "The strongest and the weakest only, under Great and Poor, then “N more Explorers”."],
   anatomy: [

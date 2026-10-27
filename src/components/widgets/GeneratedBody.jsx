@@ -8,6 +8,7 @@ import {
   ScatterMini,
   RadarChart,
   Gauge,
+  Sections, Insight, Evidence,
 } from "./primitives.jsx";
 import SubjectBody from "./SubjectBody.jsx";
 import GraphInsight from "./GraphInsight.jsx";
@@ -27,12 +28,14 @@ export default function GeneratedBody({ spec }) {
     case "scatter": {
       const b = payload.r < 0 ? ds.status.error.textIndicator : ds.status.success.textIndicator;
       return (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, justifyContent: "center" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: b }}>
-            {payload.r < -0.4 ? "Strong negative" : payload.r < 0 ? "Weak negative" : payload.r < 0.4 ? "Weak positive" : "Strong positive"} correlation
-          </span>
-          <ScatterMini topicA={payload.topicA} topicB={payload.topicB} r={payload.r} points={payload.points} />
-        </div>
+        <Sections size={size}>
+          <Insight center style={{ gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: b }}>
+              {payload.r < -0.4 ? "Strong negative" : payload.r < 0 ? "Weak negative" : payload.r < 0.4 ? "Weak positive" : "Strong positive"} correlation
+            </span>
+            <ScatterMini topicA={payload.topicA} topicB={payload.topicB} r={payload.r} points={payload.points} />
+          </Insight>
+        </Sections>
       );
     }
     case "trend": {
@@ -42,40 +45,44 @@ export default function GeneratedBody({ spec }) {
     }
     case "bar":
       return (
-        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+        <Sections size={size}><Insight center>
           {/* Topics compared on one 0–100 score scale: colour = the score's own status band
               (the same 60/80 thresholds as everywhere else), never a different hue per bar. */}
           {/* Chart rules, horizontal bars: 0–100 scale, 1x1 2 to 5 categories, 2x2 up to 13. */}
           <HBars size={size} values={size === "2x2"} rows={payload.rows.map((r, i) => ({ label: r[0], value: r[1], color: payload.byStatus ? band(r[1]).c : [T.teamBlue, T.hotPink, ds.utility.graphColors.main.goldenYellow, ds.utility.graphColors.main.lavenderViolet, ds.utility.graphColors.main.turquoise][i % 5] }))} />
-        </div>
+        </Insight></Sections>
       );
     case "ranking":
-      return <DriverGroupedList rows={payload.rows} />;
+      return <Sections size={size}><Insight style={{ overflow: "hidden" }}><DriverGroupedList rows={payload.rows} /></Insight></Sections>;
     case "status":
-      return <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}><StatusRing status={payload.status} /></div>;
+      return <Sections size={size}><Insight center style={{ alignItems: "center" }}><StatusRing status={payload.status} /></Insight></Sections>;
     case "radar":
-      return <RadarChart items={payload.items} />;
+      return <Sections size={size}><Insight center><RadarChart items={payload.items} /></Insight></Sections>;
     case "gauge":
-      return <Gauge value={payload.value} />;
+      return <Sections size={size}><Insight center style={{ alignItems: "center" }}><Gauge value={payload.value} size={size === "1x1" ? 100 : 180} /></Insight></Sections>;
     case "insight":
       return (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
-          <p style={{ fontSize: 12, color: ds.text.primary, lineHeight: 1.5, margin: 0 }}>{payload.text}</p>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <BigNumber value={payload.stat} size={28} colorBand />
-            <span style={{ fontSize: 10, color: ds.text.tertiary }}>strength of the link (0–100)</span>
-          </div>
-        </div>
+        <Sections size={size}>
+          <Insight center><p style={{ fontSize: 12, color: ds.text.primary, lineHeight: 1.5, margin: 0 }}>{payload.text}</p></Insight>
+          <Evidence>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <BigNumber value={payload.stat} size={size === "1x1" ? 20 : 28} colorBand />
+              <span style={{ fontSize: 11, color: ds.text.tertiary }}>strength of the link (0–100)</span>
+            </div>
+          </Evidence>
+        </Sections>
       );
     case "metric":
     default:
       return (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <BigNumber value={payload.value} colorBand size={40} />
-            <TrendPill delta={payload.delta} />
-          </div>
-        </div>
+        <Sections size={size}>
+          <Insight center>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <BigNumber value={payload.value} colorBand size={40} />
+              <TrendPill delta={payload.delta} compact={size === "1x1"} />
+            </div>
+          </Insight>
+        </Sections>
       );
   }
 }

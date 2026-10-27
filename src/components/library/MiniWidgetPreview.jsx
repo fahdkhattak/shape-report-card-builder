@@ -5,6 +5,7 @@ import { familyById, formTitle, cardSurface } from "../../lib/families.js";
 import { Header } from "../widgets/primitives.jsx";
 import WidgetBody from "../widgets/WidgetBody.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* MINI WIDGET PREVIEW — Add Widget panel's draggable card.            */
@@ -66,7 +67,7 @@ export default function MiniWidgetPreview({ familyId, formIndex, spec, onQuickAd
       onMouseLeave={() => { setHover(false); setHoveredBtn(null); }}
       style={{ width: SLOT_W, height: SLOT_H, flexShrink: 0, position: "relative", borderRadius: radius.lg, overflow: "hidden" }}
     >
-      <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", top: offsetY, left: offsetX, background: surface.background || T.white, border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, boxShadow: CARD_SHADOW, overflow: "hidden" }}>
+      <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", top: offsetY, left: offsetX, background: surface.background || T.white, border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, boxShadow: CARD_SHADOW, overflow: "hidden" }}>
         <Header title={title} estimated={isGenerated && spec.real === false} />
         {isGenerated ? <GeneratedBody spec={spec} /> : <WidgetBody familyId={familyId} formIndex={formIndex} />}
       </div>

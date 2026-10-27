@@ -111,7 +111,7 @@ export const { meta, toc, Page } = makeWidgetDoc({
     ["Headcount", "Row", "A people icon and the bold count; a participation icon and the bold percent (left out when invites aren't known). Labels (“Employees”, “Team Members”, “People”) on the 2x2 only."],
     ["Status bar", "Bar", "8px tall, one segment per band in its graph colour, widths by share. 2x2 only."],
     ["People by status", "Row", "Three columns: band name over its count (16px / 700) and a 14px people icon."],
-    ["Parts by status", "Sentence", "11px, text/tertiary, the counts bold in their band's colour."],
+    ["Parts by status", "Statement", "6px under the bar. Text 3xs / Regular (11 / 16) in text/tertiary; the total bold in the same grey; each count bold in its band's status/*/text colour; “is” / “are” for each band."],
     ["Layout", "2x2", "Number centred in the free space; date, status, headcount, bar and counts stacked at the foot, 8 and 12px apart."],
   ],
   behaviour: [

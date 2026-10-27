@@ -100,7 +100,7 @@ export const FORMS = [
     // For the whole organisation the Org Score card is the 2×2, as in the Library.
     defaultSize: (s) => (s.kind === "overall" ? "2x2" : "1x1"),
     title: (s) => `${nm(s)} Score`,
-    why: "The number and how it moved, with its status — best when one figure matters most.",
+    why: "The number and how it moved, with its status. Best when one figure matters most.",
     build: (s) => {
       const p = people(s);
       const parts = s.children.length >= 2 ? bandCounts(s.children.map((c) => c.values[LAST])) : null;
@@ -117,10 +117,11 @@ export const FORMS = [
     build: (s) => base(s),
   },
   {
-    id: "status", name: "Status", sizes: ["1x1", "2x2"], blocked: () => null,
+    // No Status for a Driver: Drivers have no page of their own in the product, so no status widget either (lib/scoreWidget.js).
+    id: "status", name: "Status", sizes: ["1x1", "2x2"], blocked: (s) => (s.kind === "driver" ? "A Driver has no Status widget" : null),
     title: (s) => `${nm(s)} Status`,
-    why: "One status — Flourishing, Striving or Struggling — when the band matters more than the exact number.",
-    build: (s) => ({ ...base(s), people: people(s), parts: s.children.length >= 2 ? bandCounts(s.children.map((c) => c.values[LAST])) : null }),
+    why: "One status (Flourishing, Striving or Struggling), when the band matters more than the exact number.",
+    build: (s) => ({ ...base(s), people: people(s), parts: s.children.length >= 2 ? bandCounts(s.children.map((c) => c.values[LAST])) : null, partNoun: s.childNoun }),
   },
   {
     id: "history", name: "History", sizes: ["1x1", "2x2"], blocked: () => (ROUNDS.length < 2 ? "Needs at least two rounds" : null),
@@ -140,7 +141,7 @@ export const FORMS = [
     id: "profile", name: "Profile", sizes: ["2x2"],
     blocked: (s) => (s.children.length < 4 ? "Needs four or more parts to make a shape" : null),
     title: (s) => `${nm(s)} Profile`,
-    why: "Several parts on one shape — a dent on one spoke is the part pulling the rest down.",
+    why: "Several parts on one shape: a dent on one spoke is the part pulling the rest down.",
     build: (s) => {
       const rows = partRows(s);
       // A radar reads best with 4–8 spokes; keep the lowest if there are more.
@@ -151,7 +152,7 @@ export const FORMS = [
   {
     id: "people", name: "People", sizes: ["1x1", "2x2"], blocked: needsScores,
     title: (s) => `${nm(s)}: People by Status`,
-    why: "How many people are Flourishing, Striving or Struggling — the spread a single average hides.",
+    why: "How many people are Flourishing, Striving or Struggling: the spread a single average hides.",
     build: (s) => ({ ...base(s), people: people(s) }),
   },
   {
@@ -175,7 +176,7 @@ export const FORMS = [
   {
     id: "focus", name: "Focus", sizes: ["1x1", "2x2"], blocked: needsScores,
     title: (s) => `Areas to Focus · ${nm(s)}`,
-    why: "The lowest-scoring group on each way of splitting people — where to start. Groups under 5 people are never shown.",
+    why: "The lowest-scoring group on each way of splitting people: where to start. Groups under 5 people are never shown.",
     build: (s) => ({ ...base(s), rows: focusGroups(4, s.scoreOf).map((g) => ({ axis: g.axis, group: g.group, score: g.score, n: g.n, struggling: g.struggling, change: g.change })) }),
   },
   {
@@ -191,7 +192,7 @@ export const FORMS = [
     // Ten bands of ten points: past the vertical-bar 1x1 limit (4), so 2x2 only.
     id: "spread", name: "Spread", sizes: ["2x2"], blocked: needsScores,
     title: (s) => `${nm(s)} Spread`,
-    why: "How many people sit at each score, not just the average — the same average can hide two very different groups.",
+    why: "How many people sit at each score, not just the average. The same average can hide two very different groups.",
     build: (s) => ({ ...base(s), ...scoreSpread(s.scoreOf) }),
   },
   {
@@ -262,7 +263,7 @@ export const FORMS = [
   {
     id: "versus", name: "Versus", sizes: ["2x2"], blocked: needsScores, options: ["pair"],
     title: (s, o) => { const p = pickPair(s, o); return `${p.a} vs ${p.b}`; },
-    why: "Two groups side by side on the same measure — who scores higher, by how much, and which parts the gap comes from.",
+    why: "Two groups side by side on the same measure: who scores higher, by how much, and which parts the gap comes from.",
     build: (s, o) => {
       const p = pickPair(s, o), fn = scoreFn(s);
       const A = groupSnapshot(p.axis, p.a, fn), B = groupSnapshot(p.axis, p.b, fn);
@@ -287,7 +288,7 @@ export const FORMS = [
   {
     id: "check", name: "Check-up", sizes: ["2x2"], blocked: () => null,
     title: (s) => `${nm(s)} Health Check`,
-    why: "A short checklist — passing, worth a look, or failing — so a reader can see in seconds whether things are on track.",
+    why: "A short checklist (passing, worth a look, or failing) so a reader can see in seconds whether things are on track.",
     build: (s) => {
       const b = base(s), p = people(s);
       const checks = [];
@@ -334,7 +335,7 @@ export const FORMS = [
   {
     id: "momentum", name: "Momentum", sizes: ["1x1", "2x2"], blocked: () => (ROUNDS.length < 2 ? "Needs at least two rounds" : null),
     title: (s) => `${nm(s)} Momentum`,
-    why: "Which way the score has been heading over the rounds — the total change, the run it is on, and what moved most.",
+    why: "Which way the score has been heading over the rounds: the total change, the run it is on, and what moved most.",
     build: (s) => {
       const sr = s.series, n = sr.length, b = base(s);
       const steps = sr.slice(1).map((v, i) => ({ label: ROUND_LABELS[i + 1], d: v - sr[i] }));

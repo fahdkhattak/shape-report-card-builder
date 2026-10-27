@@ -1,3 +1,4 @@
+import { TipBox } from "../../widgets/ChartTip.jsx";
 import { useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronDown, ChevronsUpDown, Target } from "lucide-react";
@@ -223,19 +224,8 @@ export function ComparisonArea({ title = "How You Compare", line, parts, entitie
                   </svg>
                   {hover != null && shown.map((e) => <span key={e.id} style={{ position: "absolute", left: `${((hover + 0.5) / n) * 100}%`, top: y(e.values[h]), width: 16, height: 16, margin: "-8px 0 0 -8px", borderRadius: "50%", boxSizing: "border-box", border: `2px solid ${colors[e.id]}`, background: ds.surface.general.card, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: colors[e.id] }} /></span>)}
                   {hover != null && shown.length > 0 && !compact && (
-                    <div data-part="area-tip" style={{ position: "absolute", top: 12, [hover < n / 2 ? "left" : "right"]: hover < n / 2 ? `min(calc(${((hover + 0.5) / n) * 100}% + 16px), calc(100% - ${Math.min(240, plotW - 16)}px - 8px))` : `min(calc(${(1 - (hover + 0.5) / n) * 100}% + 16px), calc(100% - ${Math.min(240, plotW - 16)}px - 8px))`, width: Math.min(240, plotW - 16), boxSizing: "border-box", pointerEvents: "none", zIndex: 2, background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, boxShadow: dsShadow("sm"), display: "flex", flexDirection: "column", gap: dsSpace[8] }}>
-                      <span style={{ ...dsText("Text xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{parts[h]}</span>
-                      {shown.map((e) => (
-                        <div key={e.id} style={{ display: "flex", alignItems: "center", gap: dsSpace[12], borderLeft: `2px solid ${dsBand(e.values[h]).c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-                          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dsSpace[2] }}>
-                            <span style={{ ...dsText("Text xs", 600), color: ds.text.primary }}>{e.kind === "team" ? "Team Score" : e.label}</span>
-                            {e.tag && <span style={{ alignSelf: "flex-start", maxWidth: "100%", border: `${dsBorder.sm}px solid ${ds.border.primary}`, borderRadius: dsRadius.full, padding: `${dsSpace[2]}px ${dsSpace[6]}px`, ...dsText("Text 3xs"), color: ds.text.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.tag}</span>}
-                          </span>
-                          {e.deltas && <TrendPill delta={e.deltas[h]} numberOnly />}
-                          <span style={{ ...dsText("Text md", 700), color: dsBand(e.values[h]).cs }}>{e.values[h]}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <TipBox data-part="area-tip" style={{ position: "absolute", top: 12, [hover < n / 2 ? "left" : "right"]: hover < n / 2 ? `min(calc(${((hover + 0.5) / n) * 100}% + 16px), calc(100% - ${Math.min(240, plotW - 16)}px - 8px))` : `min(calc(${(1 - (hover + 0.5) / n) * 100}% + 16px), calc(100% - ${Math.min(240, plotW - 16)}px - 8px))`, width: Math.min(240, plotW - 16), maxWidth: "none", zIndex: 2 }}
+                      content={{ head: parts[h], rows: shown.map((e) => ({ label: e.kind === "team" ? "Team Score" : e.label, tag: e.tag, value: e.values[h], delta: e.deltas ? e.deltas[h] : null, score: true })) }} />
                   )}
                 </div>
                 {numbered ? (

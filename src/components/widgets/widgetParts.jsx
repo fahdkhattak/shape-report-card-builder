@@ -247,21 +247,24 @@ export function LockedBody({ date, text }) {
 const HEAT = (v) => ({ bg: ds.utility.heatMap[HEAT_STEPS[heatStep(v)][1]], c: v < 40 || v >= 95 ? ds.text.inverse : ds.text.primary });
 /* The design lets the table run past the card edge — "95 | 97 | 9" is cut
    off on purpose, hinting there are more Explorers across. */
+/* The 1x1 Heat Map (the design's "Org Heat Map" card): groups down the side, then the group's overall score in its
+   band colour, then the heat tiles, which run on past the card's edge (the card is a window onto the full map its Scope
+   opens). Rows 18px with grey gridlines between rows and columns, no outer left or right edge. Names 11 / Regular in
+   text/tertiary, truncated; the score 11 / Bold in the band's text-indicator colour; tile values 11 / Regular, dark on
+   every tile from 40 up (as drawn), light below. */
+const HEAT_ROW = 18, HEAT_NAME = 43, HEAT_CELL = 34;
 export function HeatTable({ rows }) {
-  const cell = { width: 30, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, boxSizing: "border-box", border: `1px solid ${ds.bg.white}` };
+  const line = `1px solid ${ds.border.secondary}`;
+  const cell = { width: HEAT_CELL, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, boxSizing: "border-box", borderLeft: line };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "hidden", flex: 1 }}>
-      <div style={{ border: `1px solid ${ds.border.tertiary}`, borderRight: "none", overflow: "hidden" }}>
-        {rows.map(([dept, vals, overall]) => (
-          <div key={dept} style={{ display: "flex", borderBottom: `1px solid ${ds.border.tertiary}` }}>
-            <span style={{ width: 40, flexShrink: 0, fontSize: 10, lineHeight: "20px", color: ds.text.secondary, padding: "0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: `1px solid ${ds.border.tertiary}` }}>{dept}</span>
-            <span style={{ ...cell, color: band(overall).cs, border: "none" }}>{overall}</span>
-            {/* A 1x1 is 132px wide: the 40px name and the overall column leave room for two 30px cells. */}
-            {vals.slice(0, 2).map((v, i) => <span key={i} style={{ ...cell, background: HEAT(v).bg, color: HEAT(v).c }}>{v}</span>)}
-          </div>
-        ))}
-      </div>
-      <MoreLine bottom>More</MoreLine>
+    <div data-part="heat-table" style={{ overflow: "hidden", borderTop: line, width: "100%" }}>
+      {rows.map(([dept, vals, overall]) => (
+        <div key={dept} data-part="row" style={{ display: "flex", height: HEAT_ROW, borderBottom: line, boxSizing: "border-box" }}>
+          <span title={dept} style={{ width: HEAT_NAME, flexShrink: 0, fontSize: 11, lineHeight: `${HEAT_ROW - 1}px`, color: ds.text.tertiary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 4, boxSizing: "border-box" }}>{dept}</span>
+          <span style={{ ...cell, fontWeight: 700, color: band(overall).cs }}>{overall}</span>
+          {vals.map((v, i) => <span key={i} title={`${v}`} style={{ ...cell, background: HEAT(v).bg, color: v < 40 ? ds.text.inverse : ds.text.primary }}>{v}</span>)}
+        </div>
+      ))}
     </div>
   );
 }

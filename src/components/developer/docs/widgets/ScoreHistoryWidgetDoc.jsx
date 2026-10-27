@@ -16,7 +16,7 @@ export const { meta, toc, Page } = makeWidgetDoc({
   },
   forms: ["Every round as a line on a 0 to 100 axis (gridlines every 20), the change pill centred above, and one sentence below.", "Up to three rounds on a 0 / 50 / 100 axis, with the caret pill inside the plot's corner."],
   anatomy: [
-    { form: 0, parts: [card, header, trend, graph, { id: "caption", name: "Caption", note: "One sentence, two lines at most.", find: findOne('[data-part="caption"]') }] },
+    { form: 0, parts: [card, header, trend, graph, { id: "caption", name: "Caption", note: "One sentence in the Evidence, set from its top, three lines at most.", find: findOne('[data-part="caption"]') }] },
     { form: 1, parts: [card, header, graph, trend] },
   ],
   spec: [
@@ -25,7 +25,7 @@ export const { meta, toc, Page } = makeWidgetDoc({
     ["", "Limits", "1x1 up to 3 rounds, 2x2 up to 7 (Graph rules). More rounds send the reader to the Scope rather than squeezing."],
     ["Trend pill", "2x2", "Centred above the graph: caret, signed number, “since last round”."],
     ["", "1x1", "Caret only, inside the plot's right corner: at the top, or the bottom when the latest point is high, so it never covers the line."],
-    ["Caption", "Text", "2x2 only. 14px / 1.4, text/secondary, two lines at most, pinned to the bottom. The change is bold in its status text colour."],
+    ["Caption", "Text", "2x2 only, in the Evidence Section, set from its top. Text 3xs / Regular (11 / 16), text/secondary, three lines at most. The round and “latest round” bold in the same grey; the change bold in status/success/text (up) or status/error/text (down); the latest score bold in its band's status/*/text colour (HistoryCaption in GraphInsight.jsx)."],
   ],
   behaviour: [
     ["Hover a round (2x2)", "A dashed guide and a tooltip: that round's score and its change from the round before."],
@@ -43,8 +43,8 @@ export const { meta, toc, Page } = makeWidgetDoc({
     ["More rounds than the size allows", "The latest rounds that fit; the Scope has them all."],
   ],
   content: [
-    ["Caption", "Plain past tense, the change in points with its sign, the latest score bold. No em dashes."],
-    ["Round names", "Finding: the caption says “R2” while the axis says the month. Use the round's label (“Jun 2025”) in both; the caption is built in code today (historyCaption) and should come from a Content template."],
+    ["Caption", "“After dipping in R3, the Org Score increased by +9 points, reaching 83 in the latest round.” Plain past tense, the change with its sign, the latest score bold. No em dashes."],
+    ["Round names", "The caption names a round exactly as the axis does (the same label in both)."],
   ],
   a11y: [
     "The caption carries the graph's meaning in words; the SVG can be hidden from screen readers on the 2x2. The 1x1 needs an accessible description (“57, up 3 since Jun 2025”).",

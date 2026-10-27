@@ -1,15 +1,18 @@
 import { Check, AlertTriangle, X, ArrowRight } from "lucide-react";
 import { T, font, band } from "../../lib/tokens.js";
 import {
-  TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, StatusRing, StatusRipple, RadarChart, polar, ScoreDial,
+  TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, RadarChart, polar, ScoreDial,
+  Sections, Insight, Evidence,
 } from "./primitives.jsx";
 import { Index, IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, Footnote, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
 import { FLOURISHING_AT, STRIVING_AT, statusName, nextLine } from "../../lib/bands.js";
 import { ds } from "../../lib/ds.js";
-import GraphInsight from "./GraphInsight.jsx";
+import GraphInsight, { HistoryCaption } from "./GraphInsight.jsx";
+import { StatusView } from "./StatusCard.jsx";
+import { BarStatement } from "./ScoreCard.jsx";
 import { segmentColor } from "../scope/stories/DonutChart.jsx";
-import { HBars, VBars, TileGrid, DonutInsight } from "./ChartInsight.jsx";
+import { HBars, VBars, TileGrid, CompositionInsight } from "./ChartInsight.jsx";
 
 /* ================================================================== */
 /* SUBJECT BODY — draws the widget forms in lib/subjectForms.js.         */
@@ -18,14 +21,11 @@ import { HBars, VBars, TileGrid, DonutInsight } from "./ChartInsight.jsx";
 /* 312 × ~286. The payload is already computed; nothing here reads data.   */
 /* ================================================================== */
 const col = (extra) => ({ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, ...extra });
-
-function BandSentence({ noun, f, s, t }) {
-  return (
-    <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
-      Across the <b style={{ color: ds.text.primary }}>{f + s + t}</b> {noun}s, <b style={{ color: ds.status.success.textIndicator }}>{f}</b> are Flourishing, <b style={{ color: ds.status.warning.textIndicator }}>{s}</b> are Striving, and <b style={{ color: ds.status.error.textIndicator }}>{t}</b> are Struggling.
-    </span>
-  );
-}
+/* Every form is drawn in the widget sections (lib/widgetStructure.js): an Insight, then an Evidence Bar (1x1, 24px) or
+   Evidence Section (2x2 / 3x3, 68px) when there is something to back it up. Summary sentences and footnotes are Evidence. */
+const Only = ({ size, children, style, center }) => <Sections size={size}><Insight style={style} center={center}>{children}</Insight></Sections>;
+const Two = ({ size, insight, evidence, style, center }) => <Sections size={size}><Insight style={style} center={center}>{insight}</Insight>{evidence && <Evidence>{evidence}</Evidence>}</Sections>;
+const sentence = { fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" };
 
 const pts = (n) => `${n} point${n === 1 ? "" : "s"}`;
 const B = ({ children, c }) => <b style={{ color: c || ds.text.primary }}>{children}</b>;
@@ -38,108 +38,87 @@ function Score({ p, size }) {
     const hc = (labelled) => <Headcount labelled={labelled} label="Employees" count={p.org.employees} rate={p.org.rate} tone={ds.utility.graphColors.main.orgBlue} />;
     if (size === "1x1") {
       return (
-        <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={date11}>{fmtDate(p.date)}</span>{hc(false)}</div>
-        </div>
+        <Sections size="1x1">
+          <Insight style={{ justifyContent: "space-between" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
+            <span style={date11}>{fmtDate(p.date)}</span>
+          </Insight>
+          <Evidence>{hc(false)}</Evidence>
+        </Sections>
       );
     }
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Sections size={size}>
+        <Insight style={{ justifyContent: "space-between" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={date11}>{fmtDate(p.date)}</span>{hc(true)}</div>
-          {bar && <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />}
-          {p.people && <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} />}
-        </div>
-      </div>
+        </Insight>
+        {bar && (
+          <Evidence style={{ gap: 12 }}>
+            <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />
+            {p.people && <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} />}
+          </Evidence>
+        )}
+      </Sections>
     );
   }
   if (size === "1x1") {
+    // Board example (15489:3046): the number and its date in the Insight, the status in the Evidence Bar.
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <Sections size="1x1">
+        <Insight style={{ justifyContent: "space-between" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
           <span style={date11}>{fmtDate(p.date)}</span>
-          <StatusChip status={p.status} />
-        </div>
-      </div>
+        </Insight>
+        <Evidence><StatusChip status={p.status} /></Evidence>
+      </Sections>
     );
   }
   return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <Sections size={size}>
+      <Insight style={{ justifyContent: "space-between" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={date11}>{fmtDate(p.date)}</span>
           <StatusChip status={p.status} />
+          {p.strongest && p.weakest && (
+            <span style={sentence}>
+              <B>{p.strongest[0]}</B> is strongest at <B c={band(p.strongest[1]).cs}>{p.strongest[1]}</B>; <B>{p.weakest[0]}</B> is lowest at <B c={band(p.weakest[1]).cs}>{p.weakest[1]}</B>.
+            </span>
+          )}
         </div>
-        {bar && <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />}
-        {p.people ? <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} /> : p.parts ? <BandSentence noun={p.partNoun} {...p.parts} /> : null}
-        {p.strongest && p.weakest && (
-          <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
-            <B>{p.strongest[0]}</B> is strongest at <B c={band(p.strongest[1]).cs}>{p.strongest[1]}</B>; <B>{p.weakest[0]}</B> is lowest at <B c={band(p.weakest[1]).cs}>{p.weakest[1]}</B>.
-          </span>
-        )}
-      </div>
-    </div>
+      </Insight>
+      {p.people ? (
+        <Evidence style={{ gap: 12 }}>
+          <EvidenceSegmentBar flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} />
+          <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} />
+        </Evidence>
+      ) : p.parts ? <Evidence><BarStatement noun={`${p.partNoun}s`} {...p.parts} /></Evidence> : null}
+    </Sections>
   );
 }
 
 /* ---- Ring (was a 270° gauge; a full ring matches the Meaning story) ---- */
 function GaugeForm({ p, size }) {
-  if (size === "1x1") return <div style={col({ alignItems: "center", justifyContent: "center" })}><ScoreDial value={p.value} size={104} stroke={11} numberSize={26} wordSize={9} /></div>;
+  if (size === "1x1") return <Only size="1x1" center style={{ alignItems: "center" }}><ScoreDial value={p.value} size={100} stroke={11} numberSize={26} wordSize={9} /></Only>;
   const nl = nextLine(p.value), next = nl ? { at: nl, name: statusName(nl) } : null;
   return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}><TrendPill delta={p.delta} /></div>
-      <div style={{ display: "flex", justifyContent: "center" }}><ScoreDial value={p.value} size={190} stroke={18} numberSize={50} wordSize={13} /></div>
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
-        {next ? <><B c={band(p.value).cs}>{pts(next.at - p.value)}</B> from <B>{next.name}</B> (a score of {next.at}).</> : <>Above the Flourishing line of <B>{FLOURISHING_AT}</B> by <B c={ds.status.success.textIndicator}>{pts(p.value - FLOURISHING_AT)}</B>.</>}
-      </span>
-    </div>
+    <Two size={size} style={{ position: "relative", alignItems: "center", justifyContent: "center" }}
+      insight={<><div style={{ position: "absolute", top: 0, right: 0 }}><TrendPill delta={p.delta} /></div><ScoreDial value={p.value} size={180} stroke={18} numberSize={48} wordSize={13} /></>}
+      evidence={<span style={sentence}>{next ? <><B c={band(p.value).cs}>{pts(next.at - p.value)}</B> from <B>{next.name}</B> (a score of {next.at}).</> : <>Above the Flourishing line of <B>{FLOURISHING_AT}</B> by <B c={ds.status.success.textIndicator}>{pts(p.value - FLOURISHING_AT)}</B>.</>}</span>} />
   );
 }
 
 /* ---- Status ---------------------------------------------------------------- */
+/* The Status card's drawing (widgets/StatusCard.jsx). A builder subject is a population, so its bar is its people; a
+   subject with no per-person scores (a concept) splits its parts instead. */
 function StatusForm({ p, size }) {
-  const bar = p.people ? { f: p.people.f, s: p.people.s, t: p.people.t } : p.parts;
-  if (size === "1x1") {
-    return (
-      <div style={col({ justifyContent: "center", gap: 8 })}>
-        <StatusRing status={p.status} />
-        {bar && <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />}
-      </div>
-    );
-  }
-  return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
-        <StatusRipple status={p.status} size={196} />
-        <span style={{ fontSize: 20, fontWeight: 700, color: STATUS_COLOR[p.status], marginTop: -34, position: "relative" }}>{p.status}</span>
-      </div>
-      {bar && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 8 }}>
-          <EvidenceSegmentBar flourishing={bar.f} striving={bar.s} struggling={bar.t} />
-          {p.people ? <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} /> : <BandSentence noun="part" {...bar} />}
-        </div>
-      )}
-    </div>
-  );
+  return <StatusView size={size} status={p.status} people={p.people} parts={p.people ? null : p.parts} partsNoun={p.partNoun ? `${p.partNoun}s` : "parts"} />;
 }
 
 /* ---- History --------------------------------------------------------------- */
-function historyCaption(points) {
-  const n = points.length, last = points[n - 1], prev = points[n - 2], d = last - prev;
-  if (d > 0) {
-    const dipped = n >= 3 && points[n - 2] < points[n - 3];
-    return <>{dipped ? <>After dipping in <B>R{n - 1}</B>, the score increased by </> : <>The score increased by </>}<B c={ds.status.success.textIndicator}>+{d} points</B>{!dipped && <> since <B>R{n - 1}</B></>}, reaching <B>{last}</B> in the latest round.</>;
-  }
-  if (d < 0) return <>The score fell by <B c={ds.status.error.textIndicator}>{-d} points</B> since <B>R{n - 1}</B>, to <B>{last}</B> in the latest round.</>;
-  return <>The score held at <B>{last}</B> since <B>R{n - 1}</B>.</>;
-}
 function HistoryForm({ p, size }) {
-  return <GraphInsight series={[{ points: p.points }]} labels={p.labels} size={size} delta={p.delta} evidence={historyCaption(p.points)} />;
+  return <GraphInsight series={[{ points: p.points }]} labels={p.labels} size={size} delta={p.delta} evidence={<HistoryCaption points={p.points} labels={p.labels} />} />;
 }
 
 /* ---- Parts ------------------------------------------------------------------- */
@@ -157,17 +136,18 @@ function PartsForm({ p, size }) {
   if (size === "1x1") {
     const picked = [rows[0], rows[rows.length - 1]].map((r) => [r[0], r[1]]);
     return (
-      <div style={col({ gap: 6, overflow: "hidden" })}>
+      <Only size="1x1">
         <DriverGroupedList rows={picked} tierLabels={{ great: "Top", average: "Average", poor: "Bottom" }} />
-      </div>
+        {rows.length > 2 && <MoreLine>{rows.length - 2} more {p.noun}s</MoreLine>}
+      </Only>
     );
   }
   const shown = pickTiered(rows);
   return (
-    <div style={col({ gap: 6, overflow: "hidden" })}>
+    <Only size={size} style={{ gap: 6 }}>
       <DriverGroupedList rows={shown} />
       {rows.length > shown.length && <MoreLine>{rows.length - shown.length} more {p.noun}s</MoreLine>}
-    </div>
+    </Only>
   );
 }
 
@@ -181,21 +161,17 @@ function PeopleForm({ p, size }) {
   const q = p.people;
   if (size === "1x1") {
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 2 }}>
+      <Two size="1x1" center
+        insight={<div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: ds.status.success.textIndicator }}>{q.f}</span>
           <span style={muted11}>Flourishing of {q.total} people</span>
-        </div>
-        <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
-      </div>
+        </div>}
+        evidence={<EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />} />
     );
   }
   return (
-    <div style={col({ gap: 24 })}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>How the <B>{q.total}</B> people who answered are spread across the three statuses.</span>
-        <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
-      </div>
+    <Sections size={size}>
+      <Insight center>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {PEOPLE_ROWS(q).map(([label, n, prev, c, cs, higherBetter]) => {
           const pct = Math.round((n / (q.total || 1)) * 100), prevPct = Math.round((prev / (q.total || 1)) * 100), d = pct - prevPct;
@@ -212,7 +188,11 @@ function PeopleForm({ p, size }) {
           );
         })}
       </div>
-    </div>
+      </Insight>
+      <Evidence>
+        <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
+      </Evidence>
+    </Sections>
   );
 }
 
@@ -222,10 +202,7 @@ function PeopleForm({ p, size }) {
 function GroupsForm({ p }) {
   const rows = p.rows.map(([label, value]) => ({ label, value, color: band(value).c }));
   return (
-    <div style={col({ gap: 8, justifyContent: "space-between" })}>
-      <HBars rows={rows} size="2x2" values noun="groups" />
-      <Footnote>Average score by {p.axisLabel.toLowerCase()}.{p.hidden ? ` ${p.hidden} group${p.hidden === 1 ? "" : "s"} under 5 people aren't shown.` : ""}</Footnote>
-    </div>
+    <Only size="2x2" center><HBars rows={rows} size="2x2" values noun="groups" /></Only>
   );
 }
 
@@ -235,38 +212,33 @@ function GroupsForm({ p }) {
    2x2: the ring with the axis icon and name inside, the callout, and a three-column legend while it stays readable. */
 function CompositionForm({ p, size }) {
   const rows = p.rows;
-  if (!rows.length) return <span style={muted11}>No one to show yet.</span>;
-  if (size === "1x1" && rows.length <= 4) {
-    return <TileGrid size="1x1" rows={rows.map((r, i) => ({ label: r.group, value: r.n, color: segmentColor(p.axis, i) }))} />;
-  }
-  return <DonutInsight axisKey={p.axis} label={size === "1x1" ? p.name : p.axisLabel} rows={rows} size={size === "1x1" ? "1x1" : "2x2"} legend={size !== "1x1"} />;
+  if (!rows.length) return <Only size={size} center><span style={muted11}>No one to show yet.</span></Only>;
+  // The Composition widget's own drawing (ChartInsight.jsx CompositionInsight): a grid up to 4 groups at 1x1, else a donut.
+  return <CompositionInsight rows={rows} axisKey={p.axis} label={size === "1x1" ? p.name : p.axisLabel} size={size === "1x1" ? "1x1" : "2x2"} form={size === "1x1" && rows.length <= 4 ? "grid" : "donut"} legend={size !== "1x1"} />;
 }
 
 /* ---- Focus ----------------------------------------------------------------- */
 function FocusForm({ p, size }) {
   const rows = p.rows;
-  if (!rows.length) return <span style={muted11}>No group has 5 or more people to compare.</span>;
+  if (!rows.length) return <Only size={size} center><span style={muted11}>No group has 5 or more people to compare.</span></Only>;
   if (size === "1x1") {
     const g = rows[0], b = band(g.score);
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ ...muted11, fontSize: 10 }}>{g.axis}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: ds.text.primary, lineHeight: "16px" }}>{g.group}</span>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: b.cs }}>{g.score}</span>
-          <span style={{ ...muted11, fontSize: 10 }}>{g.struggling} of {g.n} struggling</span>
-        </div>
-      </div>
+      <Two size="1x1" style={{ justifyContent: "space-between" }}
+        insight={<>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={muted11}>{g.axis}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: ds.text.primary, lineHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.group}</span>
+          </div>
+          <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.72, lineHeight: 1, color: b.cs }}>{g.score}</span>
+        </>}
+        evidence={<span style={muted11}>{g.struggling} of {g.n} struggling</span>} />
     );
   }
   return (
-    <div style={col({ gap: 12 })}>
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>The lowest-scoring groups across your organisation.</span>
-      {rows.map((g) => <FocusRow key={`${g.axis}-${g.group}`} name={g.group} value={g.score} tag={g.axis} delta={g.change ?? undefined} sub={`${g.struggling} of ${g.n} people are struggling`} />)}
-      <Footnote>Groups under 5 people are never shown.</Footnote>
-    </div>
+    <Two size={size} style={{ gap: 12 }}
+      insight={<>{rows.slice(0, 3).map((g) => <FocusRow key={`${g.axis}-${g.group}`} name={g.group} value={g.score} tag={g.axis} delta={g.change ?? undefined} sub={`${g.struggling} of ${g.n} people are struggling`} />)}</>}
+      evidence={rows.length > 3 ? <MoreLine bottom={false}>{rows.length - 3} more groups</MoreLine> : null} />
   );
 }
 
@@ -275,16 +247,11 @@ function MoversForm({ p, size }) {
   const { gains, drops } = p;
   if (size === "1x1") {
     const top = [...gains, ...drops].sort((a, b) => Math.abs(b.d) - Math.abs(a.d))[0];
-    if (!top) return <span style={muted11}>Nothing moved since the last round.</span>;
+    if (!top) return <Only size="1x1" center><span style={muted11}>Nothing moved since the last round.</span></Only>;
     const up = top.d > 0;
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: up ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{up ? "Biggest rise" : "Biggest drop"}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: ds.text.primary, lineHeight: "16px" }}>{top.label}</span>
-        </div>
-        <ScoreHeadline value={top.value} delta={top.d} size={44} compact />
-      </div>
+      <Two size="1x1" center insight={<ScoreHeadline value={top.value} delta={top.d} size={48} compact />}
+        evidence={<span style={{ fontSize: 11, lineHeight: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><b style={{ color: up ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{up ? "Rise" : "Drop"}:</b> <b style={{ color: ds.text.primary }}>{top.label}</b></span>} />
     );
   }
   const list = (heading, color, rows, empty) => (
@@ -294,11 +261,8 @@ function MoversForm({ p, size }) {
     </div>
   );
   return (
-    <div style={col({ gap: 16 })}>
-      {list("Biggest gains", ds.status.success.textIndicator, gains, "Nothing has risen.")}
-      {list("Biggest drops", ds.status.error.textIndicator, drops, "Nothing has dropped.")}
-      <Footnote>Change in score since the last round, by {p.noun.toLowerCase()}.</Footnote>
-    </div>
+    <Two size={size} style={{ gap: 16 }}
+      insight={<>{list("Biggest gains", ds.status.success.textIndicator, gains, "Nothing has risen.")}{list("Biggest drops", ds.status.error.textIndicator, drops, "Nothing has dropped.")}</>} />
   );
 }
 
@@ -306,11 +270,9 @@ function MoversForm({ p, size }) {
 function SpreadForm({ p }) {
   const rows = p.bins.map((b) => ({ label: String(b.from), tipLabel: `Scored ${b.from}–${b.to}`, value: b.n, text: `${b.n} ${b.n === 1 ? "person" : "people"}`, color: band(b.from + 5).c }));
   return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>How many of the <B>{p.total}</B> people scored in each band of ten points.</span>
-      <VBars rows={rows} size="2x2" />
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>Half of people score between <B>{p.p25}</B> and <B>{p.p75}</B>. The middle score is <B c={band(p.median).cs}>{p.median}</B>.</span>
-    </div>
+    <Two size="2x2" style={{ gap: 12, justifyContent: "space-between" }}
+      insight={<VBars rows={rows} size="2x2" />}
+      evidence={<span style={sentence}>Half of people score between <B>{p.p25}</B> and <B>{p.p75}</B>. The middle score is <B c={band(p.median).cs}>{p.median}</B>.</span>} />
   );
 }
 
@@ -328,13 +290,12 @@ function GoalForm({ p, size }) {
   const reached = p.gap <= 0;
   if (size === "1x1") {
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 2 }}>
+      <Two size="1x1" center
+        insight={<div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: reached ? ds.status.success.textIndicator : band(p.value).cs }}>{reached ? "✓" : p.gap}</span>
           <span style={muted11}>{reached ? `above the target of ${p.target}` : `${p.gap === 1 ? "point" : "points"} to reach ${p.target}`}</span>
-        </div>
-        <Track value={p.value} target={p.target} />
-      </div>
+        </div>}
+        evidence={<Track value={p.value} target={p.target} />} />
     );
   }
   const stat = (label, v, c) => (
@@ -344,7 +305,8 @@ function GoalForm({ p, size }) {
     </div>
   );
   return (
-    <div style={col({ justifyContent: "space-between" })}>
+    <Sections size={size}>
+    <Insight style={{ justifyContent: "space-between" }}>
       <div style={{ display: "flex", gap: 24 }}>
         {stat("Now", p.value, band(p.value).cs)}
         {stat("Target", p.target, ds.text.primary)}
@@ -352,15 +314,18 @@ function GoalForm({ p, size }) {
       </div>
       <div>
         <Track value={p.value} target={p.target} h={10} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.quaternary, marginTop: 2 }}><span>0</span><span>100</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: ds.text.quaternary, marginTop: 2 }}><span>0</span><span>100</span></div>
       </div>
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
+    </Insight>
+    <Evidence>
+      <span style={sentence}>
         {reached ? <>Already at or above <B>{p.target}</B>.</>
           : p.rounds == null ? <>The score has not been rising across {p.nRounds} rounds, so there is no pace to project.</>
-          : p.rounds > 12 ? <>At the pace of past rounds (<B>{p.pace > 0 ? "+" : ""}{p.pace}</B> a round) this would take <B>more than 12 rounds</B> — a smaller target may be a better next step.</>
-          : <>At the pace of past rounds (<B>+{p.pace}</B> a round) this would take about <B>{p.rounds} more round{p.rounds === 1 ? "" : "s"}</B>. A straight line from {p.nRounds} rounds, not a forecast.</>}
+          : p.rounds > 12 ? <>At the pace of past rounds (<B>{p.pace > 0 ? "+" : ""}{p.pace}</B> a round) this would take <B>more than 12 rounds</B>.</>
+          : <>At the pace of past rounds (<B>+{p.pace}</B> a round) this would take about <B>{p.rounds} more round{p.rounds === 1 ? "" : "s"}</B>.</>}
       </span>
-    </div>
+    </Evidence>
+    </Sections>
   );
 }
 
@@ -380,10 +345,11 @@ function StoryForm({ p }) {
   const tiered = p.rows ? pickTiered(p.rows, 1, 3) : null;
   const d = p.delta;
   return (
-    <div style={col({ gap: 16 })}>
+    <Sections size="3x3">
+    <Insight style={{ gap: 16 }}>
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
-          <ScoreHeadline value={p.value} delta={p.delta} size={76} />
+          <ScoreHeadline value={p.value} delta={p.delta} size={64} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}><StatusChip status={p.status} /><span style={date11}>{fmtDate(p.date)}</span></div>
         </div>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -405,8 +371,9 @@ function StoryForm({ p }) {
           </div>
         )}
       </div>
-      <div style={hair} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
+    </Insight>
+    <Evidence>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${p.facts.length}, minmax(0, 1fr))`, gap: 16 }}>
         {p.facts.map((f) => (
           <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
             <span style={eyebrow}>{f.label}</span>
@@ -414,11 +381,12 @@ function StoryForm({ p }) {
               <span style={{ fontSize: 14, fontWeight: 700, color: ds.text.primary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.value}</span>
               {f.num != null && <span style={{ fontSize: 14, fontWeight: 700, color: band(f.num).cs }}>{f.num}</span>}
             </span>
-            <span style={{ ...muted11, fontSize: 11 }}>{f.sub}</span>
+            <span style={{ ...muted11, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.sub}</span>
           </div>
         ))}
       </div>
-    </div>
+    </Evidence>
+    </Sections>
   );
 }
 
@@ -426,7 +394,7 @@ function StoryForm({ p }) {
 function IndexForm({ p, size }) {
   // Older specs carried `dimension` (the retired "Explorer Index" form) instead of their own parts.
   const ring = p.wedges ? <Index wedges={p.wedges} center={p.value} size={p.layers >= 2 ? size : "2x2"} /> : p.dimension ? <DimensionIndex dimension={p.dimension} /> : <IndexRing variant={size} overall={p.value} />;
-  return <div style={col({ justifyContent: "center", overflow: "hidden" })}>{ring}</div>;
+  return <Only size={size} center>{ring}</Only>;
 }
 
 /* ---- Team ---------------------------------------------------------------- */
@@ -436,28 +404,29 @@ function TeamForm({ p, size }) {
   const vsText = vs === 0 ? "level with the organisation" : `${Math.abs(vs)} ${Math.abs(vs) === 1 ? "point" : "points"} ${vs > 0 ? "above" : "below"} the organisation`;
   if (size === "1x1") {
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ paddingTop: 4 }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={date11}>{p.n} people</span>
-          <span style={{ ...muted11, fontSize: 10, lineHeight: "13px" }}><b style={{ color: vs >= 0 ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{vs > 0 ? "+" : vs < 0 ? "−" : ""}{Math.abs(vs)}</b> vs Org</span>
-        </div>
-      </div>
+      <Sections size="1x1">
+        <Insight style={{ justifyContent: "space-between" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
+        </Insight>
+        <Evidence><span style={{ ...muted11, lineHeight: "14px", whiteSpace: "nowrap" }}>{p.n} people · <b style={{ color: vs >= 0 ? ds.status.success.textIndicator : ds.status.error.textIndicator }}>{vs > 0 ? "+" : vs < 0 ? "−" : ""}{Math.abs(vs)}</b> vs Org</span></Evidence>
+      </Sections>
     );
   }
   return (
-    <div style={col({ justifyContent: "space-between" })}>
-      <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <Sections size={size}>
+      <Insight style={{ justifyContent: "space-between" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={date11}>{p.axisLabel} · <b>{p.n} people</b></span>
           <StatusChip status={p.status} />
+          <span style={sentence}>This is <B c={vs >= 0 ? ds.status.success.textIndicator : ds.status.error.textIndicator}>{vsText}</B>, which scores <B c={band(p.org).cs}>{p.org}</B>.</span>
         </div>
+      </Insight>
+      <Evidence style={{ gap: 12 }}>
         <EvidenceSegmentBar flourishing={q.f} striving={q.s} struggling={q.t} />
         <StatusBreakdown flourishing={q.f} striving={q.s} struggling={q.t} />
-        <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>This is <B c={vs >= 0 ? ds.status.success.textIndicator : ds.status.error.textIndicator}>{vsText}</B>, which scores <B c={band(p.org).cs}>{p.org}</B>.</span>
-      </div>
-    </div>
+      </Evidence>
+    </Sections>
   );
 }
 
@@ -475,7 +444,8 @@ function Side({ g, color, align }) {
 function VersusForm({ p }) {
   const hi = p.gap >= 0 ? p.a : p.b, lo = p.gap >= 0 ? p.b : p.a, gap = Math.abs(p.gap);
   return (
-    <div style={col({ gap: 12, justifyContent: "space-between" })}>
+    <Sections size="2x2">
+    <Insight style={{ gap: 12, justifyContent: "space-between" }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
         <Side g={p.a} color={IDENT[0]} align="flex-start" />
         <div style={{ alignSelf: "center", textAlign: "center", flexShrink: 0 }}>
@@ -485,13 +455,10 @@ function VersusForm({ p }) {
         </div>
         <Side g={p.b} color={IDENT[1]} align="flex-end" />
       </div>
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
-        {gap === 0 ? <>Both score the same.</> : <><B>{hi.name}</B> scores <B>{gap} {gap === 1 ? "point" : "points"}</B> higher than <B>{lo.name}</B> ({p.axisLabel.toLowerCase()}).</>}
-      </span>
       {p.rows && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={eyebrow}>Where they differ most</span>
-          {p.rows.map((r) => (
+          {p.rows.slice(0, 3).map((r) => (
             <div key={r.label} style={{ display: "grid", gridTemplateColumns: "104px minmax(0, 1fr)", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 11, color: ds.text.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
               <div style={{ position: "relative", height: 14 }}>
@@ -501,10 +468,14 @@ function VersusForm({ p }) {
               </div>
             </div>
           ))}
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.quaternary, paddingLeft: 112 }}><span>0</span><span>50</span><span>100</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: ds.text.quaternary, paddingLeft: 112 }}><span>0</span><span>50</span><span>100</span></div>
         </div>
       )}
-    </div>
+    </Insight>
+    <Evidence>
+      <span style={sentence}><B>{p.a.n}</B> people in {p.a.name} · <B>{p.b.n}</B> in {p.b.name}</span>
+    </Evidence>
+    </Sections>
   );
 }
 
@@ -530,7 +501,8 @@ function DuelForm({ p }) {
   const [A, Bi] = p.items, gap = Math.abs(p.gap), hi = p.gap >= 0 ? A : Bi, lo = p.gap >= 0 ? Bi : A;
   const strength = Math.abs(p.r) >= 0.6 ? "strong" : Math.abs(p.r) >= 0.3 ? "moderate" : "weak";
   return (
-    <div style={col({ gap: 12, justifyContent: "space-between" })}>
+    <Sections size="2x2">
+    <Insight style={{ gap: 12, justifyContent: "space-between" }}>
       <div style={{ display: "flex", gap: 12 }}>
         {p.items.map((it, k) => (
           <div key={it.label} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -543,11 +515,11 @@ function DuelForm({ p }) {
         ))}
       </div>
       <DuelChart items={p.items} labels={p.labels} />
-      <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
-        {gap === 0 ? <>Both score the same today.</> : <><B>{hi.label}</B> is <B>{gap} {gap === 1 ? "point" : "points"}</B> above <B>{lo.label}</B>.</>}{" "}
-        People who score high on one {p.r >= 0 ? "tend to score high on the other" : "tend to score low on the other"} — a <B>{strength}</B> link (r = {p.r}). A link, not a cause.
-      </span>
-    </div>
+    </Insight>
+    <Evidence>
+      <span style={sentence}>Link between them: <B>r = {p.r}</B> ({strength})</span>
+    </Evidence>
+    </Sections>
   );
 }
 
@@ -557,7 +529,7 @@ function CheckForm({ p }) {
   const ratio = p.passed / p.checks.length;
   const c = ratio >= 0.8 ? ds.status.success.textIndicator : ratio >= 0.5 ? ds.status.warning.textIndicator : ds.status.error.textIndicator;
   return (
-    <div style={col({ gap: 12 })}>
+    <Only size="2x2" style={{ gap: 12 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: c }}>{p.passed}<span style={{ fontSize: 20, color: ds.text.quaternary }}>/{p.checks.length}</span></span>
         <span style={{ fontSize: 12, color: ds.text.tertiary }}>checks passing</span>
@@ -574,7 +546,7 @@ function CheckForm({ p }) {
           );
         })}
       </div>
-    </div>
+    </Only>
   );
 }
 
@@ -582,7 +554,8 @@ function CheckForm({ p }) {
 function WhatIfForm({ p }) {
   const b0 = band(p.value), b1 = band(p.after), gain = p.after - p.value;
   return (
-    <div style={col({ gap: 12, justifyContent: "space-between" })}>
+    <Sections size="2x2">
+    <Insight style={{ gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={eyebrow}>Now</span><span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: b0.cs }}>{p.value}</span></div>
         <ArrowRight size={22} color={ds.text.quaternary} />
@@ -593,7 +566,7 @@ function WhatIfForm({ p }) {
         <span style={{ fontSize: 12, color: ds.text.tertiary }}>Every {p.noun.toLowerCase()} is already at 70 or more, so there is nothing to lift.</span>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={eyebrow}>The {p.lift === 1 ? "weakest" : `${p.lifted.length} weakest`} {p.noun.toLowerCase()}{p.lifted.length === 1 ? "" : "s"}, brought to 70</span>
+          <span style={eyebrow}>The {p.lift === 1 ? "weakest" : `${p.lifted.length} weakest`} {p.noun.toLowerCase()}{p.lifted.length === 1 ? "" : "s"}, brought to {FLOURISHING_AT}</span>
           {p.lifted.map((r) => (
             <div key={r.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -608,8 +581,8 @@ function WhatIfForm({ p }) {
           ))}
         </div>
       )}
-      <Footnote>Plain arithmetic: the score is the average of its {p.n} {p.noun.toLowerCase()}s. It shows what lifting them would add up to — not a prediction that it will happen.</Footnote>
-    </div>
+    </Insight>
+    </Sections>
   );
 }
 
@@ -623,7 +596,7 @@ function HeatForm({ p }) {
   const rows = capped ? all.slice(-(HEAT_FIT - 2)) : all;
   const rowH = 22;
   return (
-    <div style={col({ gap: 4, minHeight: 0, overflow: "hidden" })}>
+    <Only size="2x2" style={{ gap: 4 }}>
       <div style={{ display: "grid", gridTemplateColumns: `minmax(0, 1fr) repeat(${p.labels.length}, 44px)`, gap: 4, paddingBottom: 2 }}>
         <span />
         {p.labels.map((l) => <span key={l} style={{ fontSize: 10, color: ds.text.tertiary, textAlign: "center" }}>{l}</span>)}
@@ -637,7 +610,7 @@ function HeatForm({ p }) {
         </div>
       ))}
       {capped && <MoreLine bottom>{all.length - rows.length} more {p.noun}s</MoreLine>}
-    </div>
+    </Only>
   );
 }
 
@@ -648,18 +621,18 @@ function MomentumForm({ p, size }) {
   const run = p.streak >= 2 ? `Rising ${p.streak} rounds in a row` : p.fall >= 2 ? `Falling ${p.fall} rounds in a row` : p.streak === 1 ? "Up on the last round" : p.fall === 1 ? "Down on the last round" : "Flat on the last round";
   if (size === "1x1") {
     return (
-      <div style={col({ justifyContent: "space-between" })}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 2 }}>
+      <Two size="1x1" center
+        insight={<div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: dcol(p.change) }}>{sgn(p.change)}</span>
           <span style={muted11}>since the first round</span>
-        </div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: dcol(p.streak ? 1 : p.fall ? -1 : 0), lineHeight: "14px" }}>{run}</span>
-      </div>
+        </div>}
+        evidence={<span style={{ fontSize: 11, fontWeight: 700, color: dcol(p.streak ? 1 : p.fall ? -1 : 0), lineHeight: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{run}</span>} />
     );
   }
   const maxAbs = Math.max(4, ...p.steps.map((s) => Math.abs(s.d)));
   return (
-    <div style={col({ gap: 16, justifyContent: "space-between" })}>
+    <Sections size={size}>
+    <Insight style={{ gap: 16 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, lineHeight: 1, color: dcol(p.change) }}>{sgn(p.change)}</span>
         <span style={{ fontSize: 12, color: ds.text.tertiary, lineHeight: "16px" }}>points since the first round<br /><b style={{ color: ds.text.primary }}>{p.first}</b> → <b style={{ color: band(p.value).cs }}>{p.value}</b></span>
@@ -677,12 +650,13 @@ function MomentumForm({ p, size }) {
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    </Insight>
+    <Evidence style={{ gap: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: dcol(p.streak ? 1 : p.fall ? -1 : 0) }}>{run}</span>
         {p.riser && p.riser.d > 0 && <span style={{ fontSize: 11, color: ds.text.tertiary }}>Most improved: <B>{p.riser.label}</B> <B c={ds.status.success.textIndicator}>{sgn(p.riser.d)}</B></span>}
         {p.faller && p.faller.d < 0 && <span style={{ fontSize: 11, color: ds.text.tertiary }}>Furthest down: <B>{p.faller.label}</B> <B c={ds.status.error.textIndicator}>{sgn(p.faller.d)}</B></span>}
-      </div>
-    </div>
+    </Evidence>
+    </Sections>
   );
 }
 
@@ -690,7 +664,7 @@ const RENDER = { dindex: IndexForm, composition: CompositionForm, story: StoryFo
 
 export default function SubjectBody({ spec }) {
   const { form, payload, size } = spec;
-  if (form === "profile") return <RadarChart items={payload.items} />;
+  if (form === "profile") return <Only size={size} center><RadarChart items={payload.items} /></Only>;
   const View = RENDER[form] || Score;
   return <View p={payload} size={size} />;
 }

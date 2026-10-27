@@ -1,11 +1,13 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { font } from "../../lib/tokens.js";
 import { ds, dsText, dsSpace } from "../../lib/ds.js";
 import { useElementWidth } from "../scope/stories/storyWidth.js";
 import DonutChart, { segmentColor } from "../scope/stories/DonutChart.jsx";
 import { MoreLine } from "./widgetParts.jsx";
-import { chartLimit } from "../../lib/insightRules.js";
-import { useChartTip } from "./ChartTip.jsx";
+import { chartLimit, compositionFit } from "../../lib/insightRules.js";
+import { useChartTip, TipCard } from "./ChartTip.jsx";
+import { Sections, Insight, Evidence } from "./primitives.jsx";
 
 /* ================================================================== */
 /* CHART INSIGHT WIDGET — relationships across categories              */
@@ -52,7 +54,8 @@ export function HBars({ rows, size = "1x1", values = size === "2x2", domain = [0
   const PITCH = 20, rowsH = shown.length * PITCH - 12;
   return (
     <div ref={ref} data-part="hbars" style={{ width: "100%", fontFamily: font, display: "flex", flexDirection: "column", gap: dsSpace[6] }}>
-      <div style={{ display: "flex" }}>
+      {/* 4px above the rows: the gridlines run 4px past the first and last bar. */}
+      <div style={{ display: "flex", paddingTop: 4 }}>
         <div style={{ width: col, flexShrink: 0, paddingTop: 0 }}>
           {shown.map((r, i) => <div key={r.label} {...hb(r, i)} style={{ opacity: on != null && on !== i ? 0.4 : 1, transition: "opacity 120ms ease", cursor: "default", height: 8, marginBottom: 12, display: "flex", alignItems: "center", ...quiet, color: ds.text.tertiary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: 6, boxSizing: "border-box" }}><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</span></div>)}
         </div>
@@ -69,11 +72,11 @@ export function HBars({ rows, size = "1x1", values = size === "2x2", domain = [0
             );
           })}
           {/* hover rows: the full row height (20px), not just the 8px bar */}
-          {shown.map((r, i) => <div key={`hit-${i}`} {...hb(r, i)} style={{ position: "absolute", left: 0, right: 0, top: i * PITCH - 6, height: PITCH }} />)}
+          {shown.map((r, i) => <div key={`hit-${i}`} {...hb(r, i)} style={{ position: "absolute", left: 0, right: 0, top: Math.max(0, i * PITCH - 6), height: i === 0 ? PITCH - 6 : PITCH }} />)}
         </div>
       </div>
       {tip.node}
-      <div style={{ display: "flex", ...quiet, color: ds.text.quaternary, fontSize: 10, paddingLeft: col + 8 - 3, width: col + 8 + plotW + 6, boxSizing: "border-box", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", ...quiet, color: ds.text.quaternary, fontSize: 10, paddingLeft: col + 8 - 3, width: Math.min(W, col + 8 + plotW + 6), boxSizing: "border-box", justifyContent: "space-between" }}>
         <span>{lo}</span><span>{hi}</span>
       </div>
       {more > 0 && <MoreLine>{more} more {noun}</MoreLine>}
@@ -97,7 +100,7 @@ export function VBars({ rows, size = "2x2", domain, height, score = false, head,
   const plotW = Math.max(40, W - 24 - 8);
   const slot = plotW / shown.length;
   return (
-    <div ref={ref} data-part="vbars" style={{ width: "100%", fontFamily: font }}>
+    <div ref={ref} data-part="vbars" style={{ width: "100%", fontFamily: font, paddingTop: 6, boxSizing: "border-box" }}>
       <div style={{ display: "flex", gap: 8 }}>
         <div aria-hidden="true" style={{ width: 24, flexShrink: 0, position: "relative", height: plotH, marginTop: 0 }}>
           {ticks.map((t) => <span key={t} style={{ position: "absolute", right: 0, top: (1 - t) * plotH, transform: "translateY(-50%)", ...quiet, fontSize: 10, color: ds.text.quaternary }}>{abbreviate(Math.round(t * max))}</span>)}
@@ -124,26 +127,33 @@ export function VBars({ rows, size = "2x2", domain, height, score = false, head,
 
 /* ---- Compact grid (Composition tiles) ---------------------------------------------------------------------------------
    rows: [{ label, value, color }]. Two columns (three in a dense 2x2), 6px gutter, tiles 40px tall with a 2px rail in the
-   category colour, label 11px regular, value 16px bold below it, then an 8px segmented proportion bar. 1x1: up to 4,
-   2x2: up to 18 (12 in two columns, 18 in three). */
-export function TileGrid({ rows, size = "1x1", format = (v) => v }) {
+   category colour, label 11px regular, value 16px bold below it in the category colour (any unit around the number, "$"
+   and "K", " hrs", stays small and dark, as the Composition cards draw it), then an 8px proportion bar. Hover a tile or a
+   bar segment: `tipText(value)` and its share of the whole. 1x1: up to 4, 2x2: up to 18 (12 in two columns, 18 in three). */
+const splitUnit = (text) => { const m = String(text).match(/^(\D*?)([\d.,]+)(.*)$/); return m ? [m[1], m[2], m[3]] : ["", String(text), ""]; };
+export function TileGrid({ rows, size = "1x1", format = (v) => v, tipText = format }) {
   const shown = rows.slice(0, chartLimit("grid", size));
   const cols = size === "2x2" && shown.length > 12 ? 3 : 2;
   const total = shown.reduce((a, r) => a + r.value, 0) || 1;
   const tip = useChartTip();
   const on = tip.active?.i;
-  const tb = (r, i) => tip.bind({ i, rows: [{ label: r.label, value: r.value, text: format(r.value), color: r.color }], note: `${Math.round((r.value / total) * 100)}% of the total` });
+  const tb = (r, i) => tip.bind({ i, rows: [{ label: r.label, value: r.value, text: tipText(r.value), color: r.color }], note: `${Math.round((r.value / total) * 100)}% of the total` });
+  const unit = { fontSize: 11, fontWeight: 400, color: ds.text.primary };
   return (
     <div data-part="tile-grid" style={{ display: "flex", flexDirection: "column", gap: dsSpace[12], flex: 1, justifyContent: size === "1x1" ? "space-between" : "flex-start", fontFamily: font }}>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 6 }}>
         {shown.map((r, i) => (
           <div key={r.label} {...tb(r, i)} style={{ opacity: on != null && on !== i ? 0.4 : 1, transition: "opacity 120ms ease", cursor: "default", minHeight: 40, boxSizing: "border-box", background: ds.bg.primary, borderLeft: `2px solid ${r.color}`, padding: "0 0 0 6px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, overflow: "hidden", minWidth: 0 }}>
             <span style={{ ...quiet, color: ds.text.secondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</span>
-            <span style={{ fontSize: 16, lineHeight: "20px", fontWeight: 700, color: ds.text.primary, fontVariantNumeric: "tabular-nums" }}>{format(r.value)}</span>
+            {(() => { const [pre, num, post] = splitUnit(format(r.value)); return (
+              <span data-part="tile-value" style={{ fontSize: 16, lineHeight: "20px", fontWeight: 700, color: r.color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                {pre && <span style={unit}>{pre}</span>}{num}{post && <span style={unit}>{post}</span>}
+              </span>
+            ); })()}
           </div>
         ))}
       </div>
-      <div role="img" aria-label={shown.map((r) => `${r.label} ${Math.round((r.value / total) * 100)}%`).join(", ")} style={{ display: "flex", gap: 1, height: 8, borderRadius: 9999, overflow: "hidden", marginTop: size === "2x2" ? "auto" : 0 }}>
+      <div role="img" aria-label={shown.map((r) => `${r.label} ${Math.round((r.value / total) * 100)}%`).join(", ")} style={{ display: "flex", height: 8, borderRadius: 9999, overflow: "hidden", marginTop: size === "2x2" ? "auto" : 0 }}>
         {shown.map((r, i) => <span key={r.label} {...tb(r, i)} style={{ flex: r.value, background: r.color, opacity: on != null && on !== i ? 0.4 : 1, transition: "opacity 120ms ease" }} />)}
       </div>
       {tip.node}
@@ -155,10 +165,9 @@ export function TileGrid({ rows, size = "1x1", format = (v) => v }) {
    rows: groupRows() output ({ group, n, pct }). The ring starts at 12 o'clock; slices sum to 100% and carry no emphasis.
    Callouts are two lines of 11px text/tertiary: what it is ("Largest Group"), then "Category (Value%)" — the name may
    truncate, the number never does.
-   1x1: a bare ring with a two-column legend (up to 4 groups) or the Largest Group callout (up to 7).
-   2x2, two variants per the rules: ring + three-column legend (insight + evidence, the default), or, without a legend,
-   ring + three callouts (Total / Largest / Smallest Group). A legend that would pass 5 rows (15 groups) falls back to
-   the callouts. */
+   The whole widget body: the ring is the Insight; the Evidence holds either the legend or the Largest Group callout.
+   1x1: a bare 72px ring; legend in two columns (up to 4 groups) or the callout (up to 7). 2x2: a 196px ring with the
+   grouping's icon and name in the middle; legend in three columns (up to 15) or the callout. */
 const rail = (c) => <span aria-hidden="true" style={{ width: 2, height: 12, background: c, flexShrink: 0 }} />;
 function Callout({ title, name, value }) {
   return (
@@ -171,42 +180,54 @@ function Callout({ title, name, value }) {
     </div>
   );
 }
-export function DonutInsight({ axisKey, label, rows, size = "1x1", legend = true }) {
+export function DonutInsight({ axisKey, label, rows, size = "1x1", legend = true, tipText = (n) => `${n} ${n === 1 ? "person" : "people"}` }) {
   const n = rows.length;
   const largest = rows.reduce((a, r) => (r.n > a.n ? r : a), rows[0]);
-  const smallest = rows.reduce((a, r) => (r.n < a.n ? r : a), rows[0]);
-  const total = rows.reduce((a, r) => a + r.n, 0);
   const largestCallout = <Callout title="Largest Group" name={largest.group} value={`${largest.pct}%`} />;
+  // Hover a slice: the group, its population (or hours, or dollars) and its share; the other slices fade.
+  const [sel, setSel] = useState(null);
+  const [pos, setPos] = useState(null);
+  const hovered = sel != null ? rows[sel] : null;
+  const tipNode = hovered && pos && typeof document !== "undefined"
+    ? createPortal(<TipCard x={pos.x} y={pos.y} content={{ rows: [{ label: hovered.group, value: hovered.n, text: tipText(hovered.n), color: segmentColor(axisKey, sel) }], note: `${hovered.pct}% of the total` }} />, document.body)
+    : null;
+  const ring = (px, bare) => (
+    <div onMouseMove={(e) => setPos({ x: e.clientX, y: e.clientY })} onMouseLeave={() => { setSel(null); setPos(null); }}>
+      <DonutChart axisKey={axisKey} label={label} rows={rows} size={px} bare={bare} selected={sel} onSelect={setSel} />
+    </div>
+  );
   const Legend = ({ cols, max }) => (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, columnGap: 8, rowGap: 2 }}>
-      {rows.slice(0, max).map((r, i) => <span key={r.group} title={`${r.group}: ${r.pct}%`} style={{ display: "flex", alignItems: "center", gap: 4, ...quiet, color: ds.text.tertiary, minWidth: 0 }}>{rail(segmentColor(axisKey, i))}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.group}</span></span>)}
+    <div data-part="legend" style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, columnGap: 8, rowGap: cols === 2 ? 0 : 2 }}>
+      {rows.slice(0, max).map((r, i) => <span key={r.group} title={`${r.group}: ${r.pct}%`} onMouseEnter={() => setSel(i)} onMouseLeave={() => setSel(null)} style={{ display: "flex", alignItems: "center", gap: 4, ...quiet, color: ds.text.tertiary, minWidth: 0, opacity: sel != null && sel !== i ? 0.4 : 1 }}>{rail(segmentColor(axisKey, i))}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.group}</span></span>)}
     </div>
   );
-  if (size === "1x1") {
-    const withLegend = legend && n <= chartLimit("donut", "1x1", { legend: true });
-    return (
-      <div data-part="donut-1x1" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minHeight: 0 }}>
-        <DonutChart axisKey={axisKey} label={label} rows={rows} size={75} bare />
-        <div style={{ alignSelf: "stretch", minWidth: 0 }}>{withLegend ? <Legend cols={2} max={4} /> : largestCallout}</div>
-      </div>
-    );
-  }
-  const withLegend = legend && n <= chartLimit("donut", "2x2");
-  const ring = n > 9 ? 150 : 170;
+  // The ring is the Insight. The Evidence holds ONE thing: the legend (1x1: up to 4 groups in two columns; 2x2: up to
+  // 15 in three) or the Largest Group line. Never both: the Evidence is a fixed 24px bar (1x1) or 68px section (2x2).
+  const big = size !== "1x1";
+  const withLegend = legend && n <= (big ? chartLimit("donut", "2x2") : chartLimit("donut", "1x1", { legend: true }));
   return (
-    <div data-part="donut-2x2" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minHeight: 0 }}>
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}><DonutChart axisKey={axisKey} label={label} rows={rows} size={ring} /></div>
-      <div style={{ alignSelf: "stretch", minWidth: 0 }}>
-        {withLegend ? <Legend cols={3} max={15} /> : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", columnGap: 8 }}>
-            <Callout title="Total Group" name={`${n} groups`} value={`${total}`} />
-            {largestCallout}
-            <Callout title="Smallest Group" name={smallest.group} value={`${smallest.pct}%`} />
-          </div>
-        )}
-      </div>
-    </div>
+    <Sections size={big ? "2x2" : "1x1"}>
+      <Insight center style={{ alignItems: "center" }}>
+        <div data-part={big ? "donut-2x2" : "donut-1x1"}>{ring(big ? 196 : 72, !big)}</div>
+        {tipNode}
+      </Insight>
+      <Evidence>{withLegend ? <Legend cols={big ? 3 : 2} max={big ? 15 : 4} /> : largestCallout}</Evidence>
+    </Sections>
   );
+}
+
+/* ---- Composition widget --------------------------------------------------------------------------------------------
+   How a whole splits into its groups: people by gender, work model, department…, or time and money by part. rows:
+   [{ group, n, pct }]. The form follows the count (lib/insightRules.js compositionFit): 4 or fewer → `form` "grid" (tiles
+   over a proportion bar) or "donut" at 1x1; 5 to 7 → donut at 1x1; more than 7 → a 2x2 donut. `format` writes a value on
+   a tile ("$26K", "19 hrs"); `tipText` writes it in the hover (default "155 people"). */
+export function CompositionInsight({ rows, axisKey, label, size = "1x1", form = "grid", legend = true, format = (v) => v, tipText }) {
+  const allowed = compositionFit(rows.length);
+  const sz = allowed[size] ? size : "2x2";
+  const f = allowed[sz].includes(form) ? form : "donut";
+  const tip = tipText || ((v) => `${v} ${v === 1 ? "person" : "people"}`);
+  if (f === "grid") return <Sections size={sz}><Insight><TileGrid size={sz} format={format} tipText={tip} rows={rows.map((r, i) => ({ label: r.group, value: r.n, color: segmentColor(axisKey, i) }))} /></Insight></Sections>;
+  return <DonutInsight axisKey={axisKey} label={label} rows={rows} size={sz} legend={legend} tipText={tip} />;
 }
 
 /* ---- Treemap (Composition) ---------------------------------------------------------------------------------------------

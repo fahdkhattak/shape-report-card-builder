@@ -31,8 +31,10 @@ import DataModelDoc, { meta as dataMeta, toc as dataToc } from "./docs/DataModel
 import { WIDGET_PAGES, WIDGET_GROUPS } from "./docs/widgets/widgetPages.js";
 import AllWidgetsDoc, { meta as allWMeta, toc as allWToc } from "./docs/widgets/AllWidgetsDoc.jsx";
 import WidgetStructureDoc, { meta as wsMeta, toc as wsToc } from "./docs/widgets/WidgetStructureDoc.jsx";
-import WidgetTokenAuditDoc, { meta as wtaMeta, toc as wtaToc } from "./docs/widgets/WidgetTokenAuditDoc.jsx";
+import ShapeWidgetsDoc, { meta as shapeWMeta, toc as shapeWToc } from "./docs/widgets/ShapeWidgetsDoc.jsx";
+import BuilderWidgetsDoc, { meta as builderWMeta, toc as builderWToc } from "./docs/widgets/BuilderWidgetsDoc.jsx";
 import WidgetTypeSystemDoc, { meta as wtsMeta, toc as wtsToc } from "./docs/WidgetTypeSystemDoc.jsx";
+import TooltipsDoc, { meta as tipMeta, toc as tipToc } from "./docs/TooltipsDoc.jsx";
 import ShapeSurveyDoc, { meta as surveyMeta, toc as surveyToc } from "./docs/data/ShapeSurveyDoc.jsx";
 import ShapeDatasetDoc, { meta as datasetMeta, toc as datasetToc } from "./docs/data/ShapeDatasetDoc.jsx";
 import { DevNavContext } from "./DataNeeds.jsx";
@@ -68,10 +70,12 @@ const DOCS = [
   { meta: goalMeta, toc: goalToc, Page: GoalPaceDoc },
   { meta: relMeta, toc: relToc, Page: RelationshipsDoc },
 ];
-const FOUNDATIONS = [{ meta: wtsMeta, toc: wtsToc, Page: WidgetTypeSystemDoc }, { meta: dataMeta, toc: dataToc, Page: DataModelDoc }, { meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: availMeta, toc: availToc, Page: StoryAvailabilityDoc }, { meta: sweepMeta, toc: sweepToc, Page: StorySweepDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
+const FOUNDATIONS = [{ meta: wtsMeta, toc: wtsToc, Page: WidgetTypeSystemDoc }, { meta: tipMeta, toc: tipToc, Page: TooltipsDoc }, { meta: dataMeta, toc: dataToc, Page: DataModelDoc }, { meta: famMeta, toc: famToc, Page: StoryFamiliesDoc }, { meta: availMeta, toc: availToc, Page: StoryAvailabilityDoc }, { meta: sweepMeta, toc: sweepToc, Page: StorySweepDoc }, { meta: auditMeta, toc: auditToc, Page: TokenAuditDoc }];
 const COMPONENTS = [{ meta: controlsMeta, toc: controlsToc, Page: ControlsDoc }];
-/* Widgets: one page per Library family (docs/widgets/, built with widgetDoc.jsx). Every other family is listed as not documented yet. */
-const WIDGETS = [{ meta: wsMeta, toc: wsToc, Page: WidgetStructureDoc }, { meta: allWMeta, toc: allWToc, Page: AllWidgetsDoc }, { meta: wtaMeta, toc: wtaToc, Page: WidgetTokenAuditDoc }, ...WIDGET_PAGES];
+/* Widgets: the rules and review pages, one page per Library family (docs/widgets/, built with widgetDoc.jsx), and one page each
+   for the SHAPE report's widgets and the Widget Builder's forms. */
+const WIDGET_EXTRA = [{ meta: shapeWMeta, toc: shapeWToc, Page: ShapeWidgetsDoc }, { meta: builderWMeta, toc: builderWToc, Page: BuilderWidgetsDoc }];
+const WIDGETS = [{ meta: wsMeta, toc: wsToc, Page: WidgetStructureDoc }, { meta: allWMeta, toc: allWToc, Page: AllWidgetsDoc }, ...WIDGET_PAGES, ...WIDGET_EXTRA];
 /* Data: survey records (data/import-survey.js). More records go here; a switcher can pick between them later. */
 const DATA = [{ meta: surveyMeta, toc: surveyToc, Page: ShapeSurveyDoc }, { meta: datasetMeta, toc: datasetToc, Page: ShapeDatasetDoc }];
 const ALL_DOCS = [...DOCS, ...WIDGETS, ...DATA, ...COMPONENTS, ...FOUNDATIONS];
@@ -168,7 +172,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
         <div style={groupLabel}>Widgets</div>
         <button onClick={() => setDocId(wsMeta.id)} style={sideItem(doc.meta.id === wsMeta.id)}>Widget structure</button>
         <button onClick={() => setDocId(allWMeta.id)} style={sideItem(doc.meta.id === allWMeta.id)}>All widgets</button>
-        <button onClick={() => setDocId(wtaMeta.id)} style={sideItem(doc.meta.id === wtaMeta.id)}>Token audit</button>
+        {WIDGET_EXTRA.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
         {WIDGET_GROUPS.map((g) => {
           const open = openWGroup.has(g.name) || g.pages.some((p) => p.id === doc.meta.id);
           const written = g.pages.filter((p) => p.written).length;
@@ -199,7 +203,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
                 <SegmentedControl options={doc.meta.views.map((v) => ({ id: v.id, label: v.label }))} value={activeView} onChange={pickView} />
               </div>
             )}
-            {!["token-audit", "data-model", "widget-type-system", "widgets-tokens"].includes(doc.meta.id) && !["Widgets", "Data"].includes(doc.meta.group) && (
+            {!["token-audit", "data-model", "widget-type-system", "tooltips"].includes(doc.meta.id) && !["Widgets", "Data"].includes(doc.meta.group) && (
               <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
                 <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>Style</span>
                 <SegmentedControl options={[{ id: "classic", label: "Current" }, { id: "refined", label: "Refined" }]} value={style} onChange={pickStyle} />

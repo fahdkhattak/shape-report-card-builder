@@ -36,7 +36,7 @@ export default function DataNeeds({ id, title = "Data it needs" }) {
         <span style={{ ...dsText("Text sm", 600), color: ds.text.primary }}>When something's missing</span>
         <SimpleTable head={["Case", "What it does"]} widths={["32%", "68%"]} rows={c.missing} />
       </div>
-      <Prose><p style={{ margin: 0, ...dsText("Text xs"), color: ds.text.tertiary }}>The prototype reads a generated dataset directly (lib/dataset.js); this is the shape a real service should send instead.</p></Prose>
+      <Prose><p style={{ margin: 0, ...dsText("Text xs"), color: ds.text.tertiary }}>The shape the service sends; the component works out the rest itself.</p></Prose>
     </Section>
   );
 }

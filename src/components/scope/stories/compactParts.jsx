@@ -1,3 +1,4 @@
+import { TipBox } from "../../widgets/ChartTip.jsx";
 import { useState } from "react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsRadius, dsSpace } from "../../../lib/ds.js";
@@ -68,15 +69,12 @@ export function NumberedList({ rows, active, onPick, hoverable = false, onHover 
 export function DetailCard({ row, refName, scoreLabel }) {
   if (!row) return null;
   const b = dsBand(row.value);
+  // The standard tooltip (widgets/ChartTip.jsx), laid flat in the page.
   return (
-    <div data-part="detail" role="status" style={{ background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}>
-      <div style={{ display: "flex", alignItems: "center", gap: dsSpace[12], borderLeft: `2px solid ${b.c}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-        <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{row.label}</span>
-        {row.delta != null && row.delta !== 0 && <TrendPill delta={row.delta} numberOnly />}
-        <span style={{ ...dsText("Text md", 700), color: b.cs }}>{row.value}</span>
-      </div>
-      <p style={{ margin: 0, ...dsText("Text 2xs"), color: ds.text.secondary }}>{scoreLabel ? `${scoreLabel}: ` : ""}<b style={{ color: b.cs }}>{statusName(row.value)}</b>{row.prev != null && refName ? <> · {refName}: <b>{row.prev}</b> → now <b>{row.value}</b></> : null}</p>
-      {row.blurb && <p style={{ margin: 0, ...dsText("Text xs"), color: ds.text.primary }}>{row.blurb}</p>}
-    </div>
+    <TipBox flat data-part="detail" content={{
+      rows: [{ label: row.label, value: row.value, delta: row.delta, score: true }],
+      note: <>{scoreLabel ? `${scoreLabel}: ` : ""}<b style={{ color: b.cs }}>{statusName(row.value)}</b>{row.prev != null && refName ? <> · {refName}: <b>{row.prev}</b> → now <b>{row.value}</b></> : null}</>,
+      body: row.blurb,
+    }} />
   );
 }

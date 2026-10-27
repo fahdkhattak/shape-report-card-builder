@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, animate, useReducedMotion } from "motion/react";
 import { font, radius } from "../../lib/tokens.js";
 import { ds, dsBand, dsShadow } from "../../lib/ds.js";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* EXPLORER RING CARD — one of the 12 Explorers on the Explorers report  */
@@ -60,7 +61,7 @@ export default function ExplorerRingCard({ name, value, selected, onClick, index
       layoutDependency={layoutKey}
       transition={{ ...PRESS, layout: { type: "spring", bounce: 0, duration: 0.5 } }}
       style={{
-        width: 164, height: 164, boxSizing: "border-box", padding: 16, background: ds.surface.general.card, borderRadius: radius.widget, cursor: "pointer", fontFamily: font,
+        width: 164, height: 164, boxSizing: "border-box", padding: SHELL_PADDING, background: ds.surface.general.card, borderRadius: radius.widget, cursor: "pointer", fontFamily: font,
         border: `1px solid ${selected ? ds.border.strong : ds.border.secondary}`, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 12,
         boxShadow: raised ? dsShadow("md") : "0 0 0 rgba(0,0,0,0)", transition: "box-shadow 200ms ease, border-color 200ms ease", textAlign: "left",
       }}

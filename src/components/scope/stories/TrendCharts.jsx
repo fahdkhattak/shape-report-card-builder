@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { font } from "../../../lib/tokens.js";
 import { ds, dsBand, dsText, dsSpace, dsRadius, dsShadow, dsBorder } from "../../../lib/ds.js";
 import { TrendPill } from "../../widgets/primitives.jsx";
-import { useChartTip } from "../../widgets/ChartTip.jsx";
+import { useChartTip, TipBox } from "../../widgets/ChartTip.jsx";
 import { StoryCard, EvidenceSection, noteText } from "./StoryCard.jsx";
 import { PillTabs, ViewSwitch, CopyTable } from "./controls.jsx";
 import { DataTable, tableText } from "./DataTable.jsx";
@@ -254,9 +254,8 @@ export function StateOverTime({ title = "State over time", line, rounds, measure
             ))}
             {hover && (
               // The design shows no hover for this form; a small tooltip over the bar names the segment so the card keeps its height.
-              <div data-part="state-tip" role="status" style={{ position: "absolute", left: `${cx(hover[0]) * 100}%`, top: -8, transform: `translate(${hover[0] === 0 ? "-16%" : hover[0] === n - 1 ? "-84%" : "-50%"}, -100%)`, zIndex: 3, pointerEvents: "none", whiteSpace: "nowrap", background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[6]}px ${dsSpace[8]}px`, boxShadow: dsShadow("sm"), borderLeft: `2px solid ${LEVEL_FILL[hover[1]]}`, ...dsText("Text 2xs"), color: ds.text.secondary }}>
-                {rounds[hover[0]].label} · <b style={{ color: LEVEL_TEXT[hover[1]] }}>{LEVELS[hover[1]]}</b> · {m.rounds[hover[0]][hover[1]]}%
-              </div>
+              <TipBox data-part="state-tip" style={{ position: "absolute", left: `${cx(hover[0]) * 100}%`, top: -8, transform: `translate(${hover[0] === 0 ? "-16%" : hover[0] === n - 1 ? "-84%" : "-50%"}, -100%)` }}
+                content={{ head: rounds[hover[0]].label, rows: [{ label: LEVELS[hover[1]], text: `${m.rounds[hover[0]][hover[1]]}%`, color: LEVEL_FILL[hover[1]], valueColor: LEVEL_TEXT[hover[1]] }] }} />
             )}
           </>)}</Frame>
         )}
@@ -295,14 +294,8 @@ export function StatusOverTime({ title = "Status Over Time", line, rounds, count
   const tip = h && (() => {
     const [i, j] = h, d = i > 0 ? share[i].pct[j] - share[i - 1].pct[j] : null;
     return (
-      <div data-part="status-tip" role="status" style={{ position: "absolute", left: `${cx(i) * 100}%`, top: -8, transform: `translate(${i === 0 ? "-16%" : i === n - 1 ? "-84%" : "-50%"}, -100%)`, zIndex: 3, pointerEvents: "none", whiteSpace: "nowrap", background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, boxShadow: dsShadow("sm"), borderLeft: `2px solid ${STATUS_KEYS[j].c}`, display: "flex", flexDirection: "column", gap: dsSpace[2], fontFamily: font }}>
-        <span style={{ ...dsText("Text 2xs", 500), color: ds.text.tertiary }}>{rounds[i].label}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
-          <b style={{ ...dsText("Text sm", 700), color: STATUS_KEYS[j].cs }}>{STATUS_KEYS[j].label} {share[i].pct[j]}%</b>
-          {d != null && d !== 0 && <span style={{ ...dsText("Text 2xs", 600), color: ds.text.secondary }}>{d > 0 ? "+" : "−"}{Math.abs(d)} pts</span>}
-        </span>
-        <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{share[i].people[j]} of {share[i].total} people</span>
-      </div>
+      <TipBox data-part="status-tip" style={{ position: "absolute", left: `${cx(i) * 100}%`, top: -8, transform: `translate(${i === 0 ? "-16%" : i === n - 1 ? "-84%" : "-50%"}, -100%)` }}
+        content={{ head: rounds[i].label, rows: [{ label: STATUS_KEYS[j].label, text: `${share[i].pct[j]}%`, delta: d, color: STATUS_KEYS[j].c, valueColor: STATUS_KEYS[j].cs }], note: `${share[i].people[j]} of ${share[i].total} people${d ? ` · ${d > 0 ? "+" : "−"}${Math.abs(d)} points on the round before` : ""}` }} />
     );
   })();
   return (
@@ -354,6 +347,9 @@ export function LevelOverTime({ title = "State over time", line, rounds, measure
   const columns = [{ key: "round", label: "Round" }, { key: "level", label: "Level", align: "right", render: (r) => <b style={{ color: LEVEL_TEXT[r.k] }}>{LEVELS[r.k]}</b>, text: (r) => LEVELS[r.k] }];
   const rows = rounds.map((r, i) => ({ round: r.label, k: m.levels[i] }));
   const h = hover;
+  // The standard tooltip: the round's level, and the round before under "Compared to".
+  const levelRow = (r) => ({ label: rounds[r].date || rounds[r].label, text: LEVELS[m.levels[r]], color: LEVEL_FILL[m.levels[r]], valueColor: LEVEL_TEXT[m.levels[r]] });
+  const levelTip = (r) => ({ head: who, rows: [levelRow(r)], compare: r > 0 ? { rows: [levelRow(r - 1)] } : null });
   return (
     <div ref={cardRef}>
     <StoryCard title={title} line={line} data-story="trend-level" controls={[<PillTabs key="t" label="Measure" tone="default" tabs={measures.map((x) => x.label)} value={m.label} onChange={(t) => { setTab(t); setHover(null); }} />, <ViewSwitch key="v" view={view} onChange={setView} />, view === "table" && <CopyTable key="c" getText={() => tableText(columns, rows)} />]}>
@@ -367,41 +363,16 @@ export function LevelOverTime({ title = "State over time", line, rounds, measure
               />
             ))}
             {h != null && !f.compact && (
-              <div data-part="level-tip" role="status" style={{ position: "absolute", left: Math.max(0, Math.min(f.plotW - 240, cx(h) * f.plotW + (cx(h) * f.plotW + 280 <= f.plotW ? 40 : -280))), top: -6, width: 240, boxSizing: "border-box", zIndex: 3, pointerEvents: "none", background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, boxShadow: dsShadow("sm"), display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}>
-                <span style={{ ...dsText("Text xs", 600), color: ds.text.secondary, textTransform: "uppercase" }}>{who}</span>
-                <TipLevel date={rounds[h].date || rounds[h].label} k={m.levels[h]} big delta={h > 0 ? m.levels[h - 1] - m.levels[h] : null} />
-                {h > 0 && <>
-                  <span style={{ ...dsText("Text 3xs", 600), lineHeight: 1, letterSpacing: "0.01em", textTransform: "uppercase", color: ds.text.quaternary }}>Compared to</span>
-                  <TipLevel date={rounds[h - 1].date || rounds[h - 1].label} k={m.levels[h - 1]} />
-                </>}
-              </div>
+              <TipBox data-part="level-tip" style={{ position: "absolute", left: Math.max(0, Math.min(f.plotW - 240, cx(h) * f.plotW + (cx(h) * f.plotW + 280 <= f.plotW ? 40 : -280))), top: -6, width: 240 }} content={levelTip(h)} />
             )}
           </>)}</Frame>
         )}
       </EvidenceSection>
       {/* On a compact card the comparison opens here, under the chart, when a bar is tapped. */}
       {view === "chart" && compact && h != null && (
-        <div data-part="level-detail" role="status" style={{ background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font }}>
-          <span style={{ ...dsText("Text xs", 600), color: ds.text.secondary, textTransform: "uppercase" }}>{who}</span>
-          <TipLevel date={rounds[h].date || rounds[h].label} k={m.levels[h]} big delta={h > 0 ? m.levels[h - 1] - m.levels[h] : null} />
-          {h > 0 && <>
-            <span style={{ ...dsText("Text 3xs", 600), lineHeight: 1, letterSpacing: "0.01em", textTransform: "uppercase", color: ds.text.quaternary }}>Compared to</span>
-            <TipLevel date={rounds[h - 1].date || rounds[h - 1].label} k={m.levels[h - 1]} />
-          </>}
-        </div>
+        <TipBox flat data-part="level-detail" content={levelTip(h)} />
       )}
     </StoryCard>
-    </div>
-  );
-}
-function TipLevel({ date, k, big, delta }) {
-  return (
-    <div style={{ borderLeft: `2px solid ${LEVEL_FILL[k]}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px`, display: "flex", flexDirection: "column", gap: dsSpace[2] }}>
-      <span style={{ ...dsText("Text 2xs", 500), color: ds.text.tertiary, textTransform: "uppercase" }}>{date}</span>
-      <span style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
-        <span style={{ ...dsText(big ? "Text lg" : "Text md", 700), color: LEVEL_TEXT[k] }}>{LEVELS[k]}</span>
-        {delta != null && delta !== 0 && <TrendPill delta={delta} compact />}
-      </span>
     </div>
   );
 }
@@ -436,7 +407,8 @@ export function ENPSOverTime({ title = "Score over time", line, rounds, parts, w
               </svg>
               {parts.map((p, i) => (
                 <span key={i} aria-hidden="true" style={{ position: "absolute", left: `${cx(i) * 100}%`, top: yE(p.enps), transform: "translate(-50%, -50%)", width: 8, height: 8, borderRadius: "50%", background: DOT, pointerEvents: "none" }}>
-                  {hover === i && <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", ...dsText("Text 2xs", 600), color: ds.text.primary, background: ds.surface.general.tooltip, borderRadius: dsRadius.md, padding: `${dsSpace[4]}px ${dsSpace[8]}px`, boxShadow: dsShadow("sm") }}>eNPS {p.enps} · {p.promoters}% / {p.passives}% / {p.detractors}%</span>}
+                  {hover === i && <TipBox style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", width: 200, transform: `translateX(${i === 0 ? "-16%" : i === n - 1 ? "-84%" : "-50%"})` }}
+                    content={{ head: rounds[i].label, rows: [{ label: "eNPS", text: p.enps > 0 ? `+${p.enps}` : `${p.enps}` }, { label: "Promoters", text: `${p.promoters}%`, color: ENPS_FILL.promoters }, { label: "Passives", text: `${p.passives}%`, color: ENPS_FILL.passives }, { label: "Detractors", text: `${p.detractors}%`, color: ENPS_FILL.detractors }] }} />}
                 </span>
               ))}
             </>)}</Frame>

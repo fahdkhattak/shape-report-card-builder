@@ -14,6 +14,7 @@ import GeneratingChecklist from "./GeneratingChecklist.jsx";
 import Button from "../ui/Button.jsx";
 import mascotAvatar from "../../assets/mascot-avatar.svg";
 import { QUICK_ACTIONS } from "./quickActions.js";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 // Same soft composer shadow and light chip-border fix as ChatLanding.jsx —
 // see that file's header comment for where these values came from.
@@ -135,7 +136,7 @@ export default function ChatPanel({ onClose, editingWidget, onAddWidget, onRepla
       {scoped && (
         <div style={{ padding: "12px 16px 0" }}>
           <p style={{ fontSize: 10.5, fontWeight: 600, color: T.gray500, textTransform: "uppercase", letterSpacing: 0.5, margin: "0 0 6px" }}>Currently on canvas</p>
-          <div style={{ width: 164, height: 164, border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, background: T.white }}>
+          <div style={{ width: 164, height: 164, border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12, background: T.white }}>
             <Header title={editingWidget.name} />
             {editingWidget.kind === "library" ? (
               <WidgetBody familyId={editingWidget.familyId} formIndex={editingWidget.formIndex} />

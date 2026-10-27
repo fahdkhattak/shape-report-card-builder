@@ -1,12 +1,12 @@
 import { ROUNDS, LATEST_ROUND, EXPLORERS, SURVEY, GROUP_AXES, respondents, personById, DEFAULT_PERSON, groups } from "../../../../lib/survey/surveyData.js";
 import { countByStatus } from "../../../../lib/bands.js";
-import { scoreTitle, MIN_GROUP } from "../../../../lib/scoreWidget.js";
+import { scoreTitle, statusTitle, MIN_GROUP } from "../../../../lib/scoreWidget.js";
 
 /* ================================================================== */
-/* Live examples for the Score and Index Developer pages: real numbers   */
+/* Live examples for the Score, Status and Index Developer pages: real numbers   */
 /* from the SHAPE survey dataset (150 people, lib/survey/surveyData.js), */
-/* for every who × what the widgets support. Teams aren't in the data    */
-/* (no reporting lines), so the Team examples are the Library's sample.  */
+/* for every who × what the widgets support. Teams aren't in the dataset */
+/* yet, so the Team examples are the Library's own Team forms.           */
 /* ================================================================== */
 const L = LATEST_ROUND, P = ROUNDS[ROUNDS.length - 2].id;
 const mean = (xs) => { const v = xs.filter((x) => typeof x === "number"); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
@@ -55,6 +55,13 @@ export function scoreWidget(popKey, measureKey, size = "2x2", show) {
   return { id: `doc-score-${popKey}-${measureKey}-${size}`, kind: "score", size, who: pop.who, what: m.what, show, data, title: scoreTitle(pop.who, m.what, { name: m.name, group: pop.group }) };
 }
 
+/* A Status card widget for one who × what: the same numbers as the Score card. */
+export function statusWidget(popKey, measureKey, size = "1x1") {
+  const pop = POPULATIONS[popKey], m = MEASURES[measureKey];
+  const w = scoreWidget(popKey, measureKey, size);
+  return { ...w, id: w.id.replace("doc-score", "doc-status"), kind: "status", title: statusTitle(pop.who, m.what, { name: m.name, group: pop.group }) };
+}
+
 /* An Index widget for one who × what: its parts and (3x3) their parts, now and the round before. */
 export function indexWidget(popKey, measureKey, size = "2x2") {
   const pop = POPULATIONS[popKey], m = MEASURES[measureKey];
@@ -66,5 +73,5 @@ export function indexWidget(popKey, measureKey, size = "2x2") {
   return { id: `doc-index-${popKey}-${measureKey}-${size}`, kind: "index", size, wedges, center: at(pop, m, L), title };
 }
 
-export const TEAM_NOTE = "Teams aren't in the prototype's data (it has no reporting lines), so the Team card is the Library's sample.";
+export const TEAM_NOTE = "The Library's Team form: the same card for a manager's team.";
 export const SMALL_NOTE = POPULATIONS.small ? `${POPULATIONS.small.label}: ${smallGroup.n} ${smallGroup.n === 1 ? "person" : "people"} answered, under the ${MIN_GROUP}-person minimum.` : null;

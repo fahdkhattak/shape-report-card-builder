@@ -6,6 +6,7 @@ import { Header } from "../widgets/primitives.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
 import Button from "../ui/Button.jsx";
 import MenuRow from "../canvas/MenuRow.jsx";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* GENERATED WIDGET PREVIEW — the draft/approve card shown inline in   */
@@ -64,7 +65,7 @@ export default function GeneratedWidgetPreview({ spec, onTitleChange, onApprove,
           transition={{ type: "spring", bounce: 0, duration: 0.2 }}
           style={{ width: DISPLAY_BOX, height: DISPLAY_BOX, flexShrink: 0, position: "relative", cursor: onExpand ? "pointer" : "default" }}
         >
-          <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0, background: T.white, border: `1px solid ${T.gray100}`, borderRadius: 18, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0, background: T.white, border: `1px solid ${T.gray100}`, borderRadius: 18, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
             <Header title={spec.title} estimated={spec.real === false} />
             <GeneratedBody spec={spec} />
           </div>

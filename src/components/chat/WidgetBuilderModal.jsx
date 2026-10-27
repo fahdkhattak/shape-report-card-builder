@@ -6,6 +6,7 @@ import { Header } from "../widgets/primitives.jsx";
 import GeneratedBody from "../widgets/GeneratedBody.jsx";
 import Button from "../ui/Button.jsx";
 import { VIZ_OPTIONS } from "./GeneratedWidgetPreview.jsx";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* ================================================================== */
 /* WIDGET BUILDER MODAL — the chat-exclusive "focus on one widget"       */
@@ -265,7 +266,7 @@ export default function WidgetBuilderModal({ variants, index, onIndexChange, onC
             >
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <div style={{ width: PREVIEW_BOX, height: PREVIEW_BOX, position: "relative", flexShrink: 0 }}>
-                  <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", background: T.white, border: `1px solid ${T.gray100}`, borderRadius: 18, padding: 16, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ width: native, height: native, transform: `scale(${scale})`, transformOrigin: "top left", position: "absolute", background: T.white, border: `1px solid ${T.gray100}`, borderRadius: 18, padding: SHELL_PADDING, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 12 }}>
                     <Header title={spec.title} estimated={spec.real === false} />
                     <GeneratedBody spec={spec} />
                   </div>

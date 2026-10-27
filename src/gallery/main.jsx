@@ -4,6 +4,7 @@ import GeneratedBody from "../components/widgets/GeneratedBody.jsx";
 import { Header } from "../components/widgets/primitives.jsx";
 import { FAMILIES, formTitle, cardSurface } from "../lib/families.js";
 import { FORMS, buildFormSpec } from "../lib/subjectForms.js";
+import { buildSpec } from "../lib/generativeEngine.js";
 import { overallSubject, dimensionSubject } from "../lib/scopeSubject.js";
 import { T, radius } from "../lib/tokens.js";
 import "../lib/ds.js";
@@ -13,6 +14,7 @@ import { STORIES } from "../components/widgetbuilder/storyCatalog.jsx";
 import { SAMPLE_SUBJECTS } from "../components/developer/sampleSubjects.js";
 import { ScopeNavContext } from "../components/scope/scopeNav.js";
 import EffectBreakdownStory from "../components/scope/stories/EffectBreakdown.jsx";
+import { SHELL_PADDING } from "../lib/widgetStructure.js";
 
 /* Scratch: ?scopes=a,b&style=refined (report Scopes) · ?family=a,b (library forms) or ?forms&only=a,b&subject=dim|overall&axes=gender,tenure (builder forms; axes repeats each form per grouping). */
 const params = new URLSearchParams(location.search);
@@ -20,7 +22,7 @@ const PX = { "1x1": 164, "2x2": 344, "3x3": 524 };
 const Card = ({ id, size, surface = {}, title, children }) => (
   <div data-w={id}>
     <div style={{ fontSize: 10, color: "#888", marginBottom: 4 }}>{id} · {size}</div>
-    <div style={{ width: PX[size], height: PX[size], background: surface.background || "#fff", border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: 16, display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box", overflow: "hidden" }}>
+    <div data-widget-card data-size={size} style={{ width: PX[size], height: PX[size], background: surface.background || "#fff", border: `1px solid ${surface.borderColor || T.gray100}`, borderRadius: radius.widget, padding: SHELL_PADDING, display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box", overflow: "hidden" }}>
       <Header title={title} />{children}
     </div>
   </div>
@@ -48,6 +50,13 @@ if (params.has("effect")) {
       <StoryStyleContext.Provider value={params.get("style") || "classic"}><ScopeRecipe familyId={id} /></StoryStyleContext.Provider>
     </div>
   ));
+} else if (params.has("generated")) {
+  // ?generated — every chat-generated chart type (lib/generativeEngine.js), for one-topic and two-topic prompts, at both sizes.
+  const cases = [["metric", ["Sleep"]], ["trend", ["Sleep"]], ["gauge", ["Sleep"]], ["status", ["Sleep"]], ["bar", ["Sleep", "Stress"]], ["ranking", ["Sleep", "Stress", "Workload"]], ["radar", ["Sleep", "Stress", "Workload"]], ["scatter", ["Sleep", "Stress"]], ["insight", ["Sleep", "Stress"]]];
+  cells = cases.flatMap(([viz, topics]) => [buildSpec(viz, topics, topics.join(" and ")).size].map((size) => {
+    const spec = { ...buildSpec(viz, topics, topics.join(" and ")), size };
+    return <Card key={viz + size} id={`${viz}:${size}`} size={size} title={spec.title}><GeneratedBody spec={spec} /></Card>;
+  }));
 } else if (params.has("forms")) {
   const subject = params.get("subject") === "dim" ? dimensionSubject("Corporate Culture") : overallSubject();
   const only = params.get("only")?.split(",");

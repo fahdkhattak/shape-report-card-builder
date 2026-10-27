@@ -5,15 +5,13 @@ import {
   BigNumber,
   TrendPill,
   EvidenceSegmentBar,
-  StatusBreakdown,
   DriverGroupedList,
   driverTier,
   Sparkline,
-  StatusRing,
-  StatusRipple,
+  Sections, Insight, Evidence, ActionBar,
 } from "./primitives.jsx";
 import {
-  statusOf, STATUS_COLOR, TEAM_BLUE, date11, muted11,
+  TEAM_BLUE, date11, muted11,
   GroupCounts, MoreLine,
   SeverityRow, DistributionRow, SupportButton, AgeNumber, AgeScale,
   CompareRow, CompareIcons, LockedBody, HeatTable, HistoryChart,
@@ -21,9 +19,14 @@ import {
 } from "./widgetParts.jsx";
 import { IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import ScoreCard from "./ScoreCard.jsx";
-import GraphInsight from "./GraphInsight.jsx";
+import StatusCard from "./StatusCard.jsx";
+import GraphInsight, { HistoryCaption } from "./GraphInsight.jsx";
 import { impact, impactSeries, samplePerson, fmtMoney } from "../../lib/impactModel.js";
-import { HBars, TileGrid, Treemap } from "./ChartInsight.jsx";
+import { HBars, TileGrid, Treemap, CompositionInsight } from "./ChartInsight.jsx";
+import { segmentColor } from "../scope/stories/DonutChart.jsx";
+import { groupRows, LAST } from "../../lib/scopeData.js";
+import { driversOnPage } from "../../lib/driversWidget.js";
+import { comparisonSize } from "../../lib/insightRules.js";
 import {
   ROUNDS, LATEST, PREVIOUS, ROUND_LABELS, DIMENSIONS, delta,
   dimensionRankedRows, driverRankedRows, dimensionValue, driverValue, driverTrend, DIMENSION_DRIVERS,
@@ -31,9 +34,13 @@ import {
   focusGroups, enpsGroups, feelingShare, heatMap,
 } from "../../lib/dataset.js";
 import { FLOURISHING_AT, countByStatus } from "../../lib/bands.js";
+import { familyById } from "../../lib/families.js";
 
-const GENDER_COLORS = { Male: T.teamBlue, Female: T.hotPink, Other: ds.utility.graphColors.main.goldenYellow, "Prefer not to respond": ds.text.quaternary };
-const WORK_MODEL_COLORS = { Onsite: ds.utility.graphColors.main.orgBlue, Remote: T.teamBlue, Hybrid: ds.utility.graphColors.main.mintGreen };
+// Groups in the order their colours are drawn (DonutChart.jsx BY_AXIS); other axes keep size order.
+const COMPOSITION_ORDER = { gender: ["Male", "Female", "Other", "Prefer not to respond"], workModel: ["Onsite", "Remote", "Hybrid"] };
+// A group keeps one colour whether it's counted (Composition) or scored (Score by Group).
+const groupColor = (axis, group, i) => { const o = COMPOSITION_ORDER[axis]; return segmentColor(axis, o ? Math.max(0, o.indexOf(group)) : i); };
+const COMPOSITION_LABEL = { gender: "Gender", workModel: "Work", location: "Location", jobLevel: "Job Level", department: "Department", tenure: "Employment Duration", employmentStatus: "Employment" };
 const MONEY_COLORS = { Productivity: ds.text.accent, Absenteeism: ds.utility.graphColors.main.teamBlue, Retention: ds.utility.graphColors.main.teal, "Injury/Claims": ds.utility.graphColors.main.lavenderViolet };
 
 /* ================================================================== */
@@ -51,6 +58,8 @@ const MONEY_COLORS = { Productivity: ds.text.accent, Absenteeism: ds.utility.gra
 /* ================================================================== */
 
 const col = (extra) => ({ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, ...extra });
+/* An Insight-only widget (the board's first template at each size). */
+const Only = ({ size, children, style, center }) => <Sections size={size}><Insight style={style} center={center}>{children}</Insight></Sections>;
 
 /* How many of a set of values land in each status band. */
 function bandCounts(values) {
@@ -73,33 +82,23 @@ function RankedList({ rows, noun, form }) {
     // No per-row trend in the 1x1 (the design drops it to make room), and a
     // Factors card says "Top / Bottom" where Explorers say "Great / Poor".
     const picked = [rows[0], rows[rows.length - 1]].map((r) => [r[0], r[1]]);
+    // Insight only: the two tiers need the whole Insight (88px), so "N more" sits at its foot, not in a 24px Evidence Bar.
     return (
-      <div style={col({ gap: 6, overflow: "hidden" })}>
-        <DriverGroupedList rows={picked} tierLabels={noun === "Factors" ? { great: "Top", average: "Average", poor: "Bottom" } : undefined} />
+      <Only size="1x1">
+        <DriverGroupedList rows={picked} tierLabels={noun === "Drivers" ? { great: "Top", average: "Average", poor: "Bottom" } : undefined} />
         <MoreLine>{rows.length - 2} more {noun}</MoreLine>
-      </div>
+      </Only>
     );
   }
   const shown = pickTiered(rows);
   return (
-    <div style={col({ gap: 6, overflow: "hidden" })}>
+    <Only size="2x2" style={{ gap: 6 }}>
       <DriverGroupedList rows={shown} />
       {rows.length > shown.length && <MoreLine>{rows.length - shown.length} more {noun}</MoreLine>}
-    </div>
+    </Only>
   );
 }
 
-/* Wording for how a score moved across rounds ("After dipping in R2, …"). */
-function historyCaption(points) {
-  const n = points.length, last = points[n - 1], prev = points[n - 2], d = last - prev;
-  const B = ({ children, c }) => <b style={{ color: c || ds.text.primary }}>{children}</b>;
-  if (d > 0) {
-    const dipped = n >= 3 && points[n - 2] < points[n - 3];
-    return <>{dipped ? <>After dipping in <B>R{n - 1}</B>, the score increased by </> : <>The score increased by </>}<B c={ds.status.success.textIndicator}>+{d} points</B>{!dipped && <> since <B>R{n - 1}</B></>}, reaching <B>{last}</B> in the latest round.</>;
-  }
-  if (d < 0) return <>The score fell by <B c={ds.status.error.textIndicator}>{-d} points</B> since <B>R{n - 1}</B>, to <B>{last}</B> in the latest round.</>;
-  return <>The score held at <B>{last}</B> since <B>R{n - 1}</B>.</>;
-}
 
 /* The design's own sample figures for anything that has no data behind it. */
 const SAMPLE = { team: { score: 87, d: 9, members: 15, rate: 95, counts: [9, 3, 3] } };
@@ -107,8 +106,6 @@ const SAMPLE = { team: { score: 87, d: 9, members: 15, rate: 95, counts: [9, 3, 
 export default function WidgetBody({ familyId, formIndex = 0 }) {
   const avg = Math.round(LATEST.avgOverall);
   const avgDelta = delta(LATEST.avgOverall, PREVIOUS.avgOverall);
-  const orgBar = <EvidenceSegmentBar flourishing={LATEST.flourishing} striving={LATEST.striving} struggling={LATEST.struggling} />;
-  const orgCounts = <StatusBreakdown flourishing={LATEST.flourishing} striving={LATEST.striving} struggling={LATEST.struggling} />;
   const orgPeople = { f: LATEST.flourishing, s: LATEST.striving, t: LATEST.struggling };
   const explorers = bandCounts(DIMENSIONS.map((d) => dimensionValue(d)));
 
@@ -136,7 +133,7 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
     case "explorer-score": {
       const dim = "Physical Health";
       const parts = bandCounts((DIMENSION_DRIVERS[dim] || []).map((x) => driverValue(x)));
-      const data = { value: Math.round(dimensionValue(dim)), delta: delta(dimensionValue(dim), dimensionValue(dim, PREVIOUS)), date: LATEST.date, parts, partsNoun: "Factors" };
+      const data = { value: Math.round(dimensionValue(dim)), delta: delta(dimensionValue(dim), dimensionValue(dim, PREVIOUS)), date: LATEST.date, parts, partsNoun: "Drivers" };
       if (formIndex === 2) return <ScoreCard size="1x1" who="team" what="explorer" data={{ ...data, n: SAMPLE.team.members, rate: SAMPLE.team.rate }} numberSize={48} />;
       if (formIndex === 3) return <ScoreCard size="1x1" who="org" what="explorer" data={{ ...data, n: EMPLOYEE_COUNT, rate: participationRate() }} numberSize={48} />;
       if (formIndex === 4) return <ScoreCard size="2x2" who="person" what="explorer" data={data} />;
@@ -144,34 +141,20 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
     }
 
     case "index":
-      if (formIndex === 2) return <DimensionIndex dimension="Corporate Culture" />;
-      return <IndexRing variant={formIndex === 1 ? "3x3" : "2x2"} overall={LATEST.avgOverall} />;
+      if (formIndex === 2) return <Only size="2x2" center><DimensionIndex dimension="Corporate Culture" /></Only>;
+      return <Only size={formIndex === 1 ? "3x3" : "2x2"} center><IndexRing variant={formIndex === 1 ? "3x3" : "2x2"} overall={LATEST.avgOverall} /></Only>;
 
     /* ---- Status ---- */
+    /* One Status card for every subject (widgets/StatusCard.jsx): a population's bar is its people, one person's is
+       their Explorers. */
     case "org-status": {
-      const sample = formIndex >= 3;
-      const status = sample ? "Flourishing" : statusOf(LATEST.avgOverall);
-      const bar = sample ? <EvidenceSegmentBar flourishing={9} striving={3} struggling={3} /> : orgBar;
-      if (formIndex === 1 || formIndex === 4) {
-        return (
-          <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
-              <StatusRipple status={status} size={196} />
-              <span style={{ fontSize: 20, fontWeight: 700, color: STATUS_COLOR[status], marginTop: -34, position: "relative" }}>{status}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 8 }}>
-              {bar}
-              {sample ? <StatusBreakdown flourishing={9} striving={3} struggling={3} /> : orgCounts}
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div style={col({ justifyContent: "center", gap: 8 })}>
-          <StatusRing status={status} />
-          {bar}
-        </div>
-      );
+      const form = familyById("org-status").forms[formIndex];
+      const { who, what } = form.subject;
+      const s = SAMPLE.team;
+      const data = who === "team" ? { value: s.score, n: s.members, people: { f: s.counts[0], s: s.counts[1], t: s.counts[2] } }
+        : who === "person" ? { value: avg, parts: explorers, partsNoun: "Explorers" }
+        : { value: avg, people: orgPeople };
+      return <StatusCard size={form.size} who={who} what={what} data={data} />;
     }
 
     /* ---- ENPS ---- */
@@ -182,40 +165,45 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       const d = score - Math.round(((prev.promoters - prev.detractors) / prev.total) * 100);
       const bar = <EvidenceSegmentBar flourishing={g.promoters} striving={g.passives} struggling={g.detractors} />;
       if (formIndex === 0) {
+        // Board example (15497:3164): the number in the Insight, the bar in the Evidence Bar.
         return (
-          <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, color: ds.text.primary, lineHeight: 0.9 }}>{score}</span>
-              <TrendPill delta={d} compact />
-            </div>
-            {bar}
-          </div>
+          <Sections size="1x1">
+            <Insight center>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: -0.96, color: ds.text.primary, lineHeight: 0.9 }}>{score}</span>
+                <TrendPill delta={d} compact />
+              </div>
+            </Insight>
+            <Evidence>{bar}</Evidence>
+          </Sections>
         );
       }
       if (formIndex === 1) {
         return (
-          <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ flex: 1, display: "flex", alignItems: "center" }}><span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: ds.text.primary, lineHeight: 0.82 }}>{score}</span></div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Sections size="2x2">
+            <Insight center><span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: ds.text.primary, lineHeight: 0.82 }}>{score}</span></Insight>
+            <Evidence style={{ gap: 12 }}>
               {bar}
               <GroupCounts items={[["Promoters", g.promoters, ds.status.success.textIndicator], ["Passives", g.passives, ds.status.warning.textIndicator], ["Detractors", g.detractors, ds.status.error.textIndicator]]} />
-            </div>
-          </div>
+            </Evidence>
+          </Sections>
         );
       }
       return (
-        <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: ds.text.primary, lineHeight: 0.82 }}>{score}</span>
-            <TrendPill delta={d} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <Sections size="2x2">
+          <Insight center>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 64, fontWeight: 700, letterSpacing: -1.3, color: ds.text.primary, lineHeight: 0.82 }}>{score}</span>
+              <TrendPill delta={d} />
+            </div>
+          </Insight>
+          <Evidence style={{ gap: 12 }}>
             {bar}
             <span style={{ fontSize: 11, color: ds.text.tertiary, lineHeight: "16px" }}>
               Across the <b style={{ color: ds.text.primary }}>{g.total}</b> people who answered, <b style={{ color: ds.status.success.textIndicator }}>{g.promoters}</b> are Promoters, <b style={{ color: ds.status.warning.textIndicator }}>{g.passives}</b> are Passives, and <b style={{ color: ds.status.error.textIndicator }}>{g.detractors}</b> are Detractors.
             </span>
-          </div>
-        </div>
+          </Evidence>
+        </Sections>
       );
     }
 
@@ -228,28 +216,30 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         // dimension — see worstDemographicGroup() in lib/dataset.js.
         const [, group, value, trendDelta] = worstDemographicGroup();
         return (
-          <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <BigNumber value={Math.round(value)} size={48} colorBand />
-              <TrendPill delta={trendDelta} numberOnly />
-            </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: ds.text.primary, lineHeight: "14px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{group}</span>
-          </div>
+          <Sections size="1x1">
+            <Insight center>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <BigNumber value={Math.round(value)} size={48} colorBand />
+                <TrendPill delta={trendDelta} numberOnly />
+              </div>
+            </Insight>
+            <Evidence><span title={group} style={{ fontSize: 11, fontWeight: 700, color: ds.text.primary, lineHeight: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{group}</span></Evidence>
+          </Sections>
         );
       }
       if (formIndex === 1) {
         const areas = groups.filter((g) => g.value < FLOURISHING_AT);
         return (
-          <div style={col({ gap: 6, overflow: "hidden" })}>
-            {areas.slice(0, 3).map((g) => <FocusRow key={g.axis + g.group} name={g.group} value={g.value} />)}
-            {areas.length > 3 && <MoreLine bottom>{areas.length - 3} more Areas</MoreLine>}
-          </div>
+          <Sections size="1x1">
+            <Insight style={{ gap: 6 }}>{areas.slice(0, 2).map((g) => <FocusRow key={g.axis + g.group} name={g.group} value={g.value} />)}</Insight>
+            {areas.length > 2 && <Evidence><MoreLine bottom={false}>{areas.length - 2} more Areas</MoreLine></Evidence>}
+          </Sections>
         );
       }
       if (formIndex === 2) {
         const CATEGORIES = [["People", ["Gender"]], ["Organisation", ["Department", "Job Level"]], ["Employment", ["Tenure", "Employment Status", "Work Model"]], ["Locations", ["Location"]]];
         return (
-          <div style={col({ gap: 12, overflow: "hidden" })}>
+          <Only size="2x2" style={{ gap: 12 }}>
             {/* Three categories fit a 2x2; the rest are counted in "N more" at the foot. */}
             {CATEGORIES.filter(([, axes]) => groups.some((x) => axes.includes(x.axis))).slice(0, 3).map(([title, axes]) => {
               const g = groups.find((x) => axes.includes(x.axis));
@@ -265,35 +255,67 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
               const more = groups.filter((g) => g.value < FLOURISHING_AT).length - shown;
               return more > 0 ? <MoreLine bottom>{more} more Areas</MoreLine> : null;
             })()}
-          </div>
+          </Only>
         );
       }
       // Chart rules, horizontal bars (Comparison): one 0–100 scale, 2x2 up to 13 groups, value labels in the bar's colour.
       const rows = groups.filter((g) => g.axis === "Department").map((g) => ({ label: g.group, value: g.value, color: band(g.value).c }));
-      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="2x2" values noun="departments" /></div>;
+      return <Only size="2x2" center><HBars rows={rows} size="2x2" values noun="departments" /></Only>;
     }
 
     case "heat-map": {
-      const { rows } = heatMap();
-      return <HeatTable rows={rows} />;
+      // Template Insight + Evidence Bar: four groups (18px rows fill the 72px Insight), the tiles cut off at the card's
+      // edge, and "More" in the Evidence Bar (the whole map is in its full-view Scope).
+      const { rows } = heatMap(4, 4);
+      return (
+        <Sections size="1x1">
+          <Insight><HeatTable rows={rows} /></Insight>
+          <Evidence><MoreLine bottom={false}>More</MoreLine></Evidence>
+        </Sections>
+      );
     }
 
-    /* ---- Explorers & Factors ---- */
+    /* ---- Explorers & Drivers ---- */
     case "explorers":
       return <RankedList rows={dimensionRankedRows()} noun="Explorers" form={formIndex === 1 ? "1x1" : "2x2"} />;
-    case "factors":
-      return <RankedList rows={driverRankedRows()} noun="Factors" form={formIndex === 1 ? "1x1" : "2x2"} />;
-
-    /* ---- Explorer Results ---- */
-    case "avg-gender": {
-      // Chart rules, horizontal bars (Comparison): 1x1 holds 2 to 5 categories on a fixed 0–100 scale; labels truncate
-      // with the full name in the tooltip. No value labels at 1x1 (the 48px value area would leave a 26px plot).
-      const rows = avgScoreByGender().map(([g, v]) => ({ label: g, value: v, color: GENDER_COLORS[g] }));
-      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="1x1" values={false} noun="groups" /></div>;
+    case "factors": {
+      // One Drivers widget: it ranks the Drivers under the page it sits on (lib/driversWidget.js), as many as fit.
+      const form = familyById("factors").forms[formIndex];
+      const names = new Set(driversOnPage(form.page));
+      return <RankedList rows={driverRankedRows().filter((r) => names.has(r[0]))} noun="Drivers" form={form.size} />;
     }
+
+    /* ---- Score by Group (Comparison) ---- */
+    /* A score for each group of people on one fixed 0–100 scale; hover a bar for its score. Chart rules: 2 to 4 groups
+       in a 1x1 (no value labels: the 48px value area would leave a 26px plot), 5 or more in a 2x2. Groups under 5
+       people are never shown. */
+    case "avg-gender":
     case "avg-work-model": {
-      const rows = avgScoreByWorkModel().map(([w, v]) => ({ label: w, value: v, color: WORK_MODEL_COLORS[w] }));
-      return <div style={{ flex: 1, display: "flex", alignItems: "center" }}><HBars rows={rows} size="1x1" values={false} noun="groups" /></div>;
+      const form = familyById(familyId).forms[formIndex];
+      const rows = groupRows(form.axis, LAST).filter((g) => !g.hidden).sort((a, b) => b.score - a.score)
+        .map((g, i) => ({ label: g.group, value: g.score, color: groupColor(form.axis, g.group, i) }));
+      const size = comparisonSize(rows.length);
+      return <Only size={size} center={size === "1x1"}><HBars rows={rows} size={size} values={size !== "1x1"} noun="groups" /></Only>;
+    }
+
+    /* ---- Composition ---- */
+    /* Who makes up the organisation, or what a total is made of (ChartInsight.jsx CompositionInsight); the form follows
+       the number of groups (compositionFit). Hover a part for how many people (or hours, or dollars) it holds. */
+    case "composition": {
+      const form = familyById("composition").forms[formIndex];
+      const { axis, form: kind, legend } = form.comp;
+      if (axis === "impactTime" || axis === "impactMoney") {
+        const time = axis === "impactTime", m = impact();
+        const parts = time ? [["Productivity", m.hours.productivity], ["Absenteeism", m.hours.absenteeism]] : [["Productivity", m.dollars.productivity], ["Absenteeism", m.dollars.absenteeism], ["Retention", m.dollars.retention], ["Injury/Claims", m.dollars.claims]];
+        const total = parts.reduce((a, [, v]) => a + v, 0) || 1;
+        const rows = parts.map(([group, v]) => ({ group, n: time ? Math.round(v) : Math.round(v), pct: Math.round((v / total) * 100) }));
+        const fmt = time ? (v) => `${v} hrs` : fmtMoney;
+        return <CompositionInsight rows={rows} axisKey={axis} label={time ? "Time" : "Money"} size={form.size} form={kind} legend={legend !== false} format={fmt} tipText={time ? (v) => `${v} hrs per person` : (v) => `${fmtMoney(v)} a year`} />;
+      }
+      const order = COMPOSITION_ORDER[axis];
+      const rows = groupRows(axis, LAST).map((g) => ({ group: g.group, n: g.n, pct: g.pct }))
+        .sort((a, b) => (order ? order.indexOf(a.group) - order.indexOf(b.group) : 0));
+      return <CompositionInsight rows={rows} axisKey={axis} label={COMPOSITION_LABEL[axis] || axis} size={form.size} form={kind} legend={legend !== false} />;
     }
     case "popular-responses":
       // No free-text theme data in the generated dataset (the survey's open-text
@@ -303,14 +325,14 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       {
         // Same sample themes as the Response Analysis Scope it opens (lib/responseSample.js), so the two agree.
         const themes = themeTotals().map((t) => ({ label: t.label, value: t.value, color: t.color }));
-        return formIndex === 1 ? <Treemap rows={themes} size="2x2" /> : <Treemap rows={themes.slice(0, 3)} size="1x1" />;
+        return formIndex === 1 ? <Only size="2x2"><Treemap rows={themes} size="2x2" /></Only> : <Only size="1x1"><Treemap rows={themes.slice(0, 3)} size="1x1" /></Only>;
       }
 
     /* ---- Score over time ---- */
     case "score-history": {
       const points = ROUNDS.map((r) => Math.round(r.avgOverall));
       // Graph insight rules (docs/widget-insight-rules.md): 1x1 up to 3 rounds, 2x2 up to 7; past that the widget grows or gives way to the detailed view.
-      return <GraphInsight series={[{ points }]} labels={ROUND_LABELS} size={formIndex === 1 ? "1x1" : "2x2"} delta={avgDelta} evidence={historyCaption(points)} />;
+      return <GraphInsight series={[{ points }]} labels={ROUND_LABELS} size={formIndex === 1 ? "1x1" : "2x2"} delta={avgDelta} evidence={<HistoryCaption points={points} labels={ROUND_LABELS} noun="the Org Score" />} />;
     }
 
     /* ---- Score comparisons ---- */
@@ -318,23 +340,25 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       const next = new Date(LATEST.date);
       next.setDate(next.getDate() + 33);
       const when = next.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      if (formIndex === 2) return <LockedBody date={when} />;
-      if (formIndex === 3) return <LockedBody date={when} text="Your score compared with your team(s) and the organisation" />;
+      if (formIndex === 2) return <Only size="1x1"><LockedBody date={when} /></Only>;
+      if (formIndex === 3) return <Only size="2x2"><LockedBody date={when} text="Your score compared with your team(s) and the organisation" /></Only>;
       if (formIndex === 0)
         return (
-          <div style={col({ gap: 8, overflow: "hidden" })}>
-            <CompareRow label="Team Score" value={64} />
-            <CompareRow label="Org Score" value={avg} />
-            <MoreLine>1 more Comparison</MoreLine>
-          </div>
+          <Sections size="1x1">
+            <Insight style={{ gap: 8 }}>
+              <CompareRow label="Team Score" value={64} />
+              <CompareRow label="Org Score" value={avg} />
+            </Insight>
+            <Evidence><MoreLine bottom={false}>1 more Comparison</MoreLine></Evidence>
+          </Sections>
         );
       return (
-        <div style={col({ gap: 8, overflow: "hidden" })}>
+        <Only size="2x2" style={{ gap: 12 }}>
           <CompareRow label="Your Score" value={83} icon={CompareIcons.you} delta={9} big />
           <CompareRow label="Team Score" value={71} icon={CompareIcons.team} chip="team-a@example.com" big />
           <CompareRow label="Team Score" value={64} icon={CompareIcons.team} chip="team-b@example.com" big />
           <CompareRow label="Org Score" value={avg} icon={CompareIcons.org} big />
-        </div>
+        </Only>
       );
     }
 
@@ -350,59 +374,61 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
         </span>
       );
       if (formIndex % 2 === 0) {
+        // Board example (15497:3180): the age in the Insight, the gap in the Evidence Bar.
         return (
-          <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <AgeNumber years={26} months={3} color={tone} />
-              <TrendPill delta={older ? 2 : -2} compact positive={older} />
-            </div>
-            <span style={{ background: older ? ds.status.error.bg : ds.status.success.bg, color: older ? ds.status.error.textIndicator : ds.status.success.textIndicator, borderRadius: 9999, padding: "4px 8px", fontSize: 11, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{older ? "1 yr 1 mo older" : "2 yrs 3 mo younger"}</span>
-          </div>
+          <Sections size="1x1">
+            <Insight center>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <AgeNumber years={26} months={3} color={tone} />
+                <TrendPill delta={older ? 2 : -2} compact positive={older} />
+              </div>
+            </Insight>
+            <Evidence>{gapChip}</Evidence>
+          </Sections>
         );
       }
       return (
-        <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+        <Sections size="2x2">
+          <Insight style={{ justifyContent: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <AgeNumber years={26} months={3} color={tone} size={36} />
             {older
               ? <span style={{ display: "inline-flex", gap: 4, background: ds.status.success.bg, color: ds.status.success.text, borderRadius: 9999, height: 20, boxSizing: "border-box", lineHeight: "20px", alignItems: "center", padding: "0 8px", fontSize: 11 }}>▲ Improved by <b style={{ color: ds.status.success.textIndicator }}>2 yrs 3 mo</b></span>
               : <span style={{ display: "inline-flex", gap: 4, background: ds.status.error.bg, color: ds.status.error.text, borderRadius: 9999, height: 20, boxSizing: "border-box", lineHeight: "20px", alignItems: "center", padding: "0 8px", fontSize: 11 }}>▼ Declined by <b style={{ color: ds.status.error.textIndicator }}>2 yrs 3 mo</b></span>}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span style={{ fontSize: 11, color: ds.text.primary }}>{who}</span>
-            {gapChip}
-            <span style={{ fontSize: 11, color: ds.text.primary }}>than your actual age.</span>
-            <AgeScale older={older} />
-          </div>
-        </div>
+          <span style={{ fontSize: 11, color: ds.text.primary, lineHeight: "16px" }}>{who} <b style={{ color: tone }}>{older ? "1 yr 1 mo older" : "2 yrs 3 mo younger"}</b> than your actual age.</span>
+          </Insight>
+          <Evidence><AgeScale older={older} /></Evidence>
+        </Sections>
       );
     }
 
     /* ---- Mental well-being ---- */
     case "mental-wellbeing": {
       if (formIndex < 2) {
-        return (
-          <div style={col({ justifyContent: "space-between" })}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <SeverityRow label="Feeling Low" level="Moderate" trend={formIndex === 1 ? "up" : undefined} />
-              <SeverityRow label="Feeling Anxious" level="Severe" trend={formIndex === 1 ? "down" : undefined} />
-              <SeverityRow label="Feeling Stressed" level="Extremely Severe" trend={formIndex === 1 ? "down" : undefined} />
-            </div>
-            {formIndex === 1 && <SupportButton tone={ds.utility.graphColors.main.personalBlue} />}
+        const rowsEl = (
+          <div style={{ display: "flex", flexDirection: "column", gap: formIndex === 1 ? 12 : 4 }}>
+            <SeverityRow label="Feeling Low" level="Moderate" trend={formIndex === 1 ? "up" : undefined} />
+            <SeverityRow label="Feeling Anxious" level="Severe" trend={formIndex === 1 ? "down" : undefined} />
+            <SeverityRow label="Feeling Stressed" level="Extremely Severe" trend={formIndex === 1 ? "down" : undefined} />
           </div>
         );
+        // 2x2 (template Insight + Action Bar): the Get Support button sits in the Action Bar, at the right.
+        return formIndex === 1
+          ? <Sections size="2x2"><Insight>{rowsEl}</Insight><ActionBar><SupportButton tone={ds.utility.graphColors.main.personalBlue} /></ActionBar></Sections>
+          : <Only size="1x1" center>{rowsEl}</Only>;
       }
       const team = formIndex < 4;
       const tone = team ? TEAM_BLUE : ds.utility.graphColors.main.orgBlue;
       const rows = team ? [["Feeling Low", 60, -3], ["Feeling Anxious", 24, 2], ["Feeling Stressed", 32, 2]] : feelingShare();
       const big = formIndex % 2 === 1;
       return (
-        <div style={col({ gap: big ? 8 : 4 })}>
+        <Only size={big ? "2x2" : "1x1"} style={{ gap: big ? 8 : 4 }}>
           <span style={{ ...muted11, lineHeight: "13px" }}>{team ? "Team" : "Org"} distribution (%)</span>
           <div style={{ display: "flex", flexDirection: "column", gap: big ? 12 : 4 }}>
             {rows.map(([label, pct, d]) => <DistributionRow key={label} label={label} pct={pct} delta={big ? d : undefined} tone={tone} bar={big} />)}
           </div>
-        </div>
+        </Only>
       );
     }
 
@@ -415,42 +441,47 @@ export default function WidgetBody({ familyId, formIndex = 0 }) {
       const team = formIndex === 1;
       const tone = team ? TEAM_BLUE : ds.utility.graphColors.main.orgBlue;
       return (
-        <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ paddingTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-            <BigNumber value={team ? 25 : now} size={48} unit="hrs" color={tone} />
-            {!team && now !== before && <TrendPill compact positive={now < before} />}
-          </div>
-          <span style={date11}>to gain per person, per year</span>
-        </div>
+        <Sections size="1x1">
+          <Insight center>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <BigNumber value={team ? 25 : now} size={48} unit="hrs to gain" color={tone} />
+              {!team && now !== before && <TrendPill compact positive={now < before} />}
+            </div>
+          </Insight>
+          <Evidence><span style={date11}>per person, per year</span></Evidence>
+        </Sections>
       );
     }
     case "time-gain": {
       const p = samplePerson();
       return (
-        <div style={col({ justifyContent: "space-between" })}>
-          <div style={{ paddingTop: 8 }}><BigNumber value={Math.round(p.hours)} size={48} unit="hrs" color={ds.utility.graphColors.main.orgBlue} /></div>
-          <span style={date11}>to gain, per year</span>
-        </div>
+        <Sections size="1x1">
+          <Insight center><BigNumber value={Math.round(p.hours)} size={48} unit="hrs" color={ds.utility.graphColors.main.orgBlue} /></Insight>
+          <Evidence><span style={date11}>to gain, per year</span></Evidence>
+        </Sections>
       );
     }
     case "money-composition": {
       const m = impact().dollars;
       // Chart rules, compact grid (Composition): dollar tiles over a proportion bar; 1x1 holds up to 4.
-      return <TileGrid size="1x1" format={fmtMoney} rows={[["Productivity", m.productivity], ["Absenteeism", m.absenteeism], ["Retention", m.retention], ["Injury/Claims", m.claims]].map(([label, value]) => ({ label, value, color: MONEY_COLORS[label] }))} />;
+      return <Only size="1x1"><TileGrid size="1x1" format={fmtMoney} rows={[["Productivity", m.productivity], ["Absenteeism", m.absenteeism], ["Retention", m.retention], ["Injury/Claims", m.claims]].map(([label, value]) => ({ label, value, color: MONEY_COLORS[label] }))} /></Only>;
     }
 
     /* ---- Support ---- */
     case "support-nudge":
+      // Board example (15497:3215): the message in the Insight, the button in the Action Bar at the right.
       return (
-        <div style={col({ justifyContent: "space-between" })}>
-          <span style={{ fontSize: 11, color: ds.text.primary, lineHeight: "14px" }}>
-            {formIndex === 0 ? "Struggling or just want to be heard? Get support now." : "Want help with low Psychological Health Scores?"}
-          </span>
-          <SupportButton tone={formIndex === 0 ? ds.text.primary : ds.text.accent} />
-        </div>
+        <Sections size="1x1">
+          <Insight>
+            <span style={{ fontSize: 13, color: ds.text.primary, lineHeight: "18px" }}>
+              {formIndex === 0 ? "Struggling or just want to be heard? Get support now." : "Want help with low Psychological Health Scores?"}
+            </span>
+          </Insight>
+          <ActionBar><SupportButton tone={formIndex === 0 ? ds.text.primary : ds.text.accent} /></ActionBar>
+        </Sections>
       );
 
     default:
-      return <div style={{ flex: 1 }} />;
+      return <Only size="1x1" />;
   }
 }

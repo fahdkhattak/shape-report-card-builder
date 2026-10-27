@@ -1,24 +1,79 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { font } from "../../lib/tokens.js";
-import { ds, dsText, dsSpace, dsRadius, dsShadow, dsBand } from "../../lib/ds.js";
+import { ds, dsText, dsSpace, dsRadius, dsShadow, dsBand, dsBorder } from "../../lib/ds.js";
 import { TrendPill } from "./primitives.jsx";
 
 /* ================================================================== */
-/* CHART TIP — the hover tooltip for the Graph and Chart widgets.       */
-/* Same card as the Index widget's (RingIndex.jsx): tooltip surface,    */
-/* an optional small upper-case heading, then one row per value with a  */
-/* 2px rail in its colour, the label, an optional change and the value.  */
-/* Rendered into document.body at the pointer, so a widget card's        */
-/* `overflow: hidden` can never clip it; it opens below the pointer near */
-/* the top of the window and stays inside the window sideways.           */
+/* THE TOOLTIP — one standard for every chart in the product (widgets,  */
+/* Stories, full-view Scopes), from the Figma Story tooltips (the radar  */
+/* 13622:35947, the comparison area 13622:39305):                        */
+/*   card   surface/General/tooltip, radius/lg, 12 / 16 padding, 8 gap,  */
+/*          shadow-sm, 180 to 240px wide                                  */
+/*   head   optional: Text xs / Semibold, upper case, text/tertiary      */
+/*   rows   a 2px rail in the row's colour; label Text xs / Semibold     */
+/*          text/primary (an optional tag pill under it); an optional     */
+/*          change (TrendPill, number only); the value Text md / Bold,    */
+/*          in its band's text-indicator colour when it's a 0–100 score   */
+/*   compare optional: "Compared to" (Text 3xs / Semibold, upper case,    */
+/*          text/quaternary) and its own rows                             */
+/*   note   optional: Text 2xs / Regular, text/secondary                 */
+/*   body   optional: Text xs / Regular, text/primary (a sentence)       */
 /*                                                                      */
-/*   const tip = useChartTip();                                          */
-/*   <rect {...tip.bind({ head, rows: [{ label, value, text?, color?, delta?, score? }] })} /> */
-/*   {tip.node}                                                          */
-/* `score: true` colours the value by its status band (0–100 scores);    */
-/* otherwise the value is plain text/primary (counts, money, shares).    */
+/* Content is data: { head?, rows: [{ label, value, text?, color?,       */
+/* delta?, score?, valueColor?, tag? }], compare?: { head?, rows },       */
+/* note?, body? }. Three ways to show it:                                */
+/*   useChartTip()  follows the pointer, portalled to document.body       */
+/*   <TipBox>       placed by the chart (absolute), or in the page (a     */
+/*                  tap's detail on a phone: pass `flat`)                  */
+/*   <TipContent>   just the inside, for a host that draws its own card    */
+/* Developer › Foundations › Tooltips documents it.                       */
 /* ================================================================== */
+export const TIP_CARD = {
+  background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[12]}px ${dsSpace[16]}px`, boxShadow: dsShadow("sm"),
+  display: "flex", flexDirection: "column", gap: dsSpace[8], fontFamily: font, boxSizing: "border-box", minWidth: 180, maxWidth: 240,
+};
+
+export function TipRow({ label, value, text, delta, color, score, valueColor, tag }) {
+  const band = score && typeof value === "number" ? dsBand(value) : null;
+  return (
+    <div data-part="tip-row" style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${color || band?.c || ds.border.strong}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dsSpace[2] }}>
+        <span style={{ ...dsText("Text xs", 600), color: ds.text.primary }}>{label}</span>
+        {tag && <span style={{ alignSelf: "flex-start", maxWidth: "100%", border: `${dsBorder.sm}px solid ${ds.border.primary}`, borderRadius: dsRadius.full, padding: `${dsSpace[2]}px ${dsSpace[6]}px`, ...dsText("Text 3xs"), color: ds.text.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tag}</span>}
+      </span>
+      {delta != null && delta !== 0 && <TrendPill delta={delta} numberOnly />}
+      <span style={{ ...dsText("Text md", 700), color: valueColor || (band ? band.cs : ds.text.primary), fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{text ?? value}</span>
+    </div>
+  );
+}
+
+export function TipContent({ head, rows = [], compare, note, body }) {
+  return (
+    <>
+      {head && <span data-part="tip-head" style={{ ...dsText("Text xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{head}</span>}
+      {rows.map((r, i) => <TipRow key={`${r.label}-${i}`} {...r} />)}
+      {compare && (
+        <>
+          <span style={{ ...dsText("Text 3xs", 600), lineHeight: 1, textTransform: "uppercase", color: ds.text.quaternary }}>{compare.head || "Compared to"}</span>
+          {compare.rows.map((r, i) => <TipRow key={`c-${r.label}-${i}`} {...r} />)}
+        </>
+      )}
+      {note && <span data-part="tip-note" style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{note}</span>}
+      {body && <p style={{ margin: 0, ...dsText("Text xs"), color: ds.text.primary }}>{body}</p>}
+    </>
+  );
+}
+
+/* A tooltip placed by its chart (pass the position in `style`), or `flat` in the page (no shadow, full width). */
+export function TipBox({ content, style, flat = false, ...rest }) {
+  return (
+    <div data-part="tip" role="status" {...rest} style={{ ...TIP_CARD, ...(flat ? { boxShadow: "none", maxWidth: "none", minWidth: 0 } : { pointerEvents: "none", zIndex: 3 }), ...style }}>
+      <TipContent {...content} />
+    </div>
+  );
+}
+
 export function useChartTip() {
   const [tip, setTip] = useState(null);
   const bind = (content) => ({
@@ -30,26 +85,11 @@ export function useChartTip() {
   return { bind, node, active: tip?.content ?? null };
 }
 
+/* Follows the pointer: above it, or below it near the top of the window, and always inside the window sideways. */
 export function TipCard({ x, y, content }) {
   const below = y < 140;
-  const left = Math.max(110, Math.min(x, (window.innerWidth || 1200) - 110));
+  const left = Math.max(126, Math.min(x, (window.innerWidth || 1200) - 126));
   return (
-    <div
-      role="status"
-      style={{ position: "fixed", left, top: y, transform: below ? "translate(-50%, 16px)" : "translate(-50%, calc(-100% - 12px))", pointerEvents: "none", zIndex: 1000, minWidth: 150, maxWidth: 220, boxSizing: "border-box", background: ds.surface.general.tooltip, borderRadius: dsRadius.lg, padding: `${dsSpace[8]}px ${dsSpace[12]}px`, boxShadow: dsShadow("sm"), display: "flex", flexDirection: "column", gap: dsSpace[6], fontFamily: font }}
-    >
-      {content.head && <span style={{ ...dsText("Text 2xs", 600), color: ds.text.tertiary, textTransform: "uppercase" }}>{content.head}</span>}
-      {content.rows.map((r, i) => {
-        const band = r.score ? dsBand(r.value) : null;
-        return (
-          <div key={`${r.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: dsSpace[8], borderLeft: `2px solid ${r.color || band?.c || ds.border.strong}`, padding: `${dsSpace[2]}px 0 ${dsSpace[2]}px ${dsSpace[6]}px` }}>
-            <span style={{ flex: 1, minWidth: 0, ...dsText("Text xs", 600), color: ds.text.primary }}>{r.label}</span>
-            {r.delta != null && r.delta !== 0 && <TrendPill delta={r.delta} numberOnly />}
-            <span style={{ ...dsText("Text md", 700), color: band ? band.cs : ds.text.primary, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{r.text ?? r.value}</span>
-          </div>
-        );
-      })}
-      {content.note && <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>{content.note}</span>}
-    </div>
+    <TipBox content={content} style={{ position: "fixed", left, top: y, zIndex: 1000, transform: below ? "translate(-50%, 16px)" : "translate(-50%, calc(-100% - 12px))" }} />
   );
 }

@@ -3344,7 +3344,7 @@ from `navRailData.js`. The rail's Org icon still opens the old report.
   letters that rise past the cap height (S, C, O) aren't shaved by `overflow: hidden`, and the box still measures 12 / 22. The audit accepts either
   colour; after the change 25 of 83 forms are fully on-system and 229 of 812 texts off (was 312).
 
-## Widget token audit (Developer › Widgets › Token audit)
+## Widget token audit (done; its Developer page was removed in the handoff cleanup)
 
 Question from the product owner: are the widgets all on design-system tokens? **No, about half.** Two checks, one page
 (`docs/widgets/WidgetTokenAuditDoc.jsx`):
@@ -3669,3 +3669,199 @@ Same props, data, controls and Table Views; only the charts changed (`InsightSto
   not a variant). The props that make that possible stay: `groups` + `tone`, `pair.scale`, optional zone names.
 - **Choices inside these Stories are a dropdown, never tabs** (product direction: a survey can offer many pairs or outcomes, and a
   row of tabs doesn't scale). `Choice` in `InsightStories.jsx` is always `ui/Dropdown.jsx`; it disappears when there's only one.
+
+## WIDGET STRUCTURE RULES (Figma 15463:2092, "Compatible Widget Template") — strict, for every widget
+
+**Standing rule (product direction): every widget, existing or new (Library, SHAPE report, Widget Builder forms, chat-generated,
+anything added later), is built to these templates and must pass the structure check.** The rules are data in
+`src/lib/widgetStructure.js` (`STRUCTURE`, `TEMPLATES`, `SHELL_PADDING`, `auditStructure(card, size)`); nothing else holds them.
+- **A widget is a column**: Header → Insight → Evidence → Action Bar, **12px apart**, **16px from the card's outer edge** (Figma
+  measures from the outside; the shell's 1px border + `SHELL_PADDING` 15 = 16, so a 1x1's content box is 132px, as on the board).
+- **Only the Insight stretches.** Header 12px (one line) / 22px (two). **Evidence: 24px on a 1x1 (Evidence Bar), 68px on a 2x2
+  or 3x3 (Evidence Section)**, content at its foot. **Action Bar: 24px**, content at the right.
+- **Templates**: 1x1 = Insight · Insight + Evidence Bar · Insight + Action Bar (never both bars). 2x2 = Insight · Insight +
+  Evidence · Insight + Evidence + Action Bar · Insight + Action Bar. 3x3 isn't on the board and follows 2x2. Measured Insight:
+  1x1 108 / 72; 2x2 288 / 208 / 172 / 252.
+- **Build bodies only from `Sections` / `Insight` / `Evidence` / `ActionBar`** (`components/widgets/primitives.jsx`). `Sections`
+  takes the size and supplies the gaps; `Insight center` centres; the card shell (WidgetCard, or any host shell) supplies the
+  padding and Header. Any new host shell with a 1px border pads `SHELL_PADDING`; a borderless one pads 16.
+- **Nothing may spill out of a section.** Too much content means fewer rows and "N more", a shorter line, or the header dropping
+  to one line (the Header now also watches each section's overflow, not just the card edge, and measures without waiting on an
+  animation frame). Summary sentences and footnotes are Evidence; a list that needs the whole Insight keeps "N more" at its foot.
+- **Check**: `auditStructure` (padding, every gap, each fixed height, template for the size, spill). It runs on Developer ›
+  Widgets › All widgets (a Structure badge per card and a total) and on the Widget structure page (the seven templates measured
+  live). Gallery: `widgets-gallery.html?family=…`, `?forms&subject=overall|dim&axes=…`, and new `?generated` (every chat chart type
+  at the size the engine gives it); every gallery card is `data-widget-card` so the same check runs there.
+- **Result of the conversion pass**: all 83 Library + SHAPE widgets, 204 Widget Builder renders (both subjects × 3 groupings) and
+  the 9 chat chart types pass. What moved to fit: 1x1 numbers keep their date in the Insight and put the headcount / status / bar /
+  gap in the Evidence Bar (the board's own examples); 2x2 splits and counts sit in the 68px Evidence; Mindfulness and Mental
+  Well-being Detail use the Action Bar for Get Support; bar charts beside Evidence show 8 bars (`CHART_LIMITS.hbars["2x2e"]`, was
+  9); Areas to Focus / Versus / Focus lists show 3 rows; Explorers & Factors 1x1 keep "N more" in the Insight; Time Impact reads
+  "25 hrs to gain" · "per person, per year"; SHAPE 1x1 numbers have one-line evidence ("Self-rated, last four weeks"); the radar
+  sizes its rings to fit its longest side label; Score History's end round labels align to the plot edges; HBars clamp their axis
+  row and leave 4px for gridlines.
+- **Settled with the product owner**: the card keeps its 1px border/secondary (the template frames' 0.5px border is ignored);
+  the Action Bar is 24px; **3x3 is parked** (only the Index uses it) and follows the 2x2 rules until it has its own.
+- Gotcha found: `requestAnimationFrame` doesn't fire in the automated Browser pane (it reports "visible"), so anything that
+  measures only inside a frame never settles there. Measure directly as well (as the Header now does).
+
+## Every widget mapped in Developer › Widgets
+
+Following the structure pass, every widget in the product has a written page.
+- **All 23 Library families are written up** (the sidebar's counts read N/N). Score, Index, Score History and Explorers keep
+  their own files; the other 15 are configs in `docs/widgets/libraryWidgetDocs.js` (`LIBRARY_DOCS`), read by `makeWidgetDoc`
+  via `widgetPages.js`: purpose / boundary / where, what each form shows, the widget's own spec, behaviour, the Scope it opens
+  (Stories linked to their pages), states, copy rules, accessibility and a done checklist. Each has a data contract in
+  `WIDGET_CONTRACTS` (`widget-<familyId>`, 19 in all), in the generic vocabulary.
+- **Measured, not typed** (`widgetDoc.jsx`): every form's **template** comes from `auditStructure` on the live card (the
+  "Template" column in the forms table; badges and the type audit were removed in the handoff cleanup below). A page with no hand-written anatomy gets the **section anatomy**
+  (`SECTION_PARTS`: card, header, Insight, Evidence, Action Bar) on the first form of each size. The shell spec now states the
+  1px + 15px = 16px rule and the templates; the done checklist adds the structure check.
+- **SHAPE report widgets** (`docs/widgets/ShapeWidgetsDoc.jsx`, id `widgets-shape`): the 22 Personal and Org widgets, live
+  (default person), each with what it shows, what it reads (surveyData), its Scope's Stories, and its **Library twin** (same
+  structure and parts; that page has the spec). Six have no twin (Health Snapshot, Morale, Performance ×2…).
+- **Widget Builder forms** (`docs/widgets/BuilderWidgetsDoc.jsx`, id `widgets-builder`): all 22 `FORMS` at every size they offer,
+  each drawn for the first subject it supports (organisation → Corporate Culture → Sleep vs Stress), with needs, options, why and
+  the measured template per size; plus the 9 chat chart types and the spec object. Both pages sit under Token audit in the sidebar.
+- Measured: every Library form, all 22 SHAPE widgets, 35 Builder renders and 9 chat charts are on a valid template.
+- The builder forms' `why` lines lost their em dashes (voice guide).
+
+## One Status widget for any subject, and the widget pages cleaned for handoff
+
+**The Status widget is one widget, like the Score** (product direction: calling it Org Status was wrong, it can be the status of
+the organisation, a team, a group or one person). Family `org-status` is now named **Status** (id unchanged so report seeds
+hold); its forms are presets with a `subject: { who, what }`: Org 1x1 / 2x2, Your 1x1, Team 1x1 / 2x2 and a new **Your Status ·
+Breakdown 2x2** (appended, index 5). Every form sets its card title ("Org Status", "Your Status", "Team Status").
+- **The breakdown bar depends on who** (`statusBreakdown(who, what)` in `lib/scoreWidget.js`, with `STATUS_ELEMENTS`,
+  `statusElements()`, `statusTitle()`): a population (org, team, group) always breaks down its **people**; one person breaks
+  down the score's **parts**, their Explorers on their overall status, an Explorer's Drivers on that Explorer's status; a
+  person's Driver status has no bar. `scoreTitle()` takes a `noun` ("Score" / "Status" / "Index").
+- **`components/widgets/StatusCard.jsx`**: `StatusCard({ size, who, what, data })` picks the breakdown from the rules and drops
+  the other kind even if sent; `StatusView({ size, status, people, parts, partsNoun })` is the drawing. 1x1 = face + word over the
+  bar (Insight only). 2x2 = illustration + word; Evidence = the bar + the people counts (population) or `BandSentence`
+  ("Across the 12 Explorers, 1 is Flourishing, 9 Striving, and 2 Struggling.") for one person; a person's Driver is Insight
+  only. Groups/teams under 5 show "Not shown". Used by the Library family (WidgetBody), the SHAPE report's `p-status` (now with
+  the person's Explorers bar, which agrees with Your Score's sentence) and `o-status`, the Widget Builder's Status form
+  (`StatusForm` → `StatusView`, its parts sentence now says "Drivers", not "part"), and a new widget kind
+  `{ kind: "status", size, who, what, data, title }` on `WidgetCard`.
+- **Developer › Widgets › Status** (`docs/widgets/StatusWidgetDoc.jsx`, id `widget-status`, replaces the `org-status` entry in
+  `libraryWidgetDocs.js`): the who × what table of what the bar shows, the element table (read from the rules), every subject
+  live from the 150-person dataset (`statusWidget()` in `subjectExamples.js`), the Library forms, three anatomies (Org 1x1, Org
+  2x2, Your 2x2), spec, contract `widget-status` (any population × measure; `partCounts` for a person), states, content, usage.
+  The Library's Status group copy explains both kinds of bar. All 22 cards on the page are on a valid template.
+
+**Widget pages cleaned for handoff** (direction: remove approved audits, questions and anything confusing for other people):
+- `widgetDoc.jsx`: no type-audit badge or table and no structure badge under forms (`AuditedWidget` is now `FormExample`, the live
+  card only; `useTypeAudit` / `AuditBadge` / `AuditTable` / `StructureBadge` deleted); the forms table keeps a "Template"
+  column; no "sample data" notes, no "generated, written when reviewed" line; accessibility states the requirement (the card
+  is a button, the dots show on focus) instead of "open work".
+- **All widgets** is a plain live catalogue (no badges, totals or "most common reasons"). The **widget Token audit page and
+  `lib/widgetTokenCheck.js` are deleted** (the conversion is done; `scripts/audit-widgets.mjs` and its generated file remain).
+  The Foundations Token audit (Stories) is untouched.
+- **Widget structure**: no "For the design owner" section, no Figma frame ids, the 3x3 callout is the rule (follows the 2x2
+  templates), "The structure check" is "Checking a widget" (how to run `auditStructure`), the checklist no longer points at the
+  type audit. **Widget type system**: the "Where it disagrees" section and the board/audit wording are gone.
+- `libraryWidgetDocs.js`: sample-data notes, "placeholder Scope", "inert in the prototype", Figma ids and open items rewritten as
+  plain rules (Get Support opens the organisation's support service; impact rates come from the SHAPE impact model; Health Age
+  needs each person's age; the Score Comparisons / Health Age / Mental Well-being pages name the Stories their Scope holds;
+  Support has no Scope entry). Contracts: "No model connected" → not shown. `DataNeeds.jsx`'s intro no longer mentions the
+  prototype (affects Story pages too). The Team note in `WHO` no longer says the prototype has no teams.
+- **Score History caption fixed instead of documented**: `historyCaption(points, labels)` (WidgetBody and SubjectBody) names the
+  round before exactly as the graph's axis does, so the "R2 vs month" finding is now a rule.
+- **Gotcha:** `no-undef` doesn't catch an undefined JSX component (a removed `Limit` import crashed Widget type system). Lint with
+  `react/jsx-no-undef` too: install `eslint@8 eslint-plugin-react@7` in a scratch folder and pass `--resolve-plugins-relative-to`.
+- Verified in a fresh tab: every Widgets page renders, every live card on them passes `auditStructure`, no audit / sample /
+  Figma / owner wording left on them, the SHAPE Personal and Org reports and the Library show the new Status, zero console errors.
+
+### Bar + statement evidence (Figma 11317:12785), and no Status for a Driver
+
+- **When the Evidence is a bar with a statement under it, it follows the Figma Evidence Section**: `BarStatement` (exported from
+  `widgets/ScoreCard.jsx`, with `BandSentence` and `BAR_STATEMENT_GAP`) = the 8px bar, **6px**, then the statement in Text 3xs /
+  Regular (11 / 16) `text/tertiary`; the total bold in the same grey (was text/primary); each count bold in its band's
+  **`status/*/text`** colour (#0E8C4F / #F1A118 / #CC2944; was text-indicator); "is" / "are" repeated for every band ("5 are
+  Flourishing, 3 are Striving, and 4 are Struggling."). Used by the person 2x2 on the Score card, the Status card and the
+  Widget Builder's Score form (its own local `BandSentence` is gone). A population's bar + people counts keep their 12px.
+- **No Status widget for a Driver** (product direction: Drivers have no page of their own). `statusBlocked(what)` /
+  `statusWhats()` in `lib/scoreWidget.js`; `StatusCard` draws nothing for a Driver; the Builder's Status form is blocked for a
+  Driver subject; the Status page's tables and examples no longer show one. The Score card still covers Drivers.
+- Verified in a fresh tab: Status page renders, the person 2x2's statement measures 6px under the bar with the Figma colours,
+  every Score / Status card passes `auditStructure`, zero console errors.
+
+## Heat Map 1x1, one Drivers widget, Composition vs Score by Group, Library regrouped
+
+- **Heat Map 1x1** (`HeatTable` in `widgetParts.jsx`, to the user's design image): template Insight + Evidence Bar; four groups
+  as 18px rows exactly filling the 72px Insight; columns name 43 (11 / Regular text/tertiary, truncated) · score 34 (11 / Bold,
+  band text-indicator) · heat tiles 34 each, **cut off by the card's edge** (a window onto the full map); 1px border/secondary
+  lines above the first row, under every row and between columns, no outer left / right edge; tile text dark from 40 up (as
+  drawn), light below; "More" on its rail in the Evidence Bar. `heatMap(4, 4)`.
+- **`auditStructure` honours clips**: content cut off on purpose by a clipping box inside the section doesn't count as a spill.
+- **Factors is gone: one Drivers widget** (family id `factors` kept for seeds; name, group, SHAPE `o-drivers`, "N more
+  Drivers", docs). **What it lists follows the page it sits on** (`lib/driversWidget.js`: `DRIVER_PAGES`, `driversOnPage`,
+  `driversTitle`): every Driver on a report (Org / Team / Personal), an Explorer's own on its page, only a cluster's on a
+  cluster's page, and any future level above the Explorers (a dimension) its own. Forms carry `page`; new forms "Physical
+  Health Drivers" and "Rest and Recovery Drivers". Its Scope (`DriversRecipe`) uses the same page. `ScopeRecipe` now gets the
+  widget's `formIndex`.
+- **Composition is a count, not a score.** New family `composition` (Library group **Composition**), drawn by
+  `CompositionInsight` (`ChartInsight.jsx`): people per group for any way of grouping, or time / money per part. **Rule
+  (`compositionFit` in `insightRules.js`): ≤4 groups → stacked grid + bar or donut, 1x1; 5–7 → donut only, 1x1; >7 → not in a
+  1x1, a 2x2 donut.** 12 forms: Gender / Work (grid + donut), Location (5) and Job Level (7) donuts, Departments 2x2 (largest
+  group; with legend), Time and Money (grid + donut). Grid tiles now show the value in the group's colour with any unit small
+  ("$", "K", "hrs"), the bar's segments touch; the donut has a real hover tooltip ("57 people · 57% of the total", "$93K a
+  year"), its 2x2 is ring + Largest Group (+ optional 3-column legend; the Total / Smallest callouts are gone). Colours per group
+  (`BY_AXIS` in `DonutChart.jsx`: gender, work model, time, money; the general order gained five more graph colours) are shared
+  with Score by Group. Time / money forms open their impact Scopes; people forms the Composition Story.
+- **Score by Group** (was "Gender / Work Composition", which were really score comparisons): family `avg-gender` = "Score by
+  Group" with Gender, Employment Status (1x1), Job Level, Department (2x2) forms (`axis`), `avg-work-model` = "Score by Work
+  Model"; both in **Areas to Focus**, one Developer page (`widget-score-by-group`). **Rule (`comparisonSize`): 2–4 groups → 1x1
+  bars, 5 or more → 2x2** (`CHART_LIMITS.hbars["1x1"]` is now 4, so the builder's Groups form follows it too). Hover shows the
+  score. SHAPE `o-gender` / `o-workmodel` renamed "Score by Gender" / "Score by Work Model". Fixed: the first bar's hover strip
+  poked 2px above the Insight in a 2x2.
+- **Library groups**: "Explorer Results" removed; "Explorers & Factors" → **Explorers & Drivers**; new **Composition** and
+  **Responses** (Popular Responses / Response Analysis). Contracts: `widget-factors` (by page), `widget-score-by-group`,
+  `widget-composition`, `widget-heat-map` updated; the avg-* contracts are gone.
+- Not changed, flagged: Money Impact (`money-composition`, Time & Money) still exists beside the new Money Composition forms
+  (same tiles); the photos say "Performance" where the impact model says "Productivity" (kept the model's word); the
+  composition ring keeps the Composition Story's thickness (the photos' ring is a little thinner).
+- Verified: all 101 widget cards on Developer › All widgets pass `auditStructure`; Heat Map measures 43 / 34 / 34, 18px rows;
+  hovers (donut, tile, money tile, bar) show the right text; Org report names and the Score by Gender Scope; Library groups;
+  zero console errors in a fresh tab.
+
+## The section rules, applied; one tooltip
+
+**THE SECTION RULES (product owner, standing): `SECTION_RULES` in `lib/widgetStructure.js`, rendered on Developer › Widgets ›
+Widget structure ("The section rules").** Header = the title only. Insight = one dominant element, readable in three seconds; no
+explanations (no sentence above a chart saying what it shows), no calls to action. Evidence = "based on what?": breakdowns,
+thresholds, comparators, composition, sample size, a legend or the largest group; **never a side note** (what the chart shows,
+how it's worked out, privacy rules, caveats: a widget can always be expanded, its Scope carries those), never a chart, never a new
+conclusion, one thing at a time. Action Bar = optional links (support, help, a report), lowest priority. Each has a validation
+check. Every new widget is checked against these by hand; `auditStructure` only measures geometry.
+- **Applied to every widget** (all 101 Library + SHAPE cards, 44 Builder renders): removed "Average score by department. 2 groups
+  under 5 people aren't shown." (Groups → Insight only), "Groups under 5 people are never shown." (Focus, SHAPE Areas to Focus →
+  "N more groups" only), "Plain arithmetic…" (What if), "Change in score since the last round…" (Movers), "How the N people…"
+  (People), the Goal's "not a forecast" and advice, Versus's restated gap (now each group's size), Head to head's sentence (now
+  "Link between them: r = 0.95 (strong)"), SHAPE "Self-rated, last four weeks", "Self-rated" (peers stays), Morale's second metric,
+  the well-being "Cut-offs are still to be confirmed." (now a colour key), and the Insight lead-ins ("Your three lowest Drivers",
+  "Your answers, and what each scores", "The lowest-scoring group…", "Share of people at each level…", "The lowest-scoring groups
+  across your organisation.", "How many of the N people scored…"). Kept as evidence: counts, splits, dates, headcount, the
+  "Across the …" statements, the gap to a status line, a group's size against the org, "per person, per year". What if's "brought
+  to 70" now reads the Flourishing line (80). The Physical Health card's statement said "Factors" (now Drivers).
+- **Composition donut** (`DonutInsight` now returns the whole body): ring in the Insight (72px 1x1, 196px 2x2); the Evidence holds
+  **one** thing, the legend or the Largest Group line (1x1 legend two columns, 12px rows; 2x2 three columns, up to 15). The builder's
+  Composition form uses `CompositionInsight` too. `VBars` keeps 6px at its top for the top tick (it had leaned on a lead-in sentence).
+- **Score History caption** (`HistoryCaption` in `GraphInsight.jsx`, shared by the Library and the Builder; both local copies gone),
+  to the design image: Text 3xs / Regular 11 / 16 text/secondary, set from the top of the Evidence, three lines at most; the round
+  and "latest round" bold grey, the change bold in status/success|error/text, the latest score bold in its band's status text;
+  "After dipping in R3, the Org Score increased by +9 points, reaching 83 in the latest round."
+
+**One tooltip** (`components/widgets/ChartTip.jsx`, Developer › Foundations › **Tooltips**), from the Figma Story tooltips:
+surface/General/tooltip, radius/lg, 12 / 16, gap 8, shadow-sm, 180 to 240px; optional heading (Text xs / Semibold, upper case,
+tertiary); rows with a 2px rail, label Text xs / Semibold, optional TrendPill (number only), value Text md / Bold (band
+text-indicator for scores); optional "Compared to" block, note (Text 2xs secondary), body (Text xs). Content is data
+`{ head, rows: [{ label, value, text, delta, color, score, valueColor, tag }], compare, note, body }`; shown by `useChartTip()`
+(follows the pointer, portalled), `<TipBox>` (placed by the chart) or `<TipBox flat>` (a phone's tap detail). **Converted**:
+the widgets' TipCard (was 8 / 12 with an upper-case 2xs heading), the radar (single and series; `SeriesRows` gone), the area
+chart, the Comparison area chart, the Priority Map, State / Status / Level Over Time (Level's `TipLevel` gone, it uses "Compared
+to"), **eNPS Over Time** (was a one-line pill), and the phone `DetailCard`. Not tooltips (left): the Heat Map column cards and the
+Relationship Stories' hover line.
+- Verified: structure check clean everywhere; Departments Evidence = one thing; caption measured (11 / 16, colours); eNPS, radar and
+  Composition hovers render the standard card (12 / 16); zero console errors in a fresh tab.

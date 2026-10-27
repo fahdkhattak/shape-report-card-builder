@@ -35,16 +35,17 @@ import { ds } from "./ds.js";
    widget's information window ("About <group>"). */
 export const GROUPS = [
   { id: "Score", blurb: "One number for how a score is doing, for anyone and anything: the organisation, a team, a group, a person, an Explorer or a Driver.", about: ["There's one Score widget. The same card shows the organisation's score, a team's, a group's (a department, an age band, a work model), one person's, or the score of a cluster, an Explorer or a Driver. What else it carries depends on who and what it's about: a group of people gets a headcount, a participation rate and how its people split across the statuses; one person gets their status and how their Explorers split.", "The Index is the same score with its parts around it: one layer deeper on a 2x2, two on a 3x3. Use the Score card as the anchor of a report, and the Index when the parts matter."] },
-  { id: "Status", blurb: "Where people stand right now: Flourishing, Striving or Struggling.", about: ["A status is a band, not a number: 80 and above is Flourishing, 60 to 79 is Striving, and below 60 is Struggling.", "The bar underneath shows how everyone splits across the three bands, so a Striving organisation with a large Struggling tail reads differently from one that is evenly spread."] },
+  { id: "Status", blurb: "Where a score stands right now: Flourishing, Striving or Struggling, for the organisation, a team, a group or one person.", about: ["A status is a band, not a number: 80 and above is Flourishing, 60 to 79 is Striving, and below 60 is Struggling.", "The bar underneath shows what sits in each band. For the organisation, a team or a group it's people, so a Striving organisation with a large Struggling tail reads differently from one that is evenly spread. For one person it's their parts: their Explorers on their overall status, or an Explorer's Drivers on that Explorer's status."] },
   { id: "ENPS", blurb: "How likely people are to recommend working here.", about: ["Employee Net Promoter Score asks one question — how likely are you to recommend this organisation as a place to work — and subtracts the share of detractors (0–6) from the share of promoters (9–10).", "A score can run from −100 to 100. Passives (7–8) don't count either way, but they are the easiest group to move."] },
-  { id: "Areas to Focus", blurb: "Identify the areas holding performance back and where action is needed first.", about: ["Areas of Focus are the segments of your audience that scored below a defined threshold in one or more of the SHAPE survey areas. These aren't arbitrary flags — they're calculated from response data and weighted by participation, so the list reflects real signal, not noise.", "Each entry shows the segment name, its lowest-scoring area, and the score itself. The list is ordered by urgency: the segments with the most critical scores appear at the top.", "These widgets are most useful when you need a fast read on where your organisation is under pressure — without filtering through a full heat map manually."] },
-  { id: "Explorers & Factors", blurb: "The areas and the individual drivers behind a score, ranked.", about: ["Explorers are the twelve areas the survey measures. Factors are the individual drivers inside them. Both are ranked into Great, Average and Poor so the strongest and weakest read at a glance.", "Start with Explorers to see which area to look at, then Factors to see what inside it is responsible."] },
-  { id: "Explorer Results", blurb: "How scores differ between groups of people, and what they say in their own words.", about: ["These widgets split the same score by something about the person — gender, work model — or surface what people most often wrote about.", "Groups with fewer than five people are never shown, so nobody can be picked out of an average."] },
+  { id: "Areas to Focus", blurb: "Identify the groups holding performance back and where action is needed first.", about: ["Score by Group puts a score side by side for each group of people (gender, work model, department, job level…). Hover a bar for its score. Two to four groups fit a 1x1; five or more need a 2x2.", "Areas of Focus are the segments of your audience that scored below a defined threshold in one or more of the SHAPE survey areas. These aren't arbitrary flags — they're calculated from response data and weighted by participation, so the list reflects real signal, not noise.", "Each entry shows the segment name, its lowest-scoring area, and the score itself. The list is ordered by urgency: the segments with the most critical scores appear at the top.", "These widgets are most useful when you need a fast read on where your organisation is under pressure — without filtering through a full heat map manually."] },
+  { id: "Explorers & Drivers", blurb: "The areas and the individual Drivers behind a score, ranked.", about: ["Explorers are the twelve areas the survey measures. Drivers are the individual things inside them. Both are ranked into Great, Average and Poor so the strongest and weakest read at a glance.", "The Drivers widget lists the Drivers under the page it sits on: every Driver on a report, an Explorer's own Drivers on that Explorer's page, a cluster's Drivers on the cluster's page."] },
+  { id: "Composition", blurb: "Who makes up a population, or what a total is made of.", about: ["A composition shows how a whole splits into its groups: people by gender, work model, department and any other way of grouping them, or the time and money people would get back, by part. Hover a part for how many it holds.", "Four groups or fewer can be a grid of tiles over a bar, or a donut; five to seven are a donut; more than seven need a 2x2."] },
+  { id: "Responses", blurb: "What people wrote, in their own words.", about: ["Popular Responses groups the open-text answers into themes and sizes each by how many responses mention it. It opens Response Analysis: the questions, a summary, the verbatims and a map of the themes."] },
   { id: "Score over time", blurb: "Track how a score has changed across survey rounds.", about: ["Score History plots the score for every round so far. The pill shows the change since the previous round.", "A single dip isn't a trend — look for two or more rounds in the same direction before acting."] },
   { id: "Score Comparisons", blurb: "Your score next to your team's and the organisation's.", about: ["Comparisons line up your own score, your team's and the organisation's on the same 0–100 scale so you can see whether you are above or below the people around you.", "A comparison unlocks once enough people in each group have answered."] },
   { id: "Health Age", blurb: "Whether health habits are making people biologically older or younger.", about: ["Health Age estimates how old your health habits make you, compared with your actual age. Sleep, exercise, nutrition and smoking all move it.", "It is an estimate for conversation, not a medical measurement."] },
   { id: "Mental Well-being", blurb: "How many people are feeling low, anxious or stressed.", about: ["Mental Well-being groups the Depression, Anxiety and Stress questions into three feelings. Personal views show a severity for each; team and organisation views show the share of people affected.", "It is a screening signal, not a diagnosis. If someone needs support, point them to the Support widgets."] },
-  { id: "Time & Money", blurb: "The time and money people would get back if scores reached Flourishing.", about: ["Time Impact is the hours a year each person would get back if everyone below Flourishing reached it: more focused work (productivity) and fewer days lost (absenteeism). Money Impact is the same idea in dollars for the organisation, and adds retention and injury / claims. Time to Gain is one person's own hours, with no breakdown.", "The gaps behind them are measured from people's answers; the rates that turn a point into hours or dollars are a sample model until the SHAPE impact model is connected."] },
+  { id: "Time & Money", blurb: "The time and money people would get back if scores reached Flourishing.", about: ["Time Impact is the hours a year each person would get back if everyone below Flourishing reached it: more focused work (productivity) and fewer days lost (absenteeism). Money Impact is the same idea in dollars for the organisation, and adds retention and injury / claims. Time to Gain is one person's own hours, with no breakdown.", "The gaps behind them are measured from people's answers; the rates that turn a point into hours or dollars come from the SHAPE impact model."] },
   { id: "Support", blurb: "Nudges that point people to help when they need it.", about: ["Support widgets appear when a score suggests someone could use help, and link to the relevant service — for example Mindfulness for low Psychological Health.", "They carry no data of their own."] },
 ];
 export const groupById = (id) => GROUPS.find((g) => g.id === id);
@@ -86,12 +87,15 @@ export const FAMILIES = [
   ] },
 
   /* ---- Status ---- */
-  { id: "org-status", name: "Org Status", category: "Status", blurb: "See where your organisation stands right now.", owned: true, persona: "org", forms: [
-    { size: "1x1", label: "Status only", name: "Org Status", blurb: "The status your organisation is in right now." },
-    { size: "2x2", label: "Status + breakdown", name: "Org Status · Breakdown", blurb: "The status, and how many people sit in each band." },
-    { size: "1x1", label: "Your status", name: "Your Status", blurb: "The status your own score puts you in.", title: "Your Status", persona: "personal" },
-    { size: "1x1", label: "Team status", name: "Team Status", blurb: "The status your team is in.", title: "Team Status", persona: "team", sample: true },
-    { size: "2x2", label: "Team status + breakdown", name: "Team Status · Breakdown", blurb: "Your team's status, and how its members split.", title: "Team Status", persona: "team", sample: true },
+  /* One Status widget for any subject (widgets/StatusCard.jsx, lib/scoreWidget.js), like the Score. A population's
+     breakdown bar is its people; one person's is their parts (Explorers, or an Explorer's Drivers). */
+  { id: "org-status", name: "Status", category: "Status", blurb: "Where a score stands, Flourishing, Striving or Struggling, for the organisation, a team, a group or one person.", owned: true, persona: "org", forms: [
+    { size: "1x1", label: "Status only", name: "Org Status", blurb: "The status your organisation is in, and how its people split across the bands.", title: "Org Status", subject: { who: "org", what: "overall" } },
+    { size: "2x2", label: "Status + breakdown", name: "Org Status · Breakdown", blurb: "The status, and how many people sit in each band.", title: "Org Status", subject: { who: "org", what: "overall" } },
+    { size: "1x1", label: "Your status", name: "Your Status", blurb: "The status your own score puts you in, and how your Explorers split across the bands.", title: "Your Status", persona: "personal", subject: { who: "person", what: "overall" } },
+    { size: "1x1", label: "Team status", name: "Team Status", blurb: "The status your team is in, and how its members split across the bands.", title: "Team Status", persona: "team", sample: true, subject: { who: "team", what: "overall" } },
+    { size: "2x2", label: "Team status + breakdown", name: "Team Status · Breakdown", blurb: "Your team's status, and how many members sit in each band.", title: "Team Status", persona: "team", sample: true, subject: { who: "team", what: "overall" } },
+    { size: "2x2", label: "Your status + breakdown", name: "Your Status · Breakdown", blurb: "Your status, and how many of your Explorers sit in each band.", title: "Your Status", persona: "personal", subject: { who: "person", what: "overall" } },
   ] },
 
   /* ---- ENPS ---- */
@@ -112,24 +116,54 @@ export const FAMILIES = [
     { size: "1x1", label: "Departments × Explorers", name: "Heat Map", blurb: "Reveal organisation-wide patterns and quickly spot challenges.", title: "Org Heat Map" },
   ] },
 
-  /* ---- Explorers & Factors ---- */
-  { id: "explorers", name: "Explorers", category: "Explorers & Factors", blurb: "Identify the areas holding performance back.", owned: true, persona: "org", forms: [
+  /* ---- Explorers & Drivers ---- */
+  { id: "explorers", name: "Explorers", category: "Explorers & Drivers", blurb: "Identify the areas holding performance back.", owned: true, persona: "org", forms: [
     { size: "2x2", label: "Ranked list", name: "Explorers", blurb: "Every Explorer ranked into Great, Average and Poor." },
     { size: "1x1", label: "Top and bottom", name: "Explorers · Top & Bottom", blurb: "Your strongest and weakest Explorer." },
   ] },
-  { id: "factors", name: "Factors", category: "Explorers & Factors", blurb: "Rank the individual drivers behind your scores.", owned: false, persona: "org", forms: [
-    { size: "2x2", label: "Ranked list", name: "Factors", blurb: "Every driver ranked into Great, Average and Poor." },
-    { size: "1x1", label: "Top and bottom", name: "Factors · Top & Bottom", blurb: "Your strongest and weakest driver." },
+  /* One Drivers widget (it used to be called Factors as well; family id kept for report seeds). It lists the Drivers under
+     the page it sits on (lib/driversWidget.js): every Driver on a report, an Explorer's own on that Explorer's page, a
+     cluster's on the cluster's page. */
+  { id: "factors", name: "Drivers", category: "Explorers & Drivers", blurb: "Rank the Drivers under the page the widget sits on.", owned: false, persona: "org", forms: [
+    { size: "2x2", label: "Ranked list", name: "Drivers", blurb: "Every Driver ranked into Great, Average and Poor.", title: "Drivers", page: { level: "report" } },
+    { size: "1x1", label: "Top and bottom", name: "Drivers · Top & Bottom", blurb: "The strongest and weakest Driver.", title: "Drivers", page: { level: "report" } },
+    { size: "2x2", label: "On an Explorer's page", name: "Drivers · Explorer", blurb: "Physical Health's own Drivers, as on that Explorer's page.", title: "Physical Health Drivers", page: { level: "explorer", name: "Physical Health" } },
+    { size: "2x2", label: "On a cluster's page", name: "Drivers · Cluster", blurb: "Only a cluster's Drivers (Rest and Recovery: Sleep, Stress, Exercise, Nutrition).", title: "Rest and Recovery Drivers", page: { level: "cluster", name: "Rest and Recovery", drivers: ["Sleep", "Stress", "Exercise", "Nutrition"] } },
   ] },
 
-  /* ---- Explorer Results ---- */
-  { id: "avg-gender", name: "Gender Composition", category: "Explorer Results", blurb: "Compare average scores across gender groups.", owned: false, persona: "org", forms: [
-    { size: "1x1", label: "Bar chart", name: "Gender Composition", blurb: "Average score for each gender group." },
+  /* Score by Group: a score for each group of people, side by side (Comparison bars). 2 to 4 groups → 1x1; 5 or more → 2x2
+     (lib/insightRules.js comparisonSize). Hover a bar for its score. Family ids kept for report seeds; `axis` is the way
+     of grouping people. These used to be called Gender / Work Composition, which they aren't: a composition counts people. */
+  { id: "avg-gender", name: "Score by Group", category: "Areas to Focus", blurb: "Compare a score across the groups of any way of grouping people.", owned: false, persona: "org", forms: [
+    { size: "1x1", label: "Gender", name: "Score by Gender", blurb: "The overall score for each gender group.", title: "Score by Gender", axis: "gender" },
+    { size: "1x1", label: "Employment status", name: "Score by Employment Status", blurb: "The overall score for each employment status.", title: "Score by Employment Status", axis: "employmentStatus" },
+    { size: "2x2", label: "Job level", name: "Score by Job Level", blurb: "The overall score for each job level. Five or more groups need a 2x2.", title: "Score by Job Level", axis: "jobLevel" },
+    { size: "2x2", label: "Department", name: "Score by Department", blurb: "The overall score for each department.", title: "Score by Department", axis: "department" },
   ] },
-  { id: "avg-work-model", name: "Work Composition", category: "Explorer Results", blurb: "Compare average scores by onsite/hybrid/remote.", owned: false, persona: "org", forms: [
-    { size: "1x1", label: "Bar chart", name: "Work Composition", blurb: "Average score for onsite, remote and hybrid people." },
+  { id: "avg-work-model", name: "Score by Work Model", category: "Areas to Focus", blurb: "Compare the score for onsite, hybrid and remote people.", owned: false, persona: "org", forms: [
+    { size: "1x1", label: "Work model", name: "Score by Work Model", blurb: "The overall score for onsite, remote and hybrid people.", title: "Score by Work Model", axis: "workModel" },
   ] },
-  { id: "popular-responses", name: "Popular Responses", category: "Explorer Results", blurb: "The most common open-text themes this round.", owned: false, persona: "org", forms: [
+
+  /* ---- Composition ---- */
+  /* Who makes up a population, or what a total is made of (ChartInsight.jsx CompositionInsight). The form follows the
+     number of groups (lib/insightRules.js compositionFit): ≤4 grid or donut 1x1; 5–7 donut 1x1; >7 donut 2x2. */
+  { id: "composition", name: "Composition", category: "Composition", blurb: "How a population splits across a way of grouping people, or a total across its parts.", owned: false, persona: "org", forms: [
+    { size: "1x1", label: "Gender · Grid", name: "Gender Composition", blurb: "How many people are in each gender group, as tiles over a bar.", title: "Gender Composition", comp: { axis: "gender", form: "grid" } },
+    { size: "1x1", label: "Gender · Donut", name: "Gender Composition · Donut", blurb: "The same as a ring with a legend.", title: "Gender Composition", comp: { axis: "gender", form: "donut" } },
+    { size: "1x1", label: "Work model · Grid", name: "Work Composition", blurb: "How many people work onsite, remote and hybrid.", title: "Work Composition", comp: { axis: "workModel", form: "grid" } },
+    { size: "1x1", label: "Work model · Donut", name: "Work Composition · Donut", blurb: "The same as a ring with a legend.", title: "Work Composition", comp: { axis: "workModel", form: "donut" } },
+    { size: "1x1", label: "Location (5 groups)", name: "Location Composition", blurb: "Five to seven groups: a ring and the largest group.", title: "Location Composition", comp: { axis: "location", form: "donut" } },
+    { size: "1x1", label: "Job level (7 groups)", name: "Job Level Composition", blurb: "Seven groups: a ring and the largest group.", title: "Job Level Composition", comp: { axis: "jobLevel", form: "donut" } },
+    { size: "2x2", label: "Department", name: "Departments Composition", blurb: "More than seven groups need a 2x2: the ring and the largest group.", title: "Departments Composition", comp: { axis: "department", form: "donut", legend: false } },
+    { size: "2x2", label: "Department · Legend", name: "Departments Composition · Legend", blurb: "The ring, the largest group and every department.", title: "Departments Composition", comp: { axis: "department", form: "donut", legend: true } },
+    { size: "1x1", label: "Time · Grid", name: "Time Composition", blurb: "Where the hours to gain come from, per person a year.", title: "Time Composition", comp: { axis: "impactTime", form: "grid" } },
+    { size: "1x1", label: "Time · Donut", name: "Time Composition · Donut", blurb: "The same as a ring with a legend.", title: "Time Composition", comp: { axis: "impactTime", form: "donut" } },
+    { size: "1x1", label: "Money · Grid", name: "Money Composition", blurb: "Where the money to gain comes from, a year.", title: "Money Composition", comp: { axis: "impactMoney", form: "grid" } },
+    { size: "1x1", label: "Money · Donut", name: "Money Composition · Donut", blurb: "The same as a ring with a legend.", title: "Money Composition", comp: { axis: "impactMoney", form: "donut" } },
+  ] },
+
+  /* ---- Responses ---- */
+  { id: "popular-responses", name: "Popular Responses", category: "Responses", blurb: "The most common open-text themes this round.", owned: false, persona: "org", forms: [
     { size: "1x1", label: "Treemap", name: "Popular Responses", blurb: "The three themes people wrote about most.", sample: true },
     { size: "2x2", label: "Treemap", name: "Popular Responses · Detail", blurb: "The seven themes people wrote about most.", sample: true },
   ] },

@@ -20,6 +20,7 @@ import { ScrollThumb } from "../ui/MinimalScroll.jsx";
 import { FullScopeContext, FULL_SCOPE_FAMILIES, isFullScope } from "./full/fullScope.js";
 import HeatMapScope from "./full/HeatMapScope.jsx";
 import ResponseAnalysisScope from "./full/ResponseAnalysisScope.jsx";
+import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
 /* The report's Scopes always draw the Current Story style (product decision). The Current | Refined switch stays only
    where design is still being explored: the Widget Builder and the Developer pages. */
@@ -89,7 +90,7 @@ function GenericScope({ widget }) {
       </ScopeCard>
       <ScopeCard>
         <ScopeCardTitle>{title}</ScopeCardTitle>
-        <div style={{ width: pxForSpan(span.col), height: pxForSpan(span.row), maxWidth: "100%", border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: 16, display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
+        <div style={{ width: pxForSpan(span.col), height: pxForSpan(span.row), maxWidth: "100%", border: `1px solid ${T.gray100}`, borderRadius: radius.widget, padding: SHELL_PADDING, display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
           <Header title={title} />
           {isLib ? <WidgetBody familyId={widget.familyId} formIndex={widget.formIndex} /> : <GeneratedBody spec={widget.spec} />}
         </div>
@@ -182,7 +183,7 @@ export default function ScopePanel({ widget, width, expanded, onToggleExpand, on
           {/* Switching to another widget's Scope: the new content settles in (a short fade and a 6px rise) from the top
               of the pane. The first open has no fade; the sheet's own slide carries that. */}
           <motion.div key={widget.id} initial={firstWidget.current === widget.id ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} style={{ display: layers.depth || full ? "none" : "flex", flexDirection: "column", gap: storyStyle === "refined" ? 20 : 16 }}>
-          {full ? null : widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.kind === "shape" ? <ShapeScope widget={widget} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} /> : <GenericScope widget={widget} />}
+          {full ? null : widget.kind === "explorer" ? <ExplorerScope dimension={widget.dimension} /> : widget.kind === "shape" ? <ShapeScope widget={widget} /> : widget.scope ? <BuiltScope scope={widget.scope} spec={widget.spec} /> : widget.kind === "library" && hasRecipe(widget.familyId) ? <ScopeRecipe familyId={widget.familyId} formIndex={widget.formIndex} /> : <GenericScope widget={widget} />}
           </motion.div>
         </div>
         </StoryStyleContext.Provider>

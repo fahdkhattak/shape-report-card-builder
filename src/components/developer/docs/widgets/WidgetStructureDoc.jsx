@@ -1,12 +1,13 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { T, font, radius } from "../../../../lib/tokens.js";
 import { ds, dsText, dsSpace, dsRadius, dsBorder, dsShadow } from "../../../../lib/ds.js";
-import { Header } from "../../../widgets/primitives.jsx";
-import { Section, Prose, Variant, Anatomy, Callout } from "../../docKit.jsx";
+import { Header, Sections, Insight, Evidence, ActionBar } from "../../../widgets/primitives.jsx";
+import { Section, Prose, Variant, Anatomy, Callout, CodeBlock } from "../../docKit.jsx";
 import { SpecTable, Two, List, Limit, card_ } from "../../docParts.jsx";
 import { DocLink } from "../../DataNeeds.jsx";
 import { HEADER_RULE, SECTIONS, TYPE_ROLES } from "../../../../lib/widgetTypeSystem.js";
-import { WidgetStage } from "../widgetDoc.jsx";
+import { STRUCTURE, TEMPLATES, SHELL_PADDING, SECTION_RULES } from "../../../../lib/widgetStructure.js";
+import { WidgetStage, LiveWidget } from "../widgetDoc.jsx";
 
 /* ================================================================== */
 /* WIDGET STRUCTURE — the blank widget, and the rules every widget is    */
@@ -18,12 +19,13 @@ import { WidgetStage } from "../widgetDoc.jsx";
 /* ================================================================== */
 export const meta = {
   id: "widget-structure", name: "Widget structure", group: "Widgets", kind: "Widget structure",
-  blurb: "A blank widget and the rules every widget is built to: its sections, the Header Rule, and what can and can't happen when one is made.",
-  source: "components/canvas/WidgetCard.jsx (shell) · components/widgets/primitives.jsx (Header) · lib/widgetTypeSystem.js (HEADER_RULE, roles, sections)",
+  blurb: "The templates every widget is built from (Header, Insight, Evidence, Action Bar, at fixed heights), the Header Rule, and what can and can't happen when one is made.",
+  source: "lib/widgetStructure.js (STRUCTURE, TEMPLATES, auditStructure) · components/widgets/primitives.jsx (Sections, Insight, Evidence, ActionBar, Header) · components/canvas/WidgetCard.jsx (shell)",
 };
 export const toc = [
-  { id: "overview", label: "Overview" }, { id: "blank", label: "The blank widget" }, { id: "anatomy", label: "Anatomy" }, { id: "header", label: "The Header Rule" },
-  { id: "sections", label: "The sections" }, { id: "sizes", label: "Sizes and the grid" }, { id: "states", label: "States" }, { id: "rules", label: "Can and can't" }, { id: "checklist", label: "New widget checklist" },
+  { id: "overview", label: "Overview" }, { id: "templates", label: "The templates" }, { id: "structure", label: "The structure rules" }, { id: "examples", label: "Examples" },
+  { id: "build", label: "Building a widget" }, { id: "check", label: "Checking a widget" }, { id: "anatomy", label: "Anatomy" }, { id: "header", label: "The Header Rule" },
+  { id: "section-rules", label: "The section rules" }, { id: "sections", label: "The sections" }, { id: "sizes", label: "Sizes and the grid" }, { id: "states", label: "States" }, { id: "rules", label: "Can and can't" }, { id: "checklist", label: "New widget checklist" },
 ];
 
 const PX = { "1x1": 164, "2x2": 344, "3x3": 524 };
@@ -31,15 +33,38 @@ const PX = { "1x1": 164, "2x2": 344, "3x3": 524 };
    color/surface/General/card. The dashed slots (bg/secondary, text/quaternary) only mark where each section goes; a real
    widget puts its own content there, with no slot fill or outline. */
 function BlankWidget({ size = "2x2", title = "Widget title", sections = ["insight", "evidence"], active = false }) {
-  const slot = (id, label, grow) => (
-    <div data-part={`section-${id}`} style={{ flex: grow ? 1 : "0 0 auto", minHeight: grow ? 0 : id === "action" ? 28 : 36, border: `${dsBorder.sm}px dashed ${ds.border.secondary}`, borderRadius: dsRadius.sm, background: ds.bg.secondary, display: "flex", alignItems: "center", justifyContent: "center", ...dsText("Text 3xs", 500), color: ds.text.quaternary, textAlign: "center", padding: 4, boxSizing: "border-box" }}>{label}</div>
-  );
+  const slot = (label) => <div style={{ position: "absolute", inset: 0, border: `${dsBorder.sm}px dashed ${ds.border.secondary}`, borderRadius: dsRadius.sm, background: ds.bg.secondary, display: "flex", alignItems: "center", justifyContent: "center", ...dsText("Text 3xs", 500), color: ds.text.quaternary, textAlign: "center", padding: 4, boxSizing: "border-box" }}>{label}</div>;
+  const h = { evidence: STRUCTURE.evidence[size], action: STRUCTURE.action };
   return (
-    <div data-widget-blank style={{ width: PX[size], height: PX[size], boxSizing: "border-box", background: ds.surface.general.card, border: `1px solid ${active ? ds.border.strong : ds.border.secondary}`, borderRadius: radius.widget, padding: 16, display: "flex", flexDirection: "column", gap: 12, boxShadow: active ? dsShadow("md") : "none", fontFamily: font }}>
+    <div data-widget-blank data-widget-card data-size={size} style={{ width: PX[size], height: PX[size], boxSizing: "border-box", background: ds.surface.general.card, border: `1px solid ${active ? ds.border.strong : ds.border.secondary}`, borderRadius: radius.widget, padding: SHELL_PADDING, display: "flex", flexDirection: "column", gap: STRUCTURE.gap, boxShadow: active ? dsShadow("md") : "none", fontFamily: font }}>
       <Header title={title} selected={active} />
-      {sections.includes("insight") && slot("insight", "Insight", true)}
-      {sections.includes("evidence") && slot("evidence", "Evidence")}
-      {sections.includes("action") && slot("action", "Action Bar")}
+      <Sections size={size}>
+        {sections.includes("insight") && <Insight>{slot("Insight · fills")}</Insight>}
+        {sections.includes("evidence") && <Evidence style={{ position: "relative" }}>{slot(`${size === "1x1" ? "Evidence Bar" : "Evidence Section"} · ${h.evidence}`)}</Evidence>}
+        {sections.includes("action") && <ActionBar style={{ position: "relative" }}>{slot(`Action Bar · ${h.action}`)}</ActionBar>}
+      </Sections>
+    </div>
+  );
+}
+
+/* A template drawn with the real section components, with its section heights. */
+function MeasuredTemplate({ size, t }) {
+  const ref = useRef(null);
+  const [res, setRes] = useState(null);
+  useLayoutEffect(() => {
+    const id = setTimeout(() => {
+      const card = ref.current?.querySelector("[data-widget-blank]");
+      if (!card) return;
+      const hs = [...card.querySelectorAll('[data-part="widget-header"], [data-part^="section-"]')].map((el) => Math.round(el.getBoundingClientRect().height));
+      setRes({ hs });
+    }, 300);
+    return () => clearTimeout(id);
+  }, [size, t.id]);
+  return (
+    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: dsSpace[8], maxWidth: PX[size] }}>
+      <BlankWidget size={size} title="Header" sections={t.sections} />
+      <span style={{ ...dsText("Text 2xs", 600), color: ds.text.primary }}>{t.name}</span>
+      {res && <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{res.hs.join(" · ")} px</span>}
     </div>
   );
 }
@@ -62,7 +87,7 @@ function HeaderMeasure({ title, size = "1x1" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: dsSpace[8] }}>
       <div ref={ref}><BlankWidget size={size} title={title} sections={["insight"]} /></div>
-      {m && <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{m.lines} line{m.lines === 1 ? "" : "s"} · header box <b style={{ color: m.box === (m.lines === 1 ? HEADER_RULE.boxOneLine : HEADER_RULE.boxTwoLines) ? ds.status.success.textIndicator : ds.status.error.text }}>{m.box}px</b> (rule: {m.lines === 1 ? HEADER_RULE.boxOneLine : HEADER_RULE.boxTwoLines}px)</span>}
+      {m && <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{m.lines} line{m.lines === 1 ? "" : "s"} · header box {m.box}px</span>}
     </div>
   );
 }
@@ -76,17 +101,22 @@ const PARTS = [
 ];
 
 const CAN = [
-  "Use the four sections in order: Header, Insight, Evidence, Action Bar. Leave out Evidence or the Action Bar when there's nothing to say.",
+  "Use one of the templates: Header, Insight, then Evidence and/or an Action Bar as the size allows. Leave out Evidence or the Action Bar when there's nothing to say.",
+  "Put the date under the number in the Insight when the Evidence Bar holds something else (a status, a headcount); otherwise the date can be the bar.",
+  "Put a legend or the largest group in the Evidence of a chart: one of them, never both.",
+  "Pin “N more” to the foot of the Insight when the list needs the whole Insight; summary sentences and footnotes go in the Evidence.",
   "Build every text from the 13 Font System roles, choosing the Primary Metric size by what the number is (Display 64, Standard 48, Dense 36, Compact 32).",
   "Colour an Insight value or an Evidence value with its status colour when it has a status.",
   "Let the header drop from two lines to one (with an ellipsis and the full title on hover) when the content needs the room.",
   "Use the Graph palette for categories (gender, work model) and the status colours for status. Never the other way round.",
-  "Show sample data where the dataset can't back a form yet, as long as the Library tags it Sample data.",
   "Offer more than one form of the same widget (1x1, 2x2, 3x3), switched with Change Widget.",
 ];
 const CANNOT = [
   "Change the card size: 1x1, 2x2 and 3x3 only, fixed pixels on the 164px grid. Never fluid, never in between.",
   "Change the shell: 16px padding, 12px between sections, radius/widget (18), 1px border/secondary, color/surface/General/card fill.",
+  "Make a section taller or shorter: Evidence is 24px (1x1) or 68px (2x2, 3x3), the Action Bar 24px. Only the Insight stretches.",
+  "Put both an Evidence Bar and an Action Bar on a 1x1, reorder the sections, or add a section the templates don't have.",
+  "Lay out a body without the section components (Sections, Insight, Evidence, ActionBar).",
   "Break the Header Rule: no other size, weight or case, no semantic colour, no black, never more than two lines.",
   "Add a header element of its own (an icon, a close button, a filter). The three-dot menu belongs to the shell.",
   "Add a scope or filter control to a Library widget: it always shows the whole population of its report. Narrowing happens in the Scope or the chat.",
@@ -94,6 +124,7 @@ const CANNOT = [
   "Show more than one Primary Metric.",
   "Let anything spill past the card, or scroll inside it. Past a limit, show what fits and “N more”.",
   "Show a group of fewer than 5 people on an Org widget, or anyone else's data on a personal one.",
+  "Write a side note anywhere on the card: what the chart shows, how it's worked out, privacy rules, caveats. A widget can always be expanded; its Scope carries them.",
   "Tell a meaning by colour alone: a status word or a sign goes with every status colour.",
 ];
 
@@ -102,25 +133,82 @@ export default function WidgetStructureDoc() {
     <>
       <Section id="overview" title="Overview" lead="Every widget is the same card with the same four sections. What changes is what's inside them, and only within these rules.">
         <Prose>
-          <p>A widget answers one question at a glance and opens into its Scope. It's built top to bottom from a <b>Header</b> (what this is), an <b>Insight</b> (the answer), <b>Evidence</b> (what backs it up) and, rarely, an <b>Action Bar</b>. The type inside follows the widget <DocLink id="widget-type-system">Font System</DocLink>; the header follows the <b>Header Rule</b> below, which is the same for every widget.</p>
+          <p>A widget answers one question at a glance and opens into its Scope. It's built top to bottom from a <b>Header</b> (what this is), an <b>Insight</b> (the answer), <b>Evidence</b> (what backs it up) and, rarely, an <b>Action Bar</b>, in one of the templates below: the Insight takes the space, everything else has a fixed height. The type inside follows the widget <DocLink id="widget-type-system">Font System</DocLink>; the header follows the <b>Header Rule</b> below, which is the same for every widget.</p>
         </Prose>
       </Section>
 
-      <Section id="blank" title="The blank widget" lead="The shell and its sections, empty. The header is the real component. The card is filled with color/surface/General/card; the dashed grey slots only show where each section goes and are always replaced by the section's real content.">
+      <Section id="templates" title="The templates" lead="Every widget is one of these. Only the Insight stretches; every other part has a fixed height. Each card below is the real section components, with its heights top to bottom: header, then each section.">
+        {["1x1", "2x2"].map((size) => (
+          <div key={size} style={{ display: "flex", flexDirection: "column", gap: dsSpace[12], marginBottom: dsSpace[24] }}>
+            <span style={{ ...dsText("Text sm", 600), color: ds.text.primary }}>{size} · {PX[size]} × {PX[size]}</span>
+            <WidgetStage>
+              <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
+                {TEMPLATES[size].map((t) => <MeasuredTemplate key={t.id} size={size} t={t} />)}
+              </div>
+            </WidgetStage>
+          </div>
+        ))}
+        <Callout title="3x3">A 3x3 follows the 2x2 templates (a 68px Evidence Section, a 24px Action Bar).</Callout>
+      </Section>
+
+      <Section id="structure" title="The structure rules" lead="The numbers behind the templates. They live in one place, STRUCTURE in lib/widgetStructure.js; the section components read them, so a widget can't drift.">
+        <SpecTable head={["Rule", "Value"]} widths={["32%", "68%"]} rows={[
+          ["Card padding", `${STRUCTURE.padding}px on every side, measured from the card's outer edge: the shell's 1px border plus ${SHELL_PADDING}px of padding (SHELL_PADDING). A 1x1's content box is 132px wide.`],
+          ["Between sections", `${STRUCTURE.gap}px, header included. Never another gap between sections.`],
+          ["Header", `${STRUCTURE.header[0]}px for one line, ${STRUCTURE.header[1]}px for two (the Header Rule, below).`],
+          ["Insight", "Fills the space left. Always present, always first after the header."],
+          ["Evidence", `1x1: an Evidence Bar, ${STRUCTURE.evidence["1x1"]}px. 2x2 and 3x3: an Evidence Section, ${STRUCTURE.evidence["2x2"]}px. Its content sits at the foot.`],
+          ["Action Bar", `${STRUCTURE.action}px at every size, its content at the right (a button or a link).`],
+          ["Order", "Header → Insight → Evidence → Action Bar. Leave a section out; never reorder or repeat one."],
+          ["Combinations", "1x1: Insight; Insight + Evidence Bar; Insight + Action Bar (one 24px bar at most). 2x2: Insight; Insight + Evidence; Insight + Evidence + Action Bar; Insight + Action Bar."],
+          ["Insight height", `What's left: a 1x1 with one bar has ${164 - 32 - 12 - 12 - 24 - 12}px (${164 - 32 - 22 - 12 - 24 - 12}px under a two-line header); a 2x2 with Evidence has ${344 - 32 - 12 - 12 - 68 - 12}px; with Evidence and an Action Bar ${344 - 32 - 12 - 12 - 68 - 12 - 24 - 12}px.`],
+          ["Overflow", "Nothing spills out of its section. Too much content means fewer rows and “N more”, a shorter sentence, or the header dropping to one line; never a taller section."],
+        ]} />
+      </Section>
+
+      <Section id="examples" title="Examples" lead="One real widget for each template.">
         <WidgetStage>
-          <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-            <Variant title="1x1 · 164px"><BlankWidget size="1x1" /></Variant>
-            <Variant title="2x2 · 344px"><BlankWidget size="2x2" sections={["insight", "evidence", "action"]} /></Variant>
-            <Variant title="3x3 · 524px"><BlankWidget size="3x3" sections={["insight", "evidence"]} /></Variant>
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
+            {[["org-status", 0, "Insight only: face, status and bar"], ["org-score", 1, "Insight + Evidence Bar: headcount"], ["your-score", 2, "Insight + Evidence Bar: status"], ["enps", 0, "Insight + Evidence Bar: the bar"], ["health-age", 0, "Insight + Evidence Bar: the gap"], ["support-nudge", 1, "Insight + Action Bar"]].map(([f, i, note]) => (
+              <div key={f + i} style={{ display: "flex", flexDirection: "column", gap: dsSpace[8], width: 164 }}>
+                <LiveWidget familyId={f} formIndex={i} />
+                <span style={{ ...dsText("Text 2xs"), color: ds.text.secondary }}>{note}</span>
+              </div>
+            ))}
           </div>
         </WidgetStage>
+      </Section>
+
+      <Section id="build" title="Building a widget" lead="Every widget body is these four components, nothing else at the top level.">
+        <CodeBlock label="A 1x1 with an Evidence Bar" code={`import { Sections, Insight, Evidence } from "components/widgets/primitives.jsx";
+
+<Sections size="1x1">
+  <Insight center>
+    <ScoreHeadline value={83} delta={4} compact />
+  </Insight>
+  <Evidence>
+    <StatusChip status="Flourishing" />
+  </Evidence>
+</Sections>`} />
+        <CodeBlock label="A 2x2 with Evidence and an Action Bar" code={`<Sections size="2x2">
+  <Insight>…the answer…</Insight>
+  <Evidence>…what backs it up, at most 68px…</Evidence>
+  <ActionBar><Button size="xs">Get Support</Button></ActionBar>
+</Sections>`} />
+        <Prose><p><b>Sections</b> takes the widget's size and supplies the 12px gaps. <b>Insight</b> fills the space (<code>center</code> centres its content). <b>Evidence</b> is 24 or 68px by size and puts its content at the foot. <b>ActionBar</b> is 24px with its content at the right. The card shell (WidgetCard) supplies the padding and the Header.</p></Prose>
+      </Section>
+
+      <Section id="check" title="Checking a widget" lead="auditStructure(card, size) in lib/widgetStructure.js measures a rendered widget: padding, the gap between every section, each fixed height, whether the sections form a template for that size, and whether anything spills out of a section.">
+        <Prose>
+          <p>It returns <code>{"{ template, sections, issues }"}</code>; a widget is right when <code>issues</code> is empty. Run it in a test, or on any page with widgets: <code>{`import("/src/lib/widgetStructure.js").then((m) => [...document.querySelectorAll("[data-widget-card]")].map((c) => m.auditStructure(c, c.dataset.size)))`}</code></p>
+        </Prose>
       </Section>
 
       <Section id="anatomy" title="Anatomy" lead="Numbered on the blank 2x2, then measured from the browser.">
         <Anatomy parts={PARTS} width={1040}><div style={{ display: "flex" }}><BlankWidget size="2x2" sections={["insight", "evidence", "action"]} /></div></Anatomy>
       </Section>
 
-      <Section id="header" title="The Header Rule" lead="One rule for every widget's header. It lives in one place (HEADER_RULE in lib/widgetTypeSystem.js), which the Header component, the audit and these pages all read.">
+      <Section id="header" title="The Header Rule" lead="One rule for every widget's header. It lives in one place (HEADER_RULE in lib/widgetTypeSystem.js), which the Header component reads.">
         <SpecTable head={["Property", "Value"]} widths={["28%", "72%"]} rows={[
           ["Text style", `${HEADER_RULE.style}: ${HEADER_RULE.family}, ${HEADER_RULE.size}px, ${HEADER_RULE.weight}, ${HEADER_RULE.transform}, letter spacing ${HEADER_RULE.tracking}, normal style.`],
           ["Line height", `${HEADER_RULE.lineHeight}, trimmed to the cap height and the baseline (leading-trim: both; text-edge: cap → text-box: ${HEADER_RULE.trim}).`],
@@ -137,11 +225,29 @@ export default function WidgetStructureDoc() {
         </div>
       </Section>
 
+      <Section id="section-rules" title="The section rules" lead="What each section is for, and what may and may not go in it. Check every widget against these when it's made: the structure check only measures the geometry.">
+        {SECTION_RULES.map((r) => (
+          <div key={r.id} data-part={`rules-${r.id}`} style={{ ...card_, display: "flex", flexDirection: "column", gap: dsSpace[12] }}>
+            <span style={{ ...dsText("Text md", 600), color: ds.text.primary }}>{r.name}</span>
+            <Prose><p><b>Role.</b> {r.role}</p></Prose>
+            <Two>
+              <div><span style={{ ...dsText("Text sm", 600), color: ds.status.success.textIndicator }}>Allowed</span><List items={r.allowed} /></div>
+              <div><span style={{ ...dsText("Text sm", 600), color: ds.status.error.text }}>Not allowed</span><List items={r.notAllowed} /><Prose><p style={{ color: ds.text.tertiary }}>{r.notAllowedRule}</p></Prose></div>
+            </Two>
+            <Two>
+              <div><span style={{ ...dsText("Text sm", 600), color: ds.text.primary }}>Behaviour</span><List items={r.behaviour} /></div>
+              <div><span style={{ ...dsText("Text sm", 600), color: ds.text.primary }}>Visual</span><List items={r.visual} /></div>
+            </Two>
+            <Callout title="Validation check">{r.check}</Callout>
+          </div>
+        ))}
+      </Section>
+
       <Section id="sections" title="The sections" lead="What each section holds, its default colour, and the roles it can use.">
         <SpecTable head={["Section", "Holds", "Colour", "Roles"]} widths={["16%", "34%", "22%", "28%"]} rows={[
           ["Header", "What this widget is. One title, nothing else.", "text/tertiary; text/secondary when active", "Header Label (Eyebrow) only"],
           ["Insight", "The answer: one Primary Metric with its unit, or a Status Metric, or a chart. Takes the free space.", "text/primary; a status colour when the value has one", TYPE_ROLES.filter((r) => r.section === "insight").map((r) => r.name.replace("Primary Metric – ", "")).join(", ")],
-          ["Evidence", "Date, captions, comparisons, category labels and their values, “N more”.", "text/tertiary; a status colour when a value has one", TYPE_ROLES.filter((r) => r.section === "evidence").map((r) => r.name.replace("Label – ", "").replace("Supporting Text – ", "Supporting ")).join(", ")],
+          ["Evidence", "What backs the insight up: a breakdown, a threshold, a comparator, a sample size, a legend or the largest group, “N more”. Never a side note.", "text/tertiary; a status colour when a value has one", TYPE_ROLES.filter((r) => r.section === "evidence").map((r) => r.name.replace("Label – ", "").replace("Supporting Text – ", "Supporting ")).join(", ")],
           ["Action Bar", "One button or link (Get Support, Unlock). Optional, at the foot.", SECTIONS.find((s) => s.id === "action").colour, "The design system's Button"],
         ]} />
       </Section>
@@ -174,9 +280,8 @@ export default function WidgetStructureDoc() {
 
       <Section id="checklist" title="New widget checklist" lead="Before a new widget or form goes into the Library.">
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {[["It answers one question.", "Say it in one sentence. If it needs two, it's two widgets, or a widget and its Scope."], ["It's a 1x1, 2x2 or 3x3.", "Its content fits at that size with the Header on two lines, and still reads with it on one."], ["The Header Rule holds.", "The type audit shows the header as Header Label (Eyebrow), text/tertiary, in a 12px or 22px box."], ["Every text has a role.", "The type audit on its page says “All on-system”."], ["Its data is real or tagged.", "Real data from the report's population, or a Sample data tag. A contract on its page says what the backend sends."], ["It opens somewhere.", "A Scope (or a report layer) that explains the number."]].map(([t, b], i) => <Limit key={t} n={String(i + 1)} title={t}>{b}</Limit>)}
+          {[["It's a template.", "Built from Sections, Insight, Evidence and ActionBar; auditStructure returns no issues (no section off its height, nothing spilling)."], ["It answers one question.", "Say it in one sentence. If it needs two, it's two widgets, or a widget and its Scope."], ["It's a 1x1, 2x2 or 3x3.", "Its content fits at that size with the Header on two lines, and still reads with it on one."], ["The Header Rule holds.", "The header is the Header Label (Eyebrow), text/tertiary, in a 12px or 22px box."], ["Every text has a role.", "Each text is one of the 13 roles of the widget type system."], ["Its data has a contract.", "It reads the report's population, and the Data it needs section on its page says what the backend sends."], ["It opens somewhere.", "A Scope (or a report layer) that explains the number."]].map(([t, b], i) => <Limit key={t} n={String(i + 1)} title={t}>{b}</Limit>)}
         </div>
-        <Callout title="Where to check">Each widget's page and <DocLink id="widgets-all">All widgets</DocLink> run the type audit on the live cards.</Callout>
       </Section>
     </>
   );
