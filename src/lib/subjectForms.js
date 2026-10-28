@@ -1,6 +1,7 @@
+import { carryCustom } from "./widgetCustom.js";
 import { LATEST, PREVIOUS, ROUNDS, ROUND_LABELS, EMPLOYEE_COUNT, participationRate, DIMENSION_DRIVERS, driverValue } from "./dataset.js";
 import { LAST, ALL_AXES, groupRows, groupGaps, focusGroups, statusCountSeries, scoreSpread, statusOf, findGroups, groupSnapshot, groupPartMeans, GROUPS_BY_AXIS, pairLink, responseCoverage } from "./scopeData.js";
-import { FLOURISHING_AT, STRIVING_AT, nextLine, countByStatus } from "./bands.js";
+import { FLOURISHING_AT, STRIVING_AT, nextLine, countByStatus, statusName } from "./bands.js";
 import { graphFit, chartSizes } from "./insightRules.js";
 
 /* ================================================================== */
@@ -42,6 +43,21 @@ const bandCounts = countByStatus;
 function base(s) {
   const value = s.series[LAST], prev = s.series[LAST - 1] ?? value;
   return { value, delta: value - prev, status: statusOf(value), date: LATEST.date };
+}
+
+/* The facts any evidence can be drawn from (lib/widgetCustom.js GENERIC_EVIDENCE, widgets/GenericEvidence.jsx). Every built
+   spec carries them as payload.ev, so a person can put evidence on a form that's drawn without it, or swap its own. */
+export function evidenceFacts(s) {
+  const b = base(s), p = people(s);
+  const rows = s.children.length >= 2 ? partRows(s) : null;
+  const nl = nextLine(b.value);
+  return {
+    value: b.value, delta: b.delta, prevLabel: ROUND_LABELS[LAST - 1] ?? null, latestLabel: ROUND_LABELS[LAST],
+    people: p, n: p?.total ?? null,
+    parts: rows ? { ...bandCounts(rows.map((r) => r[1])), noun: s.childNoun || "Part" } : null,
+    strongest: rows?.[0]?.slice(0, 2) ?? null, weakest: rows?.[rows.length - 1]?.slice(0, 2) ?? null,
+    next: nl ? { at: nl, name: statusName(nl) } : null,
+  };
 }
 
 /* Default target: the next status line up, or a stretch goal once Flourishing. */
@@ -157,7 +173,7 @@ export const FORMS = [
   },
   {
     id: "groups", name: "Groups", sizes: ["2x2"], blocked: needsScores, options: ["axis"],
-    title: (s, o) => `${nm(s)} by ${groupData(s, o?.axis).axisLabel}`,
+    title: (s, o) => `${nm(s)} Score by ${groupData(s, o?.axis).axisLabel}`,
     why: "How each group scores on this topic, on one 0–100 scale. Groups under 5 people are never shown.",
     build: (s, o) => ({ ...base(s), ...groupData(s, o?.axis) }),
   },
@@ -212,7 +228,8 @@ export const FORMS = [
 
   /* ============ the overall picture, and cases with a point of view ============ */
   {
-    id: "story", name: "Story", sizes: ["3x3"], blocked: () => null,
+    // The full picture is the organisation's: for an Explorer, a Driver or a cluster the Scope tells the story.
+    id: "story", name: "Story", sizes: ["3x3"], blocked: (s) => (s.kind === "overall" ? null : "The full picture is for the whole organisation"),
     title: (s) => `${nm(s)} Story`,
     why: "The whole picture on one card: the score, how people are spread, what moved, where the weak spots are and who to look at.",
     build: (s) => {
@@ -262,7 +279,8 @@ export const FORMS = [
   },
   {
     id: "versus", name: "Versus", sizes: ["2x2"], blocked: needsScores, options: ["pair"],
-    title: (s, o) => { const p = pickPair(s, o); return `${p.a} vs ${p.b}`; },
+    // The header names what's compared, never the result: the two groups are the Insight's job.
+    title: (s, o) => `${nm(s)} Score by ${pickPair(s, o).axisLabel}`,
     why: "Two groups side by side on the same measure: who scores higher, by how much, and which parts the gap comes from.",
     build: (s, o) => {
       const p = pickPair(s, o), fn = scoreFn(s);
@@ -345,17 +363,29 @@ export const FORMS = [
       return { ...b, first: sr[0], change: sr[n - 1] - sr[0], steps, streak, fall, nRounds: n, riser: rows.sort((x, y) => y.d - x.d)[0], faller: rows.sort((x, y) => x.d - y.d)[0] };
     },
   },
+  {
+    // An action widget: what to act on first, with a link to the actions you can take. The link is what makes it this
+    // widget, so its Action Bar can't be switched off (lib/widgetCustom.js action: "required").
+    id: "nudge", name: "Next Step", sizes: ["1x1", "2x2"], blocked: () => null,
+    title: (s) => `${nm(s)} Next Step`,
+    why: "The part most worth acting on, with a link to the actions you can take. The link is what makes this widget, so it's always there.",
+    build: (s) => {
+      const rows = s.children.length >= 2 ? partRows(s) : null;
+      const items = rows ? rows.slice(-3).reverse().map(([label, value, d]) => ({ label, value, d })) : [{ label: s.label, value: s.series[LAST], d: s.series[LAST] - (s.series[LAST - 1] ?? s.series[LAST]) }];
+      return { ...base(s), items, noun: s.childNoun || "Part", of: rows?.length ?? 1 };
+    },
+  },
 ];
 
 export const formById = (id) => FORMS.find((f) => f.id === id);
 
 /* ---- ranking: what is the data's job? ---------------------------------- */
 const BASE = {
-  overall: { score: 9, composition: 1, story: 4, index: 5, parts: 5, history: 4, momentum: 4, check: 4, heat: 4, whatif: 3, people: 3, status: 3, gauge: 3, groups: 3, focus: 2, movers: 2, spread: 2, profile: 2, team: 2, versus: 2, goal: 1 },
-  dimension: { score: 6, composition: 1, parts: 5, profile: 4, history: 4, index: 3, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, status: 3, gauge: 3, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
-  driver: { score: 6, composition: 1, history: 5, gauge: 4, status: 3, people: 3, momentum: 3, groups: 3, story: 2, check: 2, spread: 2, focus: 2, goal: 2, team: 1, versus: 1 },
-  cluster: { score: 6, composition: 1, parts: 5, duel: 5, profile: 4, history: 4, story: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, gauge: 3, status: 2, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
-  concept: { score: 6, composition: 1, history: 5, gauge: 4, status: 3, momentum: 3, story: 2, check: 2, goal: 1 },
+  overall: { nudge: 2, score: 9, composition: 1, story: 4, index: 5, parts: 5, history: 4, momentum: 4, check: 4, heat: 4, whatif: 3, people: 3, status: 3, gauge: 3, groups: 3, focus: 2, movers: 2, spread: 2, profile: 2, team: 2, versus: 2, goal: 1 },
+  dimension: { nudge: 2, score: 6, composition: 1, parts: 5, profile: 4, history: 4, index: 3, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, status: 3, gauge: 3, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
+  driver: { nudge: 1, score: 6, composition: 1, history: 5, gauge: 4, status: 3, people: 3, momentum: 3, groups: 3, check: 2, spread: 2, focus: 2, goal: 2, team: 1, versus: 1 },
+  cluster: { nudge: 2, score: 6, composition: 1, parts: 5, duel: 5, profile: 4, history: 4, heat: 3, check: 3, whatif: 3, momentum: 3, people: 3, gauge: 3, status: 2, groups: 2, focus: 2, movers: 2, spread: 2, team: 1, versus: 1, goal: 1 },
+  concept: { nudge: 1, score: 6, composition: 1, history: 5, gauge: 4, status: 3, momentum: 3, check: 2, goal: 1 },
 };
 const ASKS = [
   ["history", /trend|over time|history|across rounds|round by round|improv|declin/],
@@ -377,6 +407,7 @@ const ASKS = [
   ["check", /health check|check-?up|checklist|red flags?|are we ok|all good|how healthy|risks?/],
   ["whatif", /what if|if we|simulat|lift|raise|bring up|what would/],
   ["heat", /heat|grid|matrix|round by round|every explorer|all (the )?explorers|colou?r/],
+  ["nudge", /next step|what (can|should) (we|i) do|where to act|act on|action/],
   ["momentum", /momentum|streak|keep(ing)? up|gaining|losing steam|trajectory|heading/],
 ];
 
@@ -417,7 +448,7 @@ export const axisFromText = (t) => Object.entries(AXIS_WORDS).find(([, re]) => r
 export function buildFormSpec(formId, subject, { size, options } = {}) {
   const def = formById(formId);
   const opts = { ...(options || {}) };
-  const payload = def.build(subject, opts);
+  const payload = { ...def.build(subject, opts), ev: evidenceFacts(subject) };
   // The sizes this data may be drawn at (the rules can rule out a 1x1); a size that no longer fits grows to the next one.
   const sizes = def.fitSizes ? def.sizes.filter((x) => def.fitSizes(payload).includes(x)) : def.sizes;
   const pick = (x) => (sizes.includes(x) ? x : null);
@@ -437,5 +468,7 @@ export function rebuildFormSpec(prev, subject, change) {
   const options = { ...(prev.options || {}), ...(change.options || {}) };
   const next = buildFormSpec(form, subject, { size, options });
   const typed = prev.title && prev.title !== prev.autoTitle;
-  return typed ? { ...next, title: prev.title, autoTitle: next.autoTitle } : next;
+  const custom = carryCustom(prev.custom, next);
+  const out = custom ? { ...next, custom } : next;
+  return typed ? { ...out, title: prev.title, autoTitle: next.autoTitle } : out;
 }

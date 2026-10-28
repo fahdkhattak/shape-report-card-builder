@@ -194,7 +194,7 @@ export function AgeNumber({ years, months, color, size = 36 }) {
 export function AgeScale({ older }) {
   const c = older ? ds.status.error.graph : ds.status.success.text;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+    <div data-part="age-scale" style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
       <div style={{ position: "relative", height: 8, borderRadius: 6, background: ds.bg.quaternary }}>
         <div style={{ position: "absolute", top: 0, height: 8, background: c, left: older ? "50%" : "26%", width: older ? "13%" : "24%", borderRadius: 4 }} />
         <div style={{ position: "absolute", left: "50%", top: -4, width: 1, height: 16, background: ds.icon.tertiary }} />

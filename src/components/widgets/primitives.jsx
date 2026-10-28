@@ -1,5 +1,7 @@
-import { useRef, useState, useLayoutEffect, createContext, useContext } from "react";
+import { useRef, useState, useLayoutEffect, createContext, useContext, Children, isValidElement } from "react";
 import { Users } from "lucide-react";
+import { createPortal } from "react-dom";
+import { TipCard } from "./ChartTip.jsx";
 import { ds } from "../../lib/ds.js";
 import { T, font, band, rand } from "../../lib/tokens.js";
 import trendCaretUp from "../../assets/trend-caret-up.svg";
@@ -19,20 +21,65 @@ import { STRUCTURE } from "../../lib/widgetStructure.js";
    section's height. */
 const SectionSize = createContext("2x2");
 export const useWidgetSize = () => useContext(SectionSize);
+/* A built widget's customisation (lib/widgetCustom.js): { hide, evidence, evidenceKind, action }. Read by the sections
+   below and by the bodies that offer element toggles or evidence kinds. Null for every other widget. */
+export const WidgetCustom = createContext(null);
+export const useCustom = () => useContext(WidgetCustom) || {};
+export const useShown = () => { const c = useCustom(); return (id) => !(c.hide || []).includes(id); };
+/* A generic evidence kind ("g:…", lib/widgetCustom.js) replaces the form's own Evidence; the host passes renderGeneric. */
+const isGeneric = (k) => typeof k === "string" && k.startsWith("g:");
+const barTaken = (custom, size) => size === "1x1" && !!(custom?.action || custom?.actionRequired);
+
 export function Sections({ size = "2x2", children, style }) {
+  const custom = useContext(WidgetCustom);
+  const action = custom?.action ? actionLabelOf(custom.action) : null;
   return (
     <SectionSize.Provider value={size}>
-      <div data-part="sections" data-size={size} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: STRUCTURE.gap, ...style }}>{children}</div>
+      <div data-part="sections" data-size={size} style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: STRUCTURE.gap, ...style }}>
+        {withGeneric(children, custom?.renderGeneric && isGeneric(custom.evidenceKind) && custom.evidence !== false && !barTaken(custom, size) ? custom.renderGeneric(size) : null)}
+        {action && <ActionBar><span data-part="action-link" style={{ fontSize: 11, fontWeight: 500, color: ds.text.secondary, display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>{action} <span aria-hidden="true">›</span></span></ActionBar>}
+      </div>
     </SectionSize.Provider>
   );
 }
+/* A generic evidence goes where Evidence goes: after the Insight, before a form's own Action Bar. */
+function withGeneric(children, generic) {
+  if (!generic) return children;
+  const list = Children.toArray(children);
+  const at = list.findIndex((c) => isValidElement(c) && c.type === ActionBar);
+  return at < 0 ? [...list, generic] : [...list.slice(0, at), generic, ...list.slice(at)];
+}
+const ACTION_LABELS = { details: "Open details", support: "Get support", report: "Open the full report", method: "How it's measured" };
+const actionLabelOf = (id) => ACTION_LABELS[id] || null;
 export function Insight({ children, style, center = false }) {
   return <div data-part="section-insight" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: center ? "center" : "flex-start", position: "relative", ...style }}>{children}</div>;
 }
-/* Its content sits at the foot of the bar (the board's examples). */
+/* Takes the height the Insight has left (flex 1) and hands it to a chart that draws to a height: `children(height)`.
+   Measured directly (not in an animation frame), and again on resize, so a graph fills its space without spilling. */
+export function FillBox({ children, min = 60 }) {
+  const ref = useRef(null);
+  const [h, setH] = useState(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => { const v = Math.floor(el.getBoundingClientRect().height); if (v > 0) setH((o) => (o === v ? o : v)); };
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return <div ref={ref} data-part="fill" style={{ flex: 1, minHeight: min, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>{h != null && children(h)}</div>;
+}
+
+/* 1x1: a fixed 24px bar, content at its foot. 2x2 and up: it hugs its content between 24 and 68px, and is the full 68 when
+   it holds a bar-type element (the `.ev-hug:has(…)` rule in index.css), so the Insight gets every pixel it doesn't need. */
 export function Evidence({ children, style }) {
   const size = useContext(SectionSize);
-  return <div data-part="section-evidence" style={{ height: STRUCTURE.evidence[size], flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, minWidth: 0, ...style }}>{children}</div>;
+  const custom = useContext(WidgetCustom);
+  // Switched off, or a 1x1 whose one bar is now the Action Bar: the Insight takes the space.
+  if (custom && (custom.evidence === false || barTaken(custom, size) || isGeneric(custom.evidenceKind))) return null;
+  const bar = size === "1x1";
+  const box = bar ? { height: STRUCTURE.evidence[size] } : { minHeight: STRUCTURE.evidenceMin, maxHeight: STRUCTURE.evidence[size] };
+  return <div data-part="section-evidence" className={bar ? undefined : "ev-hug"} style={{ ...box, flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 8, minWidth: 0, ...style }}>{children}</div>;
 }
 export function ActionBar({ children, style }) {
   return <div data-part="section-action" style={{ height: STRUCTURE.action, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, ...style }}>{children}</div>;
@@ -422,8 +469,18 @@ export function StatusRing({ status }) {
    fixed, clearly-illustrative cloud from `r` — seeded, so it never shuffles
    between renders. Dots are small and translucent so the dense middle shows
    as darker, and a sloped fit line makes the direction obvious. */
-export function ScatterMini({ topicA, topicB, r, points }) {
-  const w = 150, h = 90, pad = 4;
+export function ScatterMini({ topicA, topicB, r, points, fill = false }) {
+  // `fill`: the plot takes all the height and width its parent gives it (a widget's Insight); otherwise 150 × 90.
+  const boxRef = useRef(null);
+  const [box, setBox] = useState({ w: 150, h: 90 });
+  useLayoutEffect(() => {
+    if (!fill || !boxRef.current) return;
+    const el = boxRef.current, measure = () => { const b = el.getBoundingClientRect(); if (b.width && b.height) setBox({ w: Math.round(b.width), h: Math.round(b.height) }); };
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(el);
+    return () => ro.disconnect();
+  }, [fill]);
+  const { w, h } = box, pad = 4;
   const real = Array.isArray(points) && points.length > 0;
   let pts = points;
   if (!real) {
@@ -442,20 +499,23 @@ export function ScatterMini({ topicA, topicB, r, points }) {
   pts.forEach(([x, y]) => { num += (x - mx) * (y - my); den += (x - mx) ** 2; });
   const slope = den ? num / den : 0, x0 = Math.min(...pts.map((p) => p[0])), x1 = Math.max(...pts.map((p) => p[0]));
   const c = r < 0 ? ds.status.error.graph : ds.text.accent;
+  const clampY = (v) => Math.max(0, Math.min(100, v));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
-      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`}>
-        {[25, 50, 75].map((g) => <line key={g} x1={pad} x2={w - pad} y1={Y(g)} y2={Y(g)} stroke={ds.bg.secondary} strokeWidth="1" />)}
-        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={ds.bg.quaternary} strokeWidth="1" />
-        <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={ds.bg.quaternary} strokeWidth="1" />
-        {pts.map(([x, y], i) => <circle key={i} cx={X(x)} cy={Y(y)} r="2.4" fill={c} fillOpacity={real ? 0.45 : 0.3} stroke={ds.surface.general.card} strokeWidth="0.6" />)}
-        <line x1={X(x0)} y1={Y(my + slope * (x0 - mx))} x2={X(x1)} y2={Y(my + slope * (x1 - mx))} stroke={ds.icon.primary} strokeWidth="1.2" />
-      </svg>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: ds.text.tertiary }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", ...(fill ? { flex: 1, minHeight: 0 } : {}) }}>
+      <div ref={boxRef} style={fill ? { flex: 1, minHeight: 0 } : undefined}>
+        <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: "block" }}>
+          {[25, 50, 75].map((g) => <line key={g} x1={pad} x2={w - pad} y1={Y(g)} y2={Y(g)} stroke={ds.bg.secondary} strokeWidth="1" />)}
+          <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={ds.bg.quaternary} strokeWidth="1" />
+          <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={ds.bg.quaternary} strokeWidth="1" />
+          {pts.map(([x, y], i) => <circle key={i} cx={X(x)} cy={Y(y)} r={fill ? 3.5 : 2.4} fill={c} fillOpacity={real ? 0.45 : 0.3} stroke={ds.surface.general.card} strokeWidth="0.6" />)}
+          <line x1={X(x0)} y1={Y(clampY(my + slope * (x0 - mx)))} x2={X(x1)} y2={Y(clampY(my + slope * (x1 - mx)))} stroke={ds.icon.primary} strokeWidth="1.2" />
+        </svg>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: ds.text.tertiary }}>
         <span>↑ {topicB}</span>
         <span>{topicA} →</span>
       </div>
-      {!real && <span style={{ fontSize: 10, color: ds.text.quaternary }}>Illustrative — no survey data for this pair</span>}
+      {!real && <span style={{ fontSize: 11, color: ds.text.quaternary }}>Illustrative: no survey data for this pair</span>}
     </div>
   );
 }
@@ -589,6 +649,8 @@ const labelWidth = (text, size = 11) => {
 };
 export function RadarChart({ items, size = 286 }) {
   const n = items.length;
+  const [hover, setHover] = useState(null);
+  const [pos, setPos] = useState(null);
   const W = 312, H = size;
   const cx = W / 2, cy = H / 2;
   // The rings shrink (78 down to 56) until every side label fits inside the widget: a label on the left or right starts
@@ -605,11 +667,21 @@ export function RadarChart({ items, size = 286 }) {
   const at = (i, v) => polar(cx, cy, (Math.max(0, Math.min(100, v)) / 100) * R, i * step);
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0 }}>
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Radar of ${n} parts: ${items.map((it) => `${it.label} ${it.value}`).join(", ")}`} style={{ display: "block", overflow: "visible" }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Radar of ${n} parts: ${items.map((it) => `${it.label} ${it.value}`).join(", ")}`} style={{ display: "block", overflow: "visible", touchAction: "pan-y" }}
+        onMouseMove={(e) => {
+          // The whole chart is the target: the spoke nearest the pointer's angle from the centre.
+          const b = e.currentTarget.getBoundingClientRect(), dx = e.clientX - b.left - cx, dy = e.clientY - b.top - cy;
+          if (Math.hypot(dx, dy) < 8) return;
+          const deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+          setHover(((Math.round(((deg + 360) % 360) / step) % n) + n) % n);
+          setPos({ x: e.clientX, y: e.clientY });
+        }}
+        onMouseLeave={() => { setHover(null); setPos(null); }}>
         {[0.2, 0.4, 0.6, 0.8, 1].map((f) => <circle key={f} cx={cx} cy={cy} r={R * f} fill="none" stroke={grey} strokeWidth="0.75" />)}
         {items.map((_, i) => { const p = polar(cx, cy, R + 8, i * step); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={grey} strokeWidth="0.75" />; })}
         <polygon points={items.map((it, i) => { const p = at(i, it.value); return `${p.x},${p.y}`; }).join(" ")} fill={RADAR_SERIES} fillOpacity="0.08" stroke={RADAR_SERIES} strokeWidth="2" strokeLinejoin="round" />
-        {items.map((it, i) => { const p = at(i, it.value); return <circle key={`v${i}`} cx={p.x} cy={p.y} r="3" fill={RADAR_SERIES} stroke={ds.surface.general.card} strokeWidth="1.2"><title>{`${it.label}: ${it.value}`}</title></circle>; })}
+        {hover != null && (() => { const p = polar(cx, cy, R + 8, hover * step); return <line x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={RADAR_SERIES} strokeWidth="1" strokeDasharray="3 3" />; })()}
+        {items.map((it, i) => { const p = at(i, it.value), on = hover === i; return <g key={`v${i}`}>{on && <circle cx={p.x} cy={p.y} r="7" fill={ds.surface.general.card} stroke={RADAR_SERIES} strokeWidth="2" />}<circle cx={p.x} cy={p.y} r={on ? 4 : 3} fill={RADAR_SERIES} stroke={ds.surface.general.card} strokeWidth="1.2" /></g>; })}
         {items.map((_, i) => { const p = polar(cx, cy, R, i * step); return <circle key={`n${i}`} cx={p.x} cy={p.y} r="2.5" fill={ds.border.strong} />; })}
         {items.map((it, i) => {
           const a = i * step, sin = Math.sin((a * Math.PI) / 180), cos = Math.cos((a * Math.PI) / 180);
@@ -619,12 +691,13 @@ export function RadarChart({ items, size = 286 }) {
           const lh = 12;
           const y0 = Math.abs(sin) < 0.2 ? (cos > 0 ? p.y - (lines.length - 1) * lh : p.y + 8) : p.y - ((lines.length - 1) * lh) / 2 + 3;
           return (
-            <text key={`l${i}`} textAnchor={anchor} fontSize="11" fontFamily={font} fill={ds.text.secondary}>
+            <text key={`l${i}`} textAnchor={anchor} fontSize="11" fontFamily={font} fontWeight={hover === i ? 700 : 400} fill={hover === i ? ds.text.primary : ds.text.secondary} opacity={hover == null || hover === i ? 1 : 0.6}>
               {lines.map((ln, k) => <tspan key={k} x={p.x} y={y0 + k * lh}>{ln}</tspan>)}
             </text>
           );
         })}
       </svg>
+      {hover != null && pos && typeof document !== "undefined" && createPortal(<TipCard x={pos.x} y={pos.y} content={{ rows: [{ label: items[hover].label, value: items[hover].value, delta: items[hover].delta, score: true }], note: items[hover].note }} />, document.body)}
     </div>
   );
 }

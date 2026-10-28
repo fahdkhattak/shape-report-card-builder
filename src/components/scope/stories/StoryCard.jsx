@@ -46,9 +46,9 @@ export function StoryCard({ title, titleSize, controls, line, note, children, st
   return (
     <ScopeCard style={style} {...rest}>
       {(title || controls) && <StoryHead title={title} titleSize={titleSize} controls={controls} refined={refined} kind={meta?.kind} />}
-      {line && <p style={refined ? leadText : bodyText}>{line}</p>}
+      {line && <p data-part="story-line" style={refined ? leadText : bodyText}>{line}</p>}
       {children}
-      {note && <p style={refined ? refinedNote : noteText}>{note}</p>}
+      {note && <p data-part="story-note" style={refined ? refinedNote : noteText}>{note}</p>}
     </ScopeCard>
   );
 }
@@ -57,12 +57,12 @@ export function StoryCard({ title, titleSize, controls, line, note, children, st
 function StoryHead({ title, titleSize, controls, refined, kind }) {
   const { compact } = useStoryWidth();
   return (
-    <div style={{ display: "flex", flexDirection: compact ? "column" : "row", alignItems: compact ? "stretch" : "flex-start", justifyContent: "space-between", gap: compact ? 8 : 12, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+    <div data-part="story-head" style={{ display: "flex", flexDirection: compact ? "column" : "row", alignItems: compact ? "stretch" : "flex-start", justifyContent: "space-between", gap: compact ? 8 : 12, flexWrap: "wrap" }}>
+      <div data-part="story-title" style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
         {refined && kind && <span style={{ ...dsText("Text 2xs", 500), color: ds.text.tertiary }}>{kind}</span>}
         {title ? <ScopeCardTitle size={titleSize}>{title}</ScopeCardTitle> : <span />}
       </div>
-      {controls && <div style={{ display: "flex", alignItems: "center", justifyContent: compact ? "space-between" : "flex-start", gap: 8, flexWrap: "wrap", paddingTop: refined ? 2 : 0 }}>{controls}</div>}
+      {controls && <div data-part="story-controls" style={{ display: "flex", alignItems: "center", justifyContent: compact ? "space-between" : "flex-start", gap: 8, flexWrap: "wrap", paddingTop: refined ? 2 : 0 }}>{controls}</div>}
     </div>
   );
 }

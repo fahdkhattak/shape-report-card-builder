@@ -3865,3 +3865,207 @@ to"), **eNPS Over Time** (was a one-line pill), and the phone `DetailCard`. Not 
 Relationship Stories' hover line.
 - Verified: structure check clean everywhere; Departments Evidence = one thing; caption measured (11 / 16, colours); eNPS, radar and
   Composition hovers render the standard card (12 / 16); zero console errors in a fresh tab.
+
+### Trend pills never sit on a chart; the ring is centred
+
+- **1x1 Score History / any 1x1 GraphInsight** (design image): the caret pill has its own row above the plot, right-aligned
+  (`trend-row`), with no gap (20 + the 88px plot = the 108px Insight); it used to float inside the plot and sat on the line
+  and the 100 gridline. 1x1 round labels show the month only ("Nov", not "Nov 25", which ran together).
+- **Builder Ring 2x2**: the pill and the ring (168px) are one centred group in the Insight; the pill no longer overlaps the ring.
+- **Check to rerun after any widget change** (Developer › All widgets, SHAPE report widgets, Widget Builder forms): every
+  `[data-part="trend"]` must sit inside its card, not be cut by an overflow ancestor, and not overlap a chart's svg; plus
+  `auditStructure`. All 167 cards pass.
+
+### Planned, not built (product owner, parked for credits): a customisable widget in the Widget Builder
+
+Make a built widget editable within the section rules, section by section:
+- **Header**: edit the title text (the Header Rule still applies: one or two lines, no values).
+- **Insight**: pick how to show it from the forms that make sense for the subject (`rankSubjectForms` / `fitSizes` already
+  decide what's allowed; offer only those).
+- **Evidence**: a toggle (on → the template with Evidence; off → Insight only), then a choice from what that form can carry
+  (people split, parts statement, headcount, threshold distance, sample size, legend or largest group: one at a time).
+- **Action Bar**: a toggle plus a link choice (support, help, a report); always on, not toggleable, for action cards (Support).
+- Store it on the spec as `{ header: { title }, insight: { form }, evidence: { on, kind }, action: { on, kind } }`; the body
+  renderers read it; `auditStructure` and the section rules stay the guard rails (only valid templates for the size).
+
+### Scatter fills its Insight; Versus / Groups headers
+
+- Chat scatter (`GeneratedBody` "scatter", `ScatterMini fill`): the plot measures its parent and fills the Insight (was a fixed
+  150 × 90 box floating in empty space); the takeaway line stays on top; the Evidence (2x2) holds "Link between them r = 0.95 ·
+  100 people". The "Illustrative" note lost its em dash.
+- Headers name what's compared, never the result: Versus "Upper management vs Trained professional" → "Org Score by Job Level";
+  Groups "Org by Department" → "Org Score by Department".
+
+### ANALYSIS, not built: customisable widgets (product owner's direction) + Builder forms against the section rules
+
+**Customisation model.** A widget is made as today (the default form), then refined within the rules:
+- Each form declares its **elements** like `SCORE_ELEMENTS`: `{ id, section, required, default, can(subject, size) }`. Org Score 2x2:
+  score, change, date (Insight, required except change/date), headcount, participation (Insight, optional), people split (Evidence).
+- **Insight can't be disabled**, only re-formed (to forms `rankSubjectForms` allows). **Evidence** is a switch plus one choice
+  among the form's evidence kinds; off → the Insight-only template and the Insight takes the space. **Action Bar** a switch +
+  link where the form has actions; fixed on action cards. **Header** editable, limited so it fits two lines and never states a value.
+- To hit the quality bar, every form must declare a layout for **each** template it allows (not just shrink), and a Developer
+  sweep renders every combination of elements × sizes × subjects through `auditStructure` + the trend check; a combination that
+  fails is never offered. Spec stores `{ elements: { id: on }, evidence: kind, action: kind, title }`.
+- Risks: combinatorial growth (cap optional elements per form at 3–4); forms whose Insight needs its evidence to make sense (see
+  below) must be fixed first or their Evidence can't be optional.
+
+**Builder forms vs the section rules (to refine):**
+- **Story 3x3**: several insights at once (score, status, split, history, parts, four facts). A widget is an entry point; this is
+  a Scope. Retire it or cut it to one insight (score + trend) with one evidence line.
+- **Movers 1x1, Areas to Focus 1x1** (builder and Library): the name of the thing the number is about sits in the Evidence, so
+  the Insight can't be read without it ("never required to understand the Insight"). Move the name into the Insight.
+- **Did You Know**: a headline number (95) in the Evidence. Move it to the Insight or drop it.
+- **People 2x2**: the Evidence bar repeats the Insight's own split. Use a different evidence (sample size) or none.
+- **Head to head**: two different measures on one graph (the graph rules allow several lines only for the same measure).
+- **Momentum 2x2 / Health Check**: several findings each; trim to one insight with supporting evidence.
+- **Goal**: the Evidence is a projection (a conclusion). Keep the pace as a number, not a forecast sentence.
+- **Titles**: mixed patterns ("Org: People by Status", "Org: What If", "Areas to Focus · Org", "Explorers in Org"). One scheme:
+  "{Subject} {Measure}" / "{Subject} Score by {Grouping}", title case, under 7 words, never the result.
+
+### Evidence Section hugs its content (product owner)
+
+**2x2 / 3x3 Evidence Section: min 24px, max 68px, hugging its content; the full 68 only when it carries a bar-type element (a
+status bar, the Health Age scale) with its text** (`.ev-hug:has([data-part="status-bar"], [data-part="age-scale"])` in
+index.css; `STRUCTURE.evidenceMin`). The 1x1 Evidence Bar stays 24. The Insight takes the space left and **centres a chart
+vertically** (GraphInsight 2x2, Spread). `auditStructure` checks 24–68 for a 2x2 Evidence and 68 when it has a bar. Result: no
+empty band under a chart (Org History, Spread, Scatter, Composition); 167 cards pass.
+
+## Graphs fill their space; the Customise panel; Stories follow the widget; the SHAPE dataset in the Builder
+
+**Graphs fill, rings don't.** `FillBox` (primitives.jsx) measures the height the Insight has left and hands it to a chart:
+the 2x2 line graph (`GraphLine height`) and Spread's columns (`VBars height`) now stretch to fill, with 12px under the trend
+pill. The Ring keeps its 168px, 12px under its pill. The chat scatter's plot is the whole Insight and its takeaway ("Strong
+positive correlation · r = 0.95 · 100 people") is the Evidence. **The radar (`RadarChart`) has hover**: the spoke nearest
+the pointer's angle, a dashed spoke, a ringed point, its label bold, the standard tooltip.
+
+**Customisation: edit a widget by section** (`lib/widgetCustom.js`, `widgetbuilder/WidgetEditor.jsx`, the `WidgetCustom`
+context in primitives.jsx). Superseded the floating Customise panel the same day (user: the panel was meant for the header
+switches; keep the form buttons). The form buttons are back (Original: chips; Workbench: the icon strip) with the size /
+data options; under them **Edit by section** has four rows, Header, Insight, Evidence, Action Bar, each saying what's set and
+opening to its controls. **Click any part of the widget preview to open that row**; the open section is outlined on the
+widget (`.wb-edit` / `.wb-focus-*` in index.css).
+- **Header**: the title (48 chars), a warning if it contains a number (headers name the thing, never the result), Reset to
+  the suggested title.
+- **Insight**: always on (a lock says so); the parts of it that can be hidden (`CUSTOM[form].elements`).
+- **Evidence**: on / off plus a **gallery of every evidence this widget can carry, each drawn live on the widget**: the
+  form's own ("Its own"; Score's people / parts by status, Composition's legend / largest group) and the **generic kinds**
+  (`GENERIC_EVIDENCE`: people by status, parts by status, change since last round, distance to the next status, strongest and
+  lowest, who answered), drawn by `widgets/GenericEvidence.jsx` from `payload.ev` (`evidenceFacts(subject)`, on every built
+  spec). So a form drawn without evidence can be given some, and one drawn with it can swap or drop it. Per form `generic`
+  lists which make sense (a kind that repeats the Insight is left out; Group / Versus / Head to head / Story / Check-up /
+  What if get none, because the facts are about the whole subject). A generic kind sets `custom.evidenceKind = "g:…"`: the
+  form's own `<Evidence>` steps aside and `Sections` inserts the generic one after the Insight, before any Action Bar
+  (`withGeneric`).
+- **Action Bar**: off or one link (Open details, Get support, Open the full report, How it's measured). **An action widget
+  keeps its link** (`action: "required"`, locked with the reason). New form **Next Step** (`nudge`, 1x1 / 2x2): the part most
+  worth acting on (2x2: the lowest three, evidence "The lowest 3 of 8 Drivers") with "See actions you can take" always on; its
+  Scope leads with Actions, Diagnostic and Within Reach; chat "what should we do about…", "next step".
+- **Where it breaks is measured, not listed.** The editor draws every evidence choice, with and without a link, full size
+  off screen (`useFits`) and runs `auditStructure` on each; a combination where anything spills or a section is off its
+  height is shown switched off ("No room", with why), and a size or form change that leaves a failing combination drops the
+  link, then the evidence. The same probe decides whether the form has evidence of its own at this size. Rules that aren't
+  about room stay as rules: a 1x1 has one bar (a link replaces the Evidence Bar), Focus / Movers 1x1 need their evidence.
+- **The structure check now catches crowding, not just spilling** (`auditStructure` in lib/widgetStructure.js, so every
+  widget page and the editor get it). Feedback: a 1x1 Drivers widget took an Evidence Bar and its list was squashed, Morale
+  sliding under "6 more Drivers", yet nothing left the Insight, so it passed. Three new checks: **squeezed** (in any column
+  of boxes, a box's content running onto the box below it, unless the box below pulls itself up with a negative margin on
+  purpose, as the Status word does over its illustration), **cut off** (a box that clips its children vertically and slices
+  one; one-line text with an ellipsis has no element children and isn't caught), and **text overlaps** (`textOverlap`: the ink
+  of two pieces of HTML text overlapping by more than 2px, each box trimmed to 0.8 × its font size and clipped to the clips
+  around it, so a 48px number with line height 1 or a truncated label doesn't count). All default widgets still pass (79
+  Library, 22 SHAPE, 105 + 36 builder, 9 chat). In the editor, when nothing fits the evidence gallery is hidden and the row
+  says why ("No room: at this size the Insight needs the whole card. Try the 2×2."); the 2×2 is only suggested when the form has one.
+- **Sweep**: `widgets-gallery.html?custom&subject=0..4` renders every form × size × evidence choice × link (371 cards for the
+  organisation); about a quarter fail, and those are exactly what the editor turns off (e.g. a link on History / Ring /
+  Status 1x1, people-by-status plus a link on a 2x2 History, anything extra on Groups, Index, Profile). The gallery now loads
+  index.css (the `.ev-hug` 68px rule was missing there).
+- Fixed while sweeping: a 1x1 History under a two-line title pushed its graph out of the top of the Insight (it was
+  bottom-aligned, so the header's shrink check never saw it); the 1x1 Insight is top-aligned now and the header drops to one line.
+
+**View menu** (`widgetbuilder/BuilderViewMenu.jsx`): the four header switches (Preview, Data, Stories, Prototype) are one
+"View" button showing what's set ("Desktop · SHAPE survey · Current · Original") that opens a small window with the four
+switches. `DataSourceToggle.jsx` and `CustomisePanel.jsx` are deleted.
+
+**Story structure** (Developer › Stories › Story structure, `developer/docs/StoryStructureDoc.jsx`): the Story counterpart of
+Widget structure. Widget / Story / Scope boundaries table, the skeleton (the real StoryCard with working Compare, Chart / Table
+and Copy Table, dashed slots for content, Evidence Section and note), measured anatomy (StoryCard now carries
+`data-part` story-head / story-title / story-controls / story-line / story-note), the parts table (holds / never / spec), widths
+(wide 560+, compact, tight under 400, drawn at 320 and 480), real examples, how to build and register one, can / can't, and a
+new Story checklist. Widget structure links to it.
+
+**True to the subject.** Story (the full picture) is blocked for anything but the organisation. A Driver offers Score,
+History, Ring, People, Groups, Momentum, Focus, Spread, Goal, Check-up, Composition, Group, Versus; an Explorer adds Parts,
+Profile, Index, What if, Heat strip. **Stories follow the widget** (`FORM_STORIES` in storyCatalog.jsx, `suggestScope(subject,
+form)`, `followForm` in builderEngine.js): a History widget opens with Trend and Goal & Pace, Groups with Composition, Gaps,
+Areas to Focus and Bright Spots, Spread with How Scores Are Spread, and so on, after the Insight Summary; the data-driven
+extras come below. The Scope follows form changes until the person edits it (`autoStories`).
+
+**Data: Prototype sample | SHAPE survey** (`lib/dataSource.js`, `DataSourceToggle` in both builder headers). The choice is
+remembered and read once at load by `lib/dataset.js`; switching reloads and reopens the Builder (`peekReopenScreen`, cleared
+after mount because StrictMode runs initialisers twice). **SHAPE survey** = `lib/survey/legacyAdapter.js shapeAsLegacy()`:
+the 150-person dataset, every score from scoring.js, shaped to the sample's structure, so every widget, Story and Scope reads
+it unchanged (150 people, 3 rounds 63.8 → 61.9 → 66.6, 23 / 78 / 45, 12 Explorers, **56 Drivers**: Situational Leadership
+(no formula), Décor, Dress code and Commuting (asked of some people only) are left out of this view because the sample-style
+reads average everyone). Work model reads Office / Hybrid / Home; location = site ("No site (home)"). A 1x1 Composition
+with more than 7 groups folds the smallest into "Other (n groups)". Verified on both datasets: 101 + 22 + 44 cards pass
+`auditStructure`, 69 report Stories render on SHAPE data with no NaN, no console errors.
+
+**Widget ideas that fit the rules (not built):** Participation (1x1: response rate; Evidence: answered of invited) ·
+Status Shift (2x2: people who moved band since the last round, a small flow; Evidence: the cohort size) · Weakest Driver
+(1x1: its score; Evidence: its Explorer) · eNPS by Group (2x2 bars, 5+ groups) · Status by Group (2x2 stacked bars of the
+three statuses per group) · Pulse (1x1: Explorers up / down since last round) · Well-being by Group (2x2: share at Moderate+
+per group).
+
+## Recipes: widgets and Stories as config builders (Developer only)
+
+After a "config builder" the product owner shared (a coffee drink mapped as one answer per row: category → drink name → type
+→ espresso → size → milk → syrup → whip, the recipe a line through the answers, its name reading off the line). The same idea,
+for our widgets and Stories, **on Developer pages only** (not in the Widget Builder yet, by direction).
+- **`developer/RecipeBoard.jsx`**: the shared board. Rows of options (`on` / `open` / `off`, `why` on hover), the chosen path
+  drawn as a line through the option centres (measured from the DOM, so wrapping rows work), the recipe's name in accent under
+  the first row, and an optional grey **ghost** path (a saved recipe hovered) to compare two.
+- **Widgets › Widget recipes** (`docs/widgets/WidgetRecipeDoc.jsx`, id `widget-recipe`): About (the five sample subjects) →
+  Insight type (`INSIGHT_TYPES`: a number, a status, over time, its parts, by group, overview, two measures, an action) → Form →
+  Size → Evidence → Action Bar. Driven by the real rules (FORMS `blocked()` / `sizes` / `fitSizes`, `customFor()`, and the
+  measured room from the editor's `useFits()`, now exported from `WidgetEditor.jsx` with `FullCard` and `keyOf`), so a path that
+  can be drawn is a widget the builder can make; ruled-out answers are struck through with the reason. Shows the real widget
+  with its structure-check result, "how many recipes" per subject (from the rules) and how many combinations fit for the
+  current form, the rules table (which choice narrows which, and where the rule lives), and the recipe / spec as data.
+- **Stories › Story recipes** (`docs/StoryRecipeDoc.jsx`, id `story-recipe`): About → Family → Story → Form → Card width (808 /
+  480 / 360) → Style (Current / Refined), from the Story catalogue (`blocked()`, `forms()`); draws the real Story at that width,
+  says which widget forms it leads the Scope of (`FORM_STORIES`), counts recipes per subject, the rules, and the placement as data.
+  The header Style switch is hidden on this page (it has its own row).
+- Saved recipes on both pages load a path on click and draw it in grey on hover.
+
+## Survey page — one question, isolated (`components/surveypage/SurveyPage.jsx`)
+
+A **Survey** item in the sidebar (`NavRail` `NAV_ITEMS`, ClipboardList icon, `navActions.openSurvey`, App screen `"survey"`)
+opens the respondent's survey page, built to the user's design image. Nothing else reads or writes it. Top bar (Survey | Survey
+Title), a section pill (back + "WELL"), then one 40px-radius card: the X marker and the question (Text lg / Bold), "Text for Low"
+/ "Text for High", a 0 to 10 scale (11 cells in one bordered strip, the picked one `bg/inverse`), the brand primary OK button,
+and the progress bar at the card's foot. Picking a number (click or the 0 to 9 keys) enables OK; OK (or Enter) saves the answer
+and fills the progress bar to 100%; back clears it. The question is one constant (`QUESTION`), placeholder copy kept from the design.
+Hover/focus in `index.css` (`.survey-point`). Separate from the Survey Builder (`components/survey/`).
+- **Long end labels** (clients write long anchors): the scale has three layouts plus an **Auto** rule (`autoLayout()`), compared
+  with the top bar's prototype controls (Labels: Short / Long / Very long; Layout: Auto / Ends / Anchored / List).
+  **Ends** = the design, labels above the two ends. **Anchored** = labels under the strip, each with its end number as a tag so
+  a wrapped label keeps its number; the side nearer the picked number darkens. **List** = one row per number with the labels
+  beside 0 and 10, any length; also the phone layout. Auto: List when a number would be under 40px wide (a phone), otherwise
+  Ends while each label fits one line in its half, Anchored up to three lines, else List. Screen readers hear both end labels
+  in every layout (`aria-describedby` on the strip, the label inside the 0 / 10 rows in List).
+- **Key** (added after the user disliked the vertical List for long labels on desktop): the two labels above the strip as staggered
+  lines, 0 from the left and 10 from the right, each nearly the full width (very long anchors take two or three lines instead of
+  five). Each end number is a tag centred over its own cell (measured within 1px) with a hairline down to the strip; the side
+  nearer the picked number darkens (tag inverts, line strengthens). **Auto now: List only on a phone (cells under 40px), Ends while
+  each label fits one line in its half, Key for anything longer.** Anchored and List remain selectable. Both labels always stay
+  visible: hiding an anchor behind a tap or hover would change how people answer.
+- **Phone page** (from the user's phone design image): a window under 600px renders `PhoneSurvey` full screen (44px bar: menu,
+  Survey centred, "…"; the section pill; the question and scale on white 24px from the edges; a full-width OK pinned 48px from
+  the foot; no progress bar, as drawn). The prototype's **View: Desktop | Phone** shows the same page in a 375 × 812 frame
+  scaled to fit. **The design keeps the 0 to 10 row horizontal on a phone (cells about 30px), so Auto no longer switches to List
+  there** (supersedes the "List on a phone" rule above): Ends while each label fits one line in its half, Key otherwise, at any
+  width. On a narrow scale (under 480px) the Key drops its stagger padding and the 0 label also takes the corner above the 10
+  pin, so the very long sample takes 3 + 4 lines on a 327px scale and the page doesn't scroll. Anchored at that width runs to 8
+  lines a side, which is why it isn't Auto's pick. Menu and "…" on the phone bar have nothing to open in this prototype.
+  `ScaleArea` measures its own width and reports Auto's choice, so the same scale code serves both pages.

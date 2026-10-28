@@ -9,7 +9,7 @@ import {
   Search, BookOpen, PanelLeft, ChevronRight, ChevronDown, ChevronUp,
   Plus, MoreHorizontal, ChevronsUpDown, Star, LogOut, ArrowLeftRight,
   Share2, Globe, Check, UserPlus,
-  Workflow, FileQuestion, FileText, LayoutGrid, Presentation, BadgeCheck, Code2, LayoutDashboard,
+  Workflow, FileQuestion, FileText, LayoutGrid, Presentation, BadgeCheck, Code2, LayoutDashboard, ClipboardList,
 } from "lucide-react";
 import { useNavActions } from "../../lib/navActions.js";
 import { T, font, radius } from "../../lib/tokens.js";
@@ -82,6 +82,7 @@ const NAV_ITEMS = [
   { id: "library", label: "Library", icon: BookOpen },
   { id: "developer", label: "Developer", icon: Code2 }, // the handoff area — components, states and specs (components/developer/)
   { id: "dashboards", label: "Dashboards", icon: LayoutDashboard }, // dashboard redesign mockups (components/dashboards/), isolated
+  { id: "survey", label: "Survey", icon: ClipboardList }, // the respondent survey page (components/surveypage/), isolated
 ];
 
 // CREATE TOOLS MENU — a real Figma reference for this one
@@ -562,7 +563,7 @@ function CreateToolsMenu({ floatingRef, style, floatingProps, onSelectReportBuil
 }
 
 function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch, onOpenReportBuilder, onOpenSurveyBuilder }) {
-  const { openReport, openWidgetBuilder, openLibrary, openDeveloper, openDashboards } = useNavActions();
+  const { openReport, openWidgetBuilder, openLibrary, openDeveloper, openDashboards, openSurvey } = useNavActions();
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isExpanded = expanded ?? internalExpanded;
   const setExpanded = onExpandedChange ?? setInternalExpanded;
@@ -640,7 +641,7 @@ function NavRailInner({ active, expanded, onExpandedChange, onOpenSearch, onOpen
             expanded={isExpanded}
             hovered={hoveredItem === item.id}
             onHover={(v) => setHoveredItem(v ? item.id : null)}
-            onClick={item.id === "search" ? onOpenSearch : item.id === "generate" ? () => setCreateMenuOpen((v) => !v) : item.id === "org" ? () => openReport("shape-perf-org") : item.id === "library" ? openLibrary : item.id === "developer" ? openDeveloper : item.id === "dashboards" ? openDashboards : undefined}
+            onClick={item.id === "search" ? onOpenSearch : item.id === "generate" ? () => setCreateMenuOpen((v) => !v) : item.id === "org" ? () => openReport("shape-perf-org") : item.id === "library" ? openLibrary : item.id === "developer" ? openDeveloper : item.id === "dashboards" ? openDashboards : item.id === "survey" ? openSurvey : undefined}
             itemRef={item.id === "generate" ? createFloating.refs.setReference : undefined}
           />
         ))}

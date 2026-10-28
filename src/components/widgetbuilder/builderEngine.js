@@ -83,8 +83,9 @@ export function buildWidget(prompt) {
   if (!subject) return null;
   // The widget is built from the same topics the Scope reads, so the two always agree.
   const spec = buildFormSpec(rankSubjectForms(prompt, subject)[0], subject, { options: optionsFromPrompt(prompt) });
-  const scope = suggestScope(subject);
-  return { prompt, spec, stories: scope.stories, options: {}, reasons: scope.reasons };
+  const scope = suggestScope(subject, spec.form);
+  // autoStories: the Scope as suggested. While the person hasn't edited it, it follows the widget's form.
+  return { prompt, spec, stories: scope.stories, options: {}, reasons: scope.reasons, autoStories: scope.stories };
 }
 
 /* "Added because of what the data shows: Where Gaps Are Widest (Job Level scores differ by 17 points)…" */
@@ -343,8 +344,15 @@ export function pickerOptions(built, subject) {
   return out;
 }
 
+/* The Scope follows the widget's form until the person edits the Scope themselves. */
+export function followForm(built, subject) {
+  if (built.autoStories && built.stories.join() !== built.autoStories.join()) return built;
+  const sc = suggestScope(subject, kindOf(built.spec));
+  return { ...built, stories: sc.stories, reasons: sc.reasons, autoStories: sc.stories, options: {} };
+}
+
 export function chooseKind(built, subject, id) {
-  if (formById(id)) return { ...built, spec: rebuildFormSpec(prevOf(built.spec), subject, { form: id }) };
+  if (formById(id)) return followForm({ ...built, spec: rebuildFormSpec(prevOf(built.spec), subject, { form: id }) }, subject);
   return { ...built, spec: { ...fitToSubject(buildSpec(id, subject.topics, built.prompt), subject), title: built.spec.title } };
 }
 

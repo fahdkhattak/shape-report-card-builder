@@ -8,6 +8,7 @@ import { buildSpec } from "../lib/generativeEngine.js";
 import { overallSubject, dimensionSubject } from "../lib/scopeSubject.js";
 import { T, radius } from "../lib/tokens.js";
 import "../lib/ds.js";
+import "../index.css";
 import ScopeRecipe from "../components/scope/scopeRecipes.jsx";
 import { StoryStyleContext } from "../components/scope/stories/storyStyle.js";
 import { STORIES } from "../components/widgetbuilder/storyCatalog.jsx";
@@ -15,6 +16,7 @@ import { SAMPLE_SUBJECTS } from "../components/developer/sampleSubjects.js";
 import { ScopeNavContext } from "../components/scope/scopeNav.js";
 import EffectBreakdownStory from "../components/scope/stories/EffectBreakdown.jsx";
 import { SHELL_PADDING } from "../lib/widgetStructure.js";
+import { customFor } from "../lib/widgetCustom.js";
 
 /* Scratch: ?scopes=a,b&style=refined (report Scopes) · ?family=a,b (library forms) or ?forms&only=a,b&subject=dim|overall&axes=gender,tenure (builder forms; axes repeats each form per grouping). */
 const params = new URLSearchParams(location.search);
@@ -56,6 +58,22 @@ if (params.has("effect")) {
   cells = cases.flatMap(([viz, topics]) => [buildSpec(viz, topics, topics.join(" and ")).size].map((size) => {
     const spec = { ...buildSpec(viz, topics, topics.join(" and ")), size };
     return <Card key={viz + size} id={`${viz}:${size}`} size={size} title={spec.title}><GeneratedBody spec={spec} /></Card>;
+  }));
+} else if (params.has("custom")) {
+  // ?custom&subject=0..4 — every builder form, at every size, with every evidence choice and with / without a link
+  // (lib/widgetCustom.js): the Widget Builder's editor can't offer a combination that fails the structure check.
+  const subject = SAMPLE_SUBJECTS[Number(params.get("subject")) || 0].subject;
+  cells = FORMS.filter((f) => !f.blocked(subject)).flatMap((f) => f.sizes.flatMap((size) => {
+    const base = buildFormSpec(f.id, subject, { size });
+    if (base.size !== size) return [];
+    const can = customFor(base);
+    const evs = [...(can.evidence === "toggle" ? [{ evidence: false }] : []), ...can.kinds.map((k) => ({ evidence: true, evidenceKind: k.id }))];
+    const acts = can.action === "toggle" ? [null, "details"] : [null];
+    return (evs.length ? evs : [{}]).flatMap((e) => acts.map((a) => {
+      const spec = { ...base, custom: { ...e, action: a } };
+      const id = `${f.id}:${size}:${e.evidence === false ? "none" : e.evidenceKind || "-"}:${a || "-"}`;
+      return <Card key={id} id={id} size={size} title={spec.title}><GeneratedBody spec={spec} /></Card>;
+    }));
   }));
 } else if (params.has("forms")) {
   const subject = params.get("subject") === "dim" ? dimensionSubject("Corporate Culture") : overallSubject();

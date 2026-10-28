@@ -140,3 +140,24 @@ body {
 .range-dual input[type="range"]::-webkit-slider-runnable-track { background: transparent; }
 .hm-head:hover, .hm-head:focus-within { z-index: 6 !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Widget Evidence Section (2x2 and up): hugs its content (24 to 68px) unless it carries a bar-type element, which takes the
+   full 68 with its text (widgets/primitives.jsx Evidence, lib/widgetStructure.js). */
+.ev-hug:has([data-part="status-bar"], [data-part="age-scale"]) { height: 68px; }
+
+/* Widget Builder editor (widgetbuilder/WidgetEditor.jsx): every part of the preview can be clicked to edit it; the open
+   section is outlined on the widget. */
+.wb-edit [data-part="widget-header"], .wb-edit [data-part^="section-"] { cursor: pointer; border-radius: 4px; transition: outline-color 150ms ease, background-color 150ms ease; outline: 2px solid transparent; outline-offset: 3px; }
+.wb-edit [data-part="widget-header"]:hover, .wb-edit [data-part^="section-"]:hover { outline-color: var(--ds-color-border-secondary); }
+.wb-focus-header [data-part="widget-header"], .wb-focus-insight [data-part="section-insight"], .wb-focus-evidence [data-part="section-evidence"], .wb-focus-action [data-part="section-action"] { outline-color: var(--ds-color-button-accent-primary-bg-default) !important; }
+.wb-edit-row:hover { background: var(--ds-color-interactive-ghost-hover); }
+.wb-edit-row:focus-visible { outline: 2px solid var(--ds-color-button-accent-primary-bg-default); outline-offset: 1px; }
+.wb-thumb:hover { background: var(--ds-color-interactive-ghost-hover); }
+
+/* Recipe boards (developer/RecipeBoard.jsx): an open option darkens on hover; keyboard focus gets a ring. */
+.recipe-opt:not([aria-disabled]):not([aria-checked="true"]):hover { color: var(--ds-color-text-primary) !important; }
+.recipe-opt:focus-visible { outline: 2px solid var(--ds-color-button-accent-primary-bg-default); outline-offset: 1px; }
+
+/* Survey page (components/surveypage/): hover on an unpicked scale point */
+.survey-point[aria-checked="false"]:not(:disabled):hover { background: var(--ds-color-interactive-ghost-hover) !important; }
+.survey-point:focus-visible { outline: 2px solid var(--ds-color-border-focus); outline-offset: -3px; }

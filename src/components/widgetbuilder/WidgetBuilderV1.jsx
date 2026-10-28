@@ -12,14 +12,14 @@ import { TypingDots } from "../chat/Bubble.jsx";
 import mascot from "../../assets/mascot-avatar.svg";
 import { buildWidget, refine, openingReply, noMatchReply, startingChips, caseIdeas, pickerOptions, chooseKind } from "./builderEngine.js";
 import WidgetOptions from "./WidgetOptions.jsx";
+import WidgetEditor, { EditableWidget } from "./WidgetEditor.jsx";
+import BuilderViewMenu from "./BuilderViewMenu.jsx";
 import ScopeOutline, { useWidth, storyDomId, RAIL_W } from "./ScopeOutline.jsx";
 import { STORIES, storyById, placeStory, removeStoryKeys, againIds, baseId, hasStory, placementForm } from "./storyCatalog.jsx";
 import StoryToolbar from "./StoryToolbar.jsx";
 import { ScopeNavContext } from "../scope/scopeNav.js";
 import { useLayerStack, LayerBody, Breadcrumb } from "../scope/layers.jsx";
-import { WidgetBuilderVersions } from "./WidgetBuilderVersions.jsx";
-import { StoryStyleToggle } from "./StoryStyleToggle.jsx";
-import { PreviewWidthToggle, PreviewFrame } from "./PreviewWidth.jsx";
+import { PreviewFrame } from "./PreviewWidth.jsx";
 import { useStoryStyle, StoryMetaContext } from "../scope/stories/storyStyle.js";
 import { SHELL_PADDING } from "../../lib/widgetStructure.js";
 
@@ -135,21 +135,19 @@ function WidgetPreview({ spec }) {
 const eyebrow = { fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", textTransform: "uppercase", color: T.gray500, fontFamily: font };
 
 function WidgetSection({ built, subject, onChange }) {
-  const { spec, prompt } = built;
+  const { spec } = built;
   const types = pickerOptions(built, subject);
-  const [title, setTitle] = useState(spec.title);
-  useEffect(() => setTitle(spec.title), [spec.title]);
-  const commit = () => { const t = title.trim(); if (t && t !== spec.title) onChange({ ...built, spec: { ...spec, title: t } }); else setTitle(spec.title); };
+  // Which section of the widget is open in the editor (WidgetEditor.jsx); click a part of the preview to open it.
+  const [focus, setFocus] = useState(null);
   return (
     <section style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
-      <WidgetPreview spec={spec} />
-      <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={eyebrow}>Title</span>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === "Enter" && e.target.blur()} className="field-soft" style={{ fontFamily: font, fontSize: 16, fontWeight: 600, padding: "8px 12px", borderRadius: radius.md, color: T.gray900 }} />
-        </div>
+      <div style={{ position: "sticky", top: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+        <EditableWidget focus={focus} onFocus={setFocus}><WidgetPreview spec={spec} /></EditableWidget>
+        <span style={{ fontSize: 11, color: T.gray400, textAlign: "center" }}>Click any part to edit it</span>
+      </div>
+      <div style={{ flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={eyebrow}>Widget</span>
+          <span style={eyebrow}>Show it as</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {types.map((o) => (
               <button
@@ -161,9 +159,13 @@ function WidgetSection({ built, subject, onChange }) {
               </button>
             ))}
           </div>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: T.gray500 }}>{spec.explanation}</p>
         </div>
         <WidgetOptions built={built} subject={subject} onChange={onChange} />
-        <p style={{ margin: 0, fontSize: 13, lineHeight: "18px", color: T.gray500 }}>{spec.explanation}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={eyebrow}>Edit by section</span>
+          <WidgetEditor built={built} onChange={onChange} focus={focus} setFocus={setFocus} />
+        </div>
       </div>
     </section>
   );
@@ -331,9 +333,7 @@ export default function WidgetBuilderV1({ state, setState, navExpanded, onNavExp
         <div style={{ height: 44, flexShrink: 0, background: T.white, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 32px" }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: T.gray700 }}>Widget Builder</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {built && <PreviewWidthToggle />}
-          {built && <StoryStyleToggle value={storyStyle} onChange={onStoryStyleChange} />}
-          <WidgetBuilderVersions value={version} onChange={onVersionChange} />
+          <BuilderViewMenu built={built} storyStyle={storyStyle} onStoryStyleChange={onStoryStyleChange} version={version} onVersionChange={onVersionChange} />
           {built && (
             <>
               <Button theme="brand" variation="ghost" size="xs" onClick={() => setState({ messages: [], built: null })}>Start over</Button>

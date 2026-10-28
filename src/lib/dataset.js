@@ -1,4 +1,9 @@
-import raw from "../data/shape-survey-dataset.json";
+import sample from "../data/shape-survey-dataset.json";
+import { activeSource } from "./dataSource.js";
+import { shapeAsLegacy } from "./survey/legacyAdapter.js";
+// Which dataset every widget, Story and Scope reads (lib/dataSource.js): the prototype sample, or the SHAPE survey shaped
+// to the same structure. Read once at load.
+const raw = activeSource() === "shape" ? shapeAsLegacy() : sample;
 import { STRIVING_AT, statusName } from "./bands.js";
 
 /* ================================================================== */

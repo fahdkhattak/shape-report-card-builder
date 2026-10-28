@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { font } from "../../lib/tokens.js";
 import { ds, dsText, dsSpace } from "../../lib/ds.js";
-import { TrendPill, Sections, Insight, Evidence } from "./primitives.jsx";
+import { TrendPill, Sections, Insight, Evidence, FillBox } from "./primitives.jsx";
 import { useElementWidth } from "../scope/stories/storyWidth.js";
 import { GRAPH_LIMITS } from "../../lib/insightRules.js";
 import { bandKind } from "../../lib/bands.js";
@@ -34,16 +34,18 @@ const LINE_COLOURS = [ds.text.accent, ds.graph.hotPink, ds.graph.goldenYellow];
 
 /* series: [{ label?, points: number[] }] (one for 1x1). labels: x labels, one per point.
    benchmark: { value, label?, positive? } (2x2 only, at most one). */
-export function GraphLine({ series, labels, size = "1x1", benchmark }) {
+export function GraphLine({ series, labels, size = "1x1", benchmark, height }) {
   const ref = useRef(null);
   const w = useElementWidth(ref, size === "1x1" ? 100 : 280);
   const big = size === "2x2";
   const ticks = big ? [100, 80, 60, 40, 20, 0] : [100, 50, 0];
-  const plotH = (ticks.length - 1) * INTERVAL;
+  // `height` (the whole graph, labels included): the plot stretches to fill it; never tighter than the 28px tick interval.
+  const plotH = height ? Math.max((ticks.length - 1) * INTERVAL, height - PAD_TOP - X_LABEL_GAP - X_LABEL_H) : (ticks.length - 1) * INTERVAL;
   const maxPts = GRAPH_LIMITS[size].points;
   const lines = series.slice(0, GRAPH_LIMITS[size].lines).map((s) => ({ ...s, points: s.points.slice(-maxPts) }));
   const n = lines[0].points.length;
-  const xs = labels.slice(-n);
+  // A 1x1 has about 44px per round: "Nov 25" labels run together, so it shows the month alone ("Nov").
+  const xs = labels.slice(-n).map((l) => (size === "1x1" ? String(l).split(" ")[0] : l));
   const plotW = Math.max(40, w - TICK_W - 6);
   const x = (i) => (n === 1 ? plotW / 2 : EDGE + (i * (plotW - 2 * EDGE)) / (n - 1));
   const y = (v) => PAD_TOP + (1 - Math.max(0, Math.min(100, v)) / 100) * plotH;
@@ -113,18 +115,14 @@ export default function GraphInsight({ series, labels, size = "1x1", delta, benc
   const several = series.length > 1;
   return (
     <Sections size={size}>
-    <Insight style={{ gap: big ? dsSpace[12] : dsSpace[8], justifyContent: big ? "flex-start" : "flex-end" }}>
+    <Insight style={{ gap: big ? dsSpace[12] : 0, justifyContent: big ? "flex-end" : "flex-start" }}>
       {big && delta != null && <div style={{ display: "flex", justifyContent: "center" }}><TrendPill delta={delta} /></div>}
-      {/* 1x1: the graph's height is fixed by the rules and a two-line title leaves no room for a pill row, so the caret
-          pill sits inside the plot's right corner, above the latest point — at the bottom instead when that point is
-          high (70+, the pill covers the band above about 78), so it never covers the line. */}
-      <div style={{ position: "relative" }}>
-        <GraphLine series={series} labels={labels} size={size} benchmark={big ? benchmark : null} />
-        {!big && delta != null && (() => {
-          const last = series[0].points[series[0].points.length - 1];
-          return <div style={{ position: "absolute", right: 0, ...(last >= 70 ? { bottom: 30 } : { top: 0 }) }}><TrendPill delta={delta} compact /></div>;
-        })()}
-      </div>
+      {/* 1x1 (the design's Score History card): the caret pill has its own row above the plot, at the right, so it never
+          sits on the line or a gridline. The header gives way to one line when the card needs the room. */}
+      {!big && delta != null && <div data-part="trend-row" style={{ display: "flex", justifyContent: "flex-end" }}><TrendPill delta={delta} compact /></div>}
+      {/* 2x2: the pill, 12px, then the graph takes every pixel left (FillBox measures it). */}
+      {big ? <FillBox min={(6 - 1) * INTERVAL + PAD_TOP + X_LABEL_GAP + X_LABEL_H}>{(h) => <GraphLine series={series} labels={labels} size={size} benchmark={benchmark} height={h} />}</FillBox>
+        : <GraphLine series={series} labels={labels} size={size} />}
       {big && several && (
         <div style={{ display: "flex", gap: dsSpace[12], flexWrap: "wrap" }}>
           {series.slice(0, 3).map((s, i) => (

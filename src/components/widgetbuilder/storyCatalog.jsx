@@ -312,14 +312,35 @@ const SUGGESTERS = {
 };
 
 /* { stories, reasons }: the default Scope with the Stories the data calls for, and why each extra is there. */
-export function suggestScope(subject) {
+/* The Stories that expand on each widget form, in the order they should lead the Scope (after the Insight Summary). A
+   History widget opens into the trend; a Groups widget into who is in each group and where the gaps are; a Spread widget
+   into how scores are spread… The rest of the default Scope follows. */
+export const FORM_STORIES = {
+  score: ["meaning", "trend", "diagnostic"], gauge: ["meaning", "reach"], status: ["meaning", "distribution", "spread"],
+  history: ["trend", "changes", "goal"], parts: ["breakdown", "diagnostic", "priority"], profile: ["breakdown", "diagnostic", "rank"],
+  people: ["distribution", "spread"], groups: ["composition", "gap", "areas", "bright"], composition: ["composition"],
+  focus: ["areas", "gap", "bright"], movers: ["changes", "trend"], spread: ["spread", "distribution"], goal: ["goal", "trend"],
+  index: ["breakdown", "diagnostic"], team: ["composition", "gap", "areas"], versus: ["gap", "composition"], duel: ["connected", "trend"],
+  check: ["diagnostic", "reach", "areas"], whatif: ["reach", "priority"], heat: ["trend", "changes"], momentum: ["trend", "changes"], nudge: ["actions", "diagnostic", "reach"],
+};
+const FORM_NAME = { score: "Score", gauge: "Ring", status: "Status", history: "History", parts: "Parts", profile: "Profile", people: "People", groups: "Groups", composition: "Composition", focus: "Focus", movers: "Movers", spread: "Spread", goal: "Goal", index: "Index", team: "Group", versus: "Versus", duel: "Head to head", check: "Health check", whatif: "What if", heat: "Heat strip", momentum: "Momentum", nudge: "Next Step" };
+
+export function suggestScope(subject, form) {
   let stories = suggestStories(subject);
   const reasons = {};
+  // Lead with the Stories that expand on this form, right after the Insight Summary.
+  const lead = (FORM_STORIES[form] || []).filter((id) => { const d = storyById(id); return d && !d.blocked(subject); });
+  const head = lead.length && stories.includes("summary") ? ["summary"] : [];
+  if (lead.length) {
+    stories = stories.filter((id) => !head.includes(id) && !lead.includes(id));
+    lead.forEach((id) => { if (!suggestStories(subject).includes(id)) reasons[id] = `Expands on the ${FORM_NAME[form] || form} widget`; });
+  }
   const hits = Object.entries(SUGGESTERS)
     .map(([id, fn]) => { const def = storyById(id); if (!def || def.blocked(subject) || stories.includes(id)) return null; let hit = null; try { hit = fn(subject); } catch { hit = null; } return hit ? { id, ...hit } : null; })
     .filter(Boolean).sort((a, b) => b.strength - a.strength).slice(0, R.max);
-  hits.forEach((h) => { stories = insertStory(stories, h.id); reasons[h.id] = h.why; });
-  return { stories, reasons };
+  hits.forEach((h) => { if (!lead.includes(h.id)) { stories = insertStory(stories, h.id); reasons[h.id] = h.why; } });
+  // The form's own Stories stay at the top, after the Insight Summary; the data-driven extras slot in below them.
+  return { stories: [...head, ...lead, ...stories], reasons };
 }
 
 /* Insert after the last present placement that precedes it in the taxonomy (or is the same Story). */

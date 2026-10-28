@@ -25,6 +25,9 @@ import RelationshipsDoc, { meta as relMeta, toc as relToc } from "./docs/Relatio
 import ControlsDoc, { meta as controlsMeta, toc as controlsToc } from "./docs/ControlsDoc.jsx";
 import TokenAuditDoc, { meta as auditMeta, toc as auditToc } from "./docs/TokenAuditDoc.jsx";
 import StoryFamiliesDoc, { meta as famMeta, toc as famToc } from "./docs/StoryFamiliesDoc.jsx";
+import StoryStructureDoc, { meta as ssMeta, toc as ssToc } from "./docs/StoryStructureDoc.jsx";
+import StoryRecipeDoc, { meta as srMeta, toc as srToc } from "./docs/StoryRecipeDoc.jsx";
+import WidgetRecipeDoc, { meta as wrMeta, toc as wrToc } from "./docs/widgets/WidgetRecipeDoc.jsx";
 import StoryAvailabilityDoc, { meta as availMeta, toc as availToc } from "./docs/StoryAvailabilityDoc.jsx";
 import StorySweepDoc, { meta as sweepMeta, toc as sweepToc } from "./docs/StorySweepDoc.jsx";
 import DataModelDoc, { meta as dataMeta, toc as dataToc } from "./docs/DataModelDoc.jsx";
@@ -75,10 +78,12 @@ const COMPONENTS = [{ meta: controlsMeta, toc: controlsToc, Page: ControlsDoc }]
 /* Widgets: the rules and review pages, one page per Library family (docs/widgets/, built with widgetDoc.jsx), and one page each
    for the SHAPE report's widgets and the Widget Builder's forms. */
 const WIDGET_EXTRA = [{ meta: shapeWMeta, toc: shapeWToc, Page: ShapeWidgetsDoc }, { meta: builderWMeta, toc: builderWToc, Page: BuilderWidgetsDoc }];
-const WIDGETS = [{ meta: wsMeta, toc: wsToc, Page: WidgetStructureDoc }, { meta: allWMeta, toc: allWToc, Page: AllWidgetsDoc }, ...WIDGET_PAGES, ...WIDGET_EXTRA];
+const WIDGETS = [{ meta: wsMeta, toc: wsToc, Page: WidgetStructureDoc }, { meta: wrMeta, toc: wrToc, Page: WidgetRecipeDoc }, { meta: allWMeta, toc: allWToc, Page: AllWidgetsDoc }, ...WIDGET_PAGES, ...WIDGET_EXTRA];
 /* Data: survey records (data/import-survey.js). More records go here; a switcher can pick between them later. */
 const DATA = [{ meta: surveyMeta, toc: surveyToc, Page: ShapeSurveyDoc }, { meta: datasetMeta, toc: datasetToc, Page: ShapeDatasetDoc }];
-const ALL_DOCS = [...DOCS, ...WIDGETS, ...DATA, ...COMPONENTS, ...FOUNDATIONS];
+/* Stories: the skeleton every Story is built on, first in the Stories group (the counterpart of Widget structure). */
+const STORY_RULES = [{ meta: ssMeta, toc: ssToc, Page: StoryStructureDoc }, { meta: srMeta, toc: srToc, Page: StoryRecipeDoc }];
+const ALL_DOCS = [...STORY_RULES, ...DOCS, ...WIDGETS, ...DATA, ...COMPONENTS, ...FOUNDATIONS];
 DOCS.forEach((d) => { DOCS_BY_STORY[d.meta.name] = d.meta.id; });
 /* The Breakdown page also covers these two forms (they are separate Stories in the catalogue). */
 ["Mental Well-Being", "Health Age Drivers", "Who Is Where", "How Scores Are Spread"].forEach((n) => { DOCS_BY_STORY[n] = breakdownMeta.id; });
@@ -138,6 +143,9 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
           <div style={{ ...dsText("Text md", 600), color: ds.text.primary }}>Developer</div>
           <div style={{ ...dsText("Text 2xs"), lineHeight: "17px", color: ds.text.tertiary, marginTop: dsSpace[2] }}>Components, states, and specs. The handoff, live.</div>
         </div>
+        <div style={groupLabel}>Stories</div>
+        <button onClick={() => setDocId(ssMeta.id)} style={sideItem(doc.meta.id === ssMeta.id)}>Story structure</button>
+        <button onClick={() => setDocId(srMeta.id)} style={sideItem(doc.meta.id === srMeta.id)}>Story recipes</button>
         <div style={groupLabel}>Stories by family</div>
         {FAMILIES.map((f) => {
           const ff = FAMILY_FORMS[f.name];
@@ -171,6 +179,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
         })}
         <div style={groupLabel}>Widgets</div>
         <button onClick={() => setDocId(wsMeta.id)} style={sideItem(doc.meta.id === wsMeta.id)}>Widget structure</button>
+        <button onClick={() => setDocId(wrMeta.id)} style={sideItem(doc.meta.id === wrMeta.id)}>Widget recipes</button>
         <button onClick={() => setDocId(allWMeta.id)} style={sideItem(doc.meta.id === allWMeta.id)}>All widgets</button>
         {WIDGET_EXTRA.map((d) => <button key={d.meta.id} onClick={() => setDocId(d.meta.id)} style={sideItem(d.meta.id === doc.meta.id)}>{d.meta.name}</button>)}
         {WIDGET_GROUPS.map((g) => {
@@ -203,7 +212,7 @@ export default function DeveloperScreen({ navExpanded, onNavExpandedChange, onOp
                 <SegmentedControl options={doc.meta.views.map((v) => ({ id: v.id, label: v.label }))} value={activeView} onChange={pickView} />
               </div>
             )}
-            {!["token-audit", "data-model", "widget-type-system", "tooltips"].includes(doc.meta.id) && !["Widgets", "Data"].includes(doc.meta.group) && (
+            {!["token-audit", "data-model", "widget-type-system", "tooltips", "story-recipe"].includes(doc.meta.id) && !["Widgets", "Data"].includes(doc.meta.group) && (
               <div style={{ display: "flex", alignItems: "center", gap: dsSpace[8] }}>
                 <span style={{ ...dsText("Text 2xs"), color: ds.text.tertiary }}>Style</span>
                 <SegmentedControl options={[{ id: "classic", label: "Current" }, { id: "refined", label: "Refined" }]} value={style} onChange={pickStyle} />

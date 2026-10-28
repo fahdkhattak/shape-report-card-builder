@@ -221,7 +221,12 @@ export function DonutInsight({ axisKey, label, rows, size = "1x1", legend = true
    [{ group, n, pct }]. The form follows the count (lib/insightRules.js compositionFit): 4 or fewer → `form` "grid" (tiles
    over a proportion bar) or "donut" at 1x1; 5 to 7 → donut at 1x1; more than 7 → a 2x2 donut. `format` writes a value on
    a tile ("$26K", "19 hrs"); `tipText` writes it in the hover (default "155 people"). */
-export function CompositionInsight({ rows, axisKey, label, size = "1x1", form = "grid", legend = true, format = (v) => v, tipText }) {
+export function CompositionInsight({ rows: given, axisKey, label, size = "1x1", form = "grid", legend = true, format = (v) => v, tipText }) {
+  // A widget never draws bigger than its card: a 1x1 holds at most 7 slices, so past that the six largest stay and the
+  // rest become one "Other" slice (the 2x2 form shows every group).
+  const rows = size === "1x1" && given.length > 7
+    ? (() => { const sorted = [...given].sort((a, b) => b.n - a.n), rest = sorted.slice(6); return [...sorted.slice(0, 6), { group: `Other (${rest.length} groups)`, n: rest.reduce((t, r) => t + r.n, 0), pct: rest.reduce((t, r) => t + r.pct, 0) }]; })()
+    : given;
   const allowed = compositionFit(rows.length);
   const sz = allowed[size] ? size : "2x2";
   const f = allowed[sz].includes(form) ? form : "donut";

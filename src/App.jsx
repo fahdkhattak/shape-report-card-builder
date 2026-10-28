@@ -1,3 +1,4 @@
+import { peekReopenScreen, clearReopenScreen } from "./lib/dataSource.js";
 import { useState, useEffect } from "react";
 import { MotionConfig, AnimatePresence } from "motion/react";
 import { T } from "./lib/tokens.js";
@@ -11,6 +12,7 @@ import SurveyBuilderScreen from "./components/survey/SurveyBuilderScreen.jsx";
 import WidgetBuilderScreen from "./components/widgetbuilder/WidgetBuilderScreen.jsx";
 import DeveloperScreen from "./components/developer/DeveloperScreen.jsx";
 import DashboardsScreen from "./components/dashboards/DashboardsScreen.jsx";
+import SurveyPage from "./components/surveypage/SurveyPage.jsx";
 import { NavActionsContext } from "./lib/navActions.js";
 import SearchOverlay from "./components/shell/SearchOverlay.jsx";
 import { SHAPE_REPORT_WIDGETS } from "./components/shape/shapeWidgets.jsx";
@@ -36,7 +38,9 @@ const DEFAULT_ORG_WIDGETS = [
 ].map(([familyId, formIndex]) => ({ familyId, formIndex }));
 
 export default function App() {
-  const [screen, setScreen] = useState("landing");
+  // After a data source switch (lib/dataSource.js) the app reloads and reopens the screen it was switched from.
+  const [screen, setScreen] = useState(() => peekReopenScreen() || "landing");
+  useEffect(() => { clearReopenScreen(); }, []);
   const [canvasProps, setCanvasProps] = useState({ initialWidgets: [], scopeLabel: null, chatOpen: false, generating: false });
   const [scopeInfo, setScopeInfo] = useState(null); // { areaLabel, drivers } once the opening scoping conversation confirms, else null
   const [navExpanded, setNavExpanded] = useState(false); // lifted so NavRail's expand/collapse survives screen transitions, not reset per remount
@@ -97,6 +101,7 @@ export default function App() {
   const goLibrary = () => setScreen("library");
   const goDeveloper = () => setScreen("developer"); // the handoff area (components/developer/)
   const goDashboards = () => setScreen("dashboards"); // dashboard redesign mockups (components/dashboards/)
+  const goSurvey = () => setScreen("survey"); // the respondent survey page (components/surveypage/)
   const addToOrgReport = (familyId, formIndex) => setOrgLibrary((l) => (l.some((w) => w.familyId === familyId && w.formIndex === formIndex) ? l : [...l, { familyId, formIndex }]));
   const removeFromOrgReport = (familyId, formIndex) => setOrgLibrary((l) => l.filter((w) => !(w.familyId === familyId && w.formIndex === formIndex)));
 
@@ -178,7 +183,7 @@ export default function App() {
     // per Apple's own reduced-motion guidance: a gentler equivalent, not a
     // silent removal of all feedback. Set once here rather than per-component.
     <MotionConfig reducedMotion="user">
-    <NavActionsContext.Provider value={{ openReport: openReportById, openWidgetBuilder: goWidgetBuilder, openLibrary: goLibrary, openDeveloper: goDeveloper, openDashboards: goDashboards }}>
+    <NavActionsContext.Provider value={{ openReport: openReportById, openWidgetBuilder: goWidgetBuilder, openLibrary: goLibrary, openDeveloper: goDeveloper, openDashboards: goDashboards, openSurvey: goSurvey }}>
     <div style={{ width: "100%", height: "100vh", background: T.white }}>
       {screen === "landing" && (
         <ChatLanding
@@ -249,6 +254,15 @@ export default function App() {
       )}
       {screen === "dashboards" && (
         <DashboardsScreen
+          navExpanded={navExpanded}
+          onNavExpandedChange={setNavExpanded}
+          onOpenSearch={() => setSearchOpen(true)}
+          onOpenReportBuilder={goHome}
+          onOpenSurveyBuilder={goSurveyBuilder}
+        />
+      )}
+      {screen === "survey" && (
+        <SurveyPage
           navExpanded={navExpanded}
           onNavExpandedChange={setNavExpanded}
           onOpenSearch={() => setSearchOpen(true)}

@@ -4,5 +4,5 @@ import { createContext, useContext } from "react";
    opening a built report from the sidebar, the Create menu's Widget Builder, and the Library screen. A context rather than one
    more prop threaded through ChatLanding / CanvasScreen / all three Survey
    Builder screens, each of which already renders its own <NavRail>. */
-export const NavActionsContext = createContext({ openReport: () => {}, openWidgetBuilder: () => {}, openLibrary: () => {}, openDeveloper: () => {}, openDashboards: () => {} });
+export const NavActionsContext = createContext({ openReport: () => {}, openWidgetBuilder: () => {}, openLibrary: () => {}, openDeveloper: () => {}, openDashboards: () => {}, openSurvey: () => {} });
 export const useNavActions = () => useContext(NavActionsContext);

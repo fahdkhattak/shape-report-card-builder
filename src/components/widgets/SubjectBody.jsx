@@ -2,8 +2,10 @@ import { Check, AlertTriangle, X, ArrowRight } from "lucide-react";
 import { T, font, band } from "../../lib/tokens.js";
 import {
   TrendPill, EvidenceSegmentBar, StatusBreakdown, DriverGroupedList, driverTier, Sparkline, RadarChart, polar, ScoreDial,
-  Sections, Insight, Evidence,
+  Sections, Insight, Evidence, ActionBar, FillBox, WidgetCustom, useCustom, useShown,
 } from "./primitives.jsx";
+import GenericEvidence from "./GenericEvidence.jsx";
+import { CUSTOM } from "../../lib/widgetCustom.js";
 import { Index, IndexRing, DimensionIndex } from "./RingIndex.jsx";
 import { StatusChip, DeltaPill, Headcount, ScoreHeadline, MoreLine, HistoryChart, FocusRow, Footnote, fmtDate, date11, muted11, STATUS_COLOR } from "./widgetParts.jsx";
 import { FLOURISHING_AT, STRIVING_AT, statusName, nextLine } from "../../lib/bands.js";
@@ -32,6 +34,8 @@ const B = ({ children, c }) => <b style={{ color: c || ds.text.primary }}>{child
 
 /* ---- Score ---------------------------------------------------------------- */
 function Score({ p, size }) {
+  const shown = useShown(), custom = useCustom();
+  const delta = shown("change") ? p.delta : undefined;
   const bar = p.people ? p.people : p.parts ? { f: p.parts.f, s: p.parts.s, t: p.parts.t } : null;
   // The whole organisation: the Library's Org Score card — headcount and participation, no status chip.
   if (p.org) {
@@ -40,18 +44,18 @@ function Score({ p, size }) {
       return (
         <Sections size="1x1">
           <Insight style={{ justifyContent: "space-between" }}>
-            <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
-            <span style={date11}>{fmtDate(p.date)}</span>
+            <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={delta} size={p.value >= 100 ? 48 : 64} compact /></div>
+            {shown("date") && <span style={date11}>{fmtDate(p.date)}</span>}
           </Insight>
-          <Evidence>{hc(false)}</Evidence>
+          {shown("headcount") && <Evidence>{hc(false)}</Evidence>}
         </Sections>
       );
     }
     return (
       <Sections size={size}>
         <Insight style={{ justifyContent: "space-between" }}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={date11}>{fmtDate(p.date)}</span>{hc(true)}</div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={delta} /></div>
+          {(shown("date") || shown("headcount")) && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{shown("date") && <span style={date11}>{fmtDate(p.date)}</span>}{shown("headcount") && hc(true)}</div>}
         </Insight>
         {bar && (
           <Evidence style={{ gap: 12 }}>
@@ -67,8 +71,8 @@ function Score({ p, size }) {
     return (
       <Sections size="1x1">
         <Insight style={{ justifyContent: "space-between" }}>
-          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} size={p.value >= 100 ? 48 : 64} compact /></div>
-          <span style={date11}>{fmtDate(p.date)}</span>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={delta} size={p.value >= 100 ? 48 : 64} compact /></div>
+          {shown("date") && <span style={date11}>{fmtDate(p.date)}</span>}
         </Insight>
         <Evidence><StatusChip status={p.status} /></Evidence>
       </Sections>
@@ -77,18 +81,19 @@ function Score({ p, size }) {
   return (
     <Sections size={size}>
       <Insight style={{ justifyContent: "space-between" }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={p.delta} /></div>
+        <div style={{ flex: 1, display: "flex", alignItems: "center" }}><ScoreHeadline value={p.value} delta={delta} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={date11}>{fmtDate(p.date)}</span>
-          <StatusChip status={p.status} />
-          {p.strongest && p.weakest && (
+          {shown("date") && <span style={date11}>{fmtDate(p.date)}</span>}
+          {shown("status") && <StatusChip status={p.status} />}
+          {shown("highlights") && p.strongest && p.weakest && (
             <span style={sentence}>
               <B>{p.strongest[0]}</B> is strongest at <B c={band(p.strongest[1]).cs}>{p.strongest[1]}</B>; <B>{p.weakest[0]}</B> is lowest at <B c={band(p.weakest[1]).cs}>{p.weakest[1]}</B>.
             </span>
           )}
         </div>
       </Insight>
-      {p.people ? (
+      {/* Evidence: who is where (people by status) by default; the parts by status when chosen, or when there are no people. */}
+      {p.people && custom.evidenceKind !== "parts" ? (
         <Evidence style={{ gap: 12 }}>
           <EvidenceSegmentBar flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} />
           <StatusBreakdown flourishing={p.people.f} striving={p.people.s} struggling={p.people.t} />
@@ -100,11 +105,12 @@ function Score({ p, size }) {
 
 /* ---- Ring (was a 270° gauge; a full ring matches the Meaning story) ---- */
 function GaugeForm({ p, size }) {
+  const shown = useShown();
   if (size === "1x1") return <Only size="1x1" center style={{ alignItems: "center" }}><ScoreDial value={p.value} size={100} stroke={11} numberSize={26} wordSize={9} /></Only>;
   const nl = nextLine(p.value), next = nl ? { at: nl, name: statusName(nl) } : null;
   return (
     <Two size={size} style={{ position: "relative", alignItems: "center", justifyContent: "center" }}
-      insight={<><div style={{ position: "absolute", top: 0, right: 0 }}><TrendPill delta={p.delta} /></div><ScoreDial value={p.value} size={180} stroke={18} numberSize={48} wordSize={13} /></>}
+      insight={<div data-part="ring-group" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>{shown("change") && <TrendPill delta={p.delta} />}<ScoreDial value={p.value} size={168} stroke={17} numberSize={48} wordSize={13} /></div>}
       evidence={<span style={sentence}>{next ? <><B c={band(p.value).cs}>{pts(next.at - p.value)}</B> from <B>{next.name}</B> (a score of {next.at}).</> : <>Above the Flourishing line of <B>{FLOURISHING_AT}</B> by <B c={ds.status.success.textIndicator}>{pts(p.value - FLOURISHING_AT)}</B>.</>}</span>} />
   );
 }
@@ -118,7 +124,8 @@ function StatusForm({ p, size }) {
 
 /* ---- History --------------------------------------------------------------- */
 function HistoryForm({ p, size }) {
-  return <GraphInsight series={[{ points: p.points }]} labels={p.labels} size={size} delta={p.delta} evidence={<HistoryCaption points={p.points} labels={p.labels} />} />;
+  const shown = useShown();
+  return <GraphInsight series={[{ points: p.points }]} labels={p.labels} size={size} delta={shown("change") ? p.delta : undefined} evidence={<HistoryCaption points={p.points} labels={p.labels} />} />;
 }
 
 /* ---- Parts ------------------------------------------------------------------- */
@@ -214,7 +221,8 @@ function CompositionForm({ p, size }) {
   const rows = p.rows;
   if (!rows.length) return <Only size={size} center><span style={muted11}>No one to show yet.</span></Only>;
   // The Composition widget's own drawing (ChartInsight.jsx CompositionInsight): a grid up to 4 groups at 1x1, else a donut.
-  return <CompositionInsight rows={rows} axisKey={p.axis} label={size === "1x1" ? p.name : p.axisLabel} size={size === "1x1" ? "1x1" : "2x2"} form={size === "1x1" && rows.length <= 4 ? "grid" : "donut"} legend={size !== "1x1"} />;
+  const kind = useCustom().evidenceKind;
+  return <CompositionInsight rows={rows} axisKey={p.axis} label={size === "1x1" ? p.name : p.axisLabel} size={size === "1x1" ? "1x1" : "2x2"} form={size === "1x1" && rows.length <= 4 ? "grid" : "donut"} legend={kind ? kind === "legend" : size !== "1x1"} />;
 }
 
 /* ---- Focus ----------------------------------------------------------------- */
@@ -270,8 +278,8 @@ function MoversForm({ p, size }) {
 function SpreadForm({ p }) {
   const rows = p.bins.map((b) => ({ label: String(b.from), tipLabel: `Scored ${b.from}–${b.to}`, value: b.n, text: `${b.n} ${b.n === 1 ? "person" : "people"}`, color: band(b.from + 5).c }));
   return (
-    <Two size="2x2" style={{ gap: 12, justifyContent: "space-between" }}
-      insight={<VBars rows={rows} size="2x2" />}
+    <Two size="2x2"
+      insight={<FillBox min={140}>{(h) => <VBars rows={rows} size="2x2" height={Math.max(100, h - 30)} />}</FillBox>}
       evidence={<span style={sentence}>Half of people score between <B>{p.p25}</B> and <B>{p.p75}</B>. The middle score is <B c={band(p.median).cs}>{p.median}</B>.</span>} />
   );
 }
@@ -660,11 +668,48 @@ function MomentumForm({ p, size }) {
   );
 }
 
-const RENDER = { dindex: IndexForm, composition: CompositionForm, story: StoryForm, index: IndexForm, team: TeamForm, versus: VersusForm, duel: DuelForm, check: CheckForm, whatif: WhatIfForm, heat: HeatForm, momentum: MomentumForm, score: Score, gauge: GaugeForm, status: StatusForm, history: HistoryForm, parts: PartsForm, people: PeopleForm, groups: GroupsForm, focus: FocusForm, movers: MoversForm, spread: SpreadForm, goal: GoalForm };
+/* ---- Next Step (an action widget) --------------------------------------------------------------------------------
+   What to act on first. The Action Bar is the point of it: it's always there and opens the actions you can take. */
+function NudgeForm({ p, size }) {
+  const top = p.items[0], b = band(top.value);
+  const link = <span data-part="action-link" style={{ fontSize: 11, fontWeight: 500, color: ds.text.secondary, display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>See actions you can take <span aria-hidden="true">›</span></span>;
+  if (size === "1x1") {
+    return (
+      <Sections size="1x1">
+        <Insight center style={{ gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: ds.text.primary, lineHeight: "16px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{top.label}</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.72, lineHeight: 1, color: b.cs }}>{top.value}</span>
+            <span style={{ fontSize: 11, color: b.cs, fontWeight: 500 }}>{statusName(top.value)}</span>
+          </div>
+        </Insight>
+        <ActionBar>{link}</ActionBar>
+      </Sections>
+    );
+  }
+  return (
+    <Sections size={size}>
+      <Insight style={{ gap: 12 }}>
+        {p.items.map((r) => <FocusRow key={r.label} name={r.label} value={r.value} delta={r.d || undefined} />)}
+      </Insight>
+      {p.of > 1 && <Evidence><span style={sentence}>The lowest <B>{p.items.length}</B> of <B>{p.of}</B> {p.noun}s.</span></Evidence>}
+      <ActionBar>{link}</ActionBar>
+    </Sections>
+  );
+}
+
+const RENDER = { dindex: IndexForm, composition: CompositionForm, story: StoryForm, index: IndexForm, team: TeamForm, versus: VersusForm, duel: DuelForm, check: CheckForm, whatif: WhatIfForm, heat: HeatForm, momentum: MomentumForm, nudge: NudgeForm, score: Score, gauge: GaugeForm, status: StatusForm, history: HistoryForm, parts: PartsForm, people: PeopleForm, groups: GroupsForm, focus: FocusForm, movers: MoversForm, spread: SpreadForm, goal: GoalForm };
 
 export default function SubjectBody({ spec }) {
   const { form, payload, size } = spec;
-  if (form === "profile") return <Only size={size} center><RadarChart items={payload.items} /></Only>;
+  // A built widget's customisation (lib/widgetCustom.js) reaches every section through the context, with what it needs
+  // to draw a generic evidence kind in place of the form's own, and whether the form is an action widget.
+  const custom = spec.custom || CUSTOM[form]?.action === "required" ? {
+    ...(spec.custom || {}),
+    actionRequired: CUSTOM[form]?.action === "required",
+    renderGeneric: (sz) => <GenericEvidence key="generic-evidence" kind={spec.custom?.evidenceKind} facts={payload.ev} size={sz} />,
+  } : null;
+  if (form === "profile") return <WidgetCustom.Provider value={custom}><Only size={size} center><RadarChart items={payload.items} /></Only></WidgetCustom.Provider>;
   const View = RENDER[form] || Score;
-  return <View p={payload} size={size} />;
+  return <WidgetCustom.Provider value={custom}><View p={payload} size={size} /></WidgetCustom.Provider>;
 }

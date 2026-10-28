@@ -165,7 +165,7 @@ export const SECTION_PARTS = [
   { id: "card", name: "Card", note: "The shared widget shell: 1px border + 15px padding = 16px from the edge.", find: (r) => [r.querySelector("[data-widget-card]")] },
   { id: "header", name: "Header", note: "12px for one line, 22px for two.", find: (r) => [r.querySelector('[data-part="widget-header"]')] },
   { id: "insight", name: "Insight", note: "The answer. The only section that stretches.", find: (r) => [r.querySelector('[data-part="section-insight"]')] },
-  { id: "evidence", name: "Evidence", note: "24px Evidence Bar (1x1), 68px Evidence Section (2x2, 3x3). Content at its foot.", find: (r) => [r.querySelector('[data-part="section-evidence"]')] },
+  { id: "evidence", name: "Evidence", note: "24px Evidence Bar (1x1). Evidence Section (2x2, 3x3): hugs its content, 24 to 68px; 68 when it holds a bar.", find: (r) => [r.querySelector('[data-part="section-evidence"]')] },
   { id: "action", name: "Action Bar", note: "24px, content at the right.", find: (r) => [r.querySelector('[data-part="section-action"]')] },
 ];
 const SHELL_SPEC = [

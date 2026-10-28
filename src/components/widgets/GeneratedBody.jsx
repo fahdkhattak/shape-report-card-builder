@@ -26,15 +26,17 @@ export default function GeneratedBody({ spec }) {
     case "form":
       return <SubjectBody spec={spec} />;
     case "scatter": {
+      // Insight: the plot, filling every pixel. Evidence: the takeaway (strength and direction), r and how many people.
       const b = payload.r < 0 ? ds.status.error.textIndicator : ds.status.success.textIndicator;
+      const word = payload.r < -0.4 ? "Strong negative" : payload.r < 0 ? "Weak negative" : payload.r < 0.4 ? "Weak positive" : "Strong positive";
       return (
         <Sections size={size}>
-          <Insight center style={{ gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: b }}>
-              {payload.r < -0.4 ? "Strong negative" : payload.r < 0 ? "Weak negative" : payload.r < 0.4 ? "Weak positive" : "Strong positive"} correlation
+          <Insight><ScatterMini fill topicA={payload.topicA} topicB={payload.topicB} r={payload.r} points={payload.points} /></Insight>
+          <Evidence>
+            <span style={{ fontSize: 11, lineHeight: "16px", color: ds.text.tertiary }}>
+              <b style={{ color: b }}>{word} correlation</b>{size !== "1x1" && payload.r != null && <> · <b style={{ color: ds.text.secondary }}>r = {Math.round(payload.r * 100) / 100}</b>{payload.points?.length ? <> · <b style={{ color: ds.text.secondary }}>{payload.points.length}</b> people</> : null}</>}
             </span>
-            <ScatterMini topicA={payload.topicA} topicB={payload.topicB} r={payload.r} points={payload.points} />
-          </Insight>
+          </Evidence>
         </Sections>
       );
     }

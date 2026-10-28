@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowUp, ArrowDown, ArrowRight, X, Plus, Hash, TrendingUp, CircleDot, BarChart3, ListOrdered, Radar, Smile, ScatterChart, Lightbulb, History, Users, BarChartHorizontal, Crosshair, ArrowUpDown, BarChart2, Flag, Scale, BookOpen, Target, Swords, ClipboardCheck, Sparkles, Grid3x3, Activity, Building2, GitCompare } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowRight, X, Plus, Hash, TrendingUp, CircleDot, BarChart3, ListOrdered, Radar, Smile, ScatterChart, Lightbulb, History, Users, BarChartHorizontal, Crosshair, ArrowUpDown, BarChart2, Flag, Scale, BookOpen, Target, Swords, ClipboardCheck, Sparkles, Grid3x3, Activity, Building2, GitCompare, Footprints } from "lucide-react";
 import { T, font, radius, band } from "../../lib/tokens.js";
 import { subjectFromPrompt } from "../../lib/scopeSubject.js";
 import { dimensionRankedRows } from "../../lib/dataset.js";
@@ -13,15 +13,15 @@ import { TypingDots } from "../chat/Bubble.jsx";
 import mascot from "../../assets/mascot-avatar.svg";
 import { buildWidget, refine, openingReply, noMatchReply, pickerOptions, chooseKind, caseIdeas } from "./builderEngine.js";
 import WidgetOptions from "./WidgetOptions.jsx";
+import WidgetEditor, { EditableWidget } from "./WidgetEditor.jsx";
+import BuilderViewMenu from "./BuilderViewMenu.jsx";
 import ScopeOutline from "./ScopeOutline.jsx";
 import { storyById, placeStory, removeStoryKeys, againIds, baseId, placementForm } from "./storyCatalog.jsx";
 import StoryToolbar from "./StoryToolbar.jsx";
 import { ScopeNavContext } from "../scope/scopeNav.js";
 import { useLayerStack, LayerBody, Breadcrumb } from "../scope/layers.jsx";
 import { RichText, AddStoryMenu } from "./WidgetBuilderV1.jsx";
-import { WidgetBuilderVersions } from "./WidgetBuilderVersions.jsx";
-import { StoryStyleToggle } from "./StoryStyleToggle.jsx";
-import { PreviewWidthToggle, PreviewFrame } from "./PreviewWidth.jsx";
+import { PreviewFrame } from "./PreviewWidth.jsx";
 import { useStoryStyle, StoryMetaContext } from "../scope/stories/storyStyle.js";
 
 /* ================================================================== */
@@ -57,7 +57,7 @@ const SHADOW = "0 1px 2px rgba(35,31,32,0.06), 0 12px 28px -12px rgba(35,31,32,0
 const SHADOW_SOFT = "0 1px 2px rgba(35,31,32,0.05), 0 6px 16px -8px rgba(35,31,32,0.14)";
 const LEFT_W = 340; // the outline + conversation column
 
-const TYPE_ICONS = { score: Hash, gauge: CircleDot, status: Smile, history: TrendingUp, parts: ListOrdered, profile: Radar, people: Users, groups: BarChartHorizontal, focus: Crosshair, movers: ArrowUpDown, spread: BarChart2, goal: Flag, story: BookOpen, index: Target, team: Building2, versus: GitCompare, duel: Swords, check: ClipboardCheck, whatif: Sparkles, heat: Grid3x3, momentum: Activity, bar: Scale, scatter: ScatterChart, insight: Lightbulb };
+const TYPE_ICONS = { score: Hash, gauge: CircleDot, status: Smile, history: TrendingUp, parts: ListOrdered, profile: Radar, people: Users, groups: BarChartHorizontal, focus: Crosshair, movers: ArrowUpDown, spread: BarChart2, goal: Flag, story: BookOpen, index: Target, team: Building2, versus: GitCompare, duel: Swords, check: ClipboardCheck, whatif: Sparkles, heat: Grid3x3, momentum: Activity, nudge: Footprints, bar: Scale, scatter: ScatterChart, insight: Lightbulb };
 
 /* Observe an element's width so the layout can drop the outline rail on narrow panes. */
 function useWidth(ref) {
@@ -204,21 +204,21 @@ function WidgetCard({ spec }) {
   );
 }
 
-function ChartPicker({ built, subject, thinking, onChange }) {
+function ChartPicker({ built, subject, thinking, onChange, focus, setFocus }) {
   const { spec } = built;
   const options = pickerOptions(built, subject);
   const current = options.find((o) => o.on);
   const fit = !!current?.good;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.gray500 }}>Widget</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.gray500 }}>Show it as</div>
       <div role="radiogroup" aria-label="Widget type" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {options.map((o) => {
           const Icon = TYPE_ICONS[o.id] || Hash;
           return (
             <Press
               key={o.id} role="radio" aria-checked={o.on} aria-label={o.label}
-              title={`${o.label} — ${o.good ? "a good fit for this question" : "a weaker fit for this question"}`}
+              title={`${o.label}: ${o.good ? "a good fit for this question" : "a weaker fit for this question"}`}
               onClick={() => !o.on && onChange(chooseKind(built, subject, o.id))}
               style={{ position: "relative", width: 56, height: 52, borderRadius: radius.lg, border: "none", background: o.on ? T.gray900 : T.white, color: o.on ? T.white : T.gray700, boxShadow: o.on ? "none" : SHADOW_SOFT, display: "flex", flexDirection: "column", gap: 3, alignItems: "center", justifyContent: "center", opacity: o.good || o.on ? 1 : 0.55, transition: "background 150ms ease, color 150ms ease, opacity 150ms ease", fontFamily: font }}
             >
@@ -241,6 +241,10 @@ function ChartPicker({ built, subject, thinking, onChange }) {
       ) : (
         <p style={{ margin: 0, fontSize: 14, lineHeight: "21px", color: T.gray700, maxWidth: "52ch", textWrap: "pretty" }}>{spec.explanation}</p>
       )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: T.gray500 }}>Edit by section</div>
+        <WidgetEditor built={built} onChange={onChange} focus={focus} setFocus={setFocus} />
+      </div>
     </div>
   );
 }
@@ -250,12 +254,14 @@ function Stage({ built, subject, thinking, onChange }) {
   const [title, setTitle] = useState(spec.title);
   useEffect(() => setTitle(spec.title), [spec.title]);
   const commit = () => { const t = title.trim(); if (t && t !== spec.title) onChange({ ...built, spec: { ...spec, title: t } }); else setTitle(spec.title); };
+  // Which section of the widget is open in the editor; click a part of the widget to open it.
+  const [focus, setFocus] = useState(null);
   return (
     <section style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: 40, alignItems: "start" }}>
-      <div className="wb2-dots" style={{ borderRadius: 28, background: T.gray25, padding: 36, display: "grid", placeItems: "center", minWidth: 260, minHeight: 260 }}>
+      <div className="wb2-dots" style={{ position: "sticky", top: 16, borderRadius: 28, background: T.gray25, padding: 36, display: "grid", placeItems: "center", minWidth: 260, minHeight: 260 }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={`${spec.vizType}-${spec.form || ""}-${spec.size}`} initial={{ opacity: 0, scale: 0.97, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={SPRING}>
-            <WidgetCard spec={spec} />
+            <EditableWidget focus={focus} onFocus={setFocus}><WidgetCard spec={spec} /></EditableWidget>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -268,7 +274,7 @@ function Stage({ built, subject, thinking, onChange }) {
             style={{ width: "100%", boxSizing: "border-box", border: "none", background: "transparent", fontFamily: font, fontSize: title.length > 24 ? 24 : 30, lineHeight: "36px", fontWeight: 600, letterSpacing: "-0.6px", color: T.gray900, padding: "2px 8px", margin: "0 -8px", borderRadius: radius.md, textWrap: "balance" }}
           />
         </label>
-        <ChartPicker built={built} subject={subject} thinking={thinking} onChange={onChange} />
+        <ChartPicker built={built} subject={subject} thinking={thinking} onChange={onChange} focus={focus} setFocus={setFocus} />
       </div>
     </section>
   );
@@ -460,9 +466,7 @@ export default function WidgetBuilderV2({ state, setState, navExpanded, onNavExp
         <div style={{ height: 44, flexShrink: 0, background: T.white, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 32px", position: "relative" }}>
           <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: T.gray700 }}>Widget builder</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {built && <PreviewWidthToggle />}
-            {built && <StoryStyleToggle value={storyStyle} onChange={onStoryStyleChange} />}
-            <WidgetBuilderVersions value={version} onChange={onVersionChange} />
+            <BuilderViewMenu built={built} storyStyle={storyStyle} onStoryStyleChange={onStoryStyleChange} version={version} onVersionChange={onVersionChange} />
             {built && (
               <>
                 <Button theme="brand" variation="ghost" size="xs" onClick={() => setState({ messages: [], built: null })}>Start over</Button>

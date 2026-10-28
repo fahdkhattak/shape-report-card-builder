@@ -114,7 +114,7 @@ const CAN = [
 const CANNOT = [
   "Change the card size: 1x1, 2x2 and 3x3 only, fixed pixels on the 164px grid. Never fluid, never in between.",
   "Change the shell: 16px padding, 12px between sections, radius/widget (18), 1px border/secondary, color/surface/General/card fill.",
-  "Make a section taller or shorter: Evidence is 24px (1x1) or 68px (2x2, 3x3), the Action Bar 24px. Only the Insight stretches.",
+  "Make a section taller or shorter than its rule: the Evidence Bar is 24px (1x1); the Evidence Section (2x2, 3x3) hugs its content between 24 and 68px, and is 68 when it holds a bar-type element (a status bar, the Health Age scale) with its text; the Action Bar is 24px. The Insight takes the rest and centres a chart vertically.",
   "Put both an Evidence Bar and an Action Bar on a 1x1, reorder the sections, or add a section the templates don't have.",
   "Lay out a body without the section components (Sections, Insight, Evidence, ActionBar).",
   "Break the Header Rule: no other size, weight or case, no semantic colour, no black, never more than two lines.",
@@ -133,7 +133,7 @@ export default function WidgetStructureDoc() {
     <>
       <Section id="overview" title="Overview" lead="Every widget is the same card with the same four sections. What changes is what's inside them, and only within these rules.">
         <Prose>
-          <p>A widget answers one question at a glance and opens into its Scope. It's built top to bottom from a <b>Header</b> (what this is), an <b>Insight</b> (the answer), <b>Evidence</b> (what backs it up) and, rarely, an <b>Action Bar</b>, in one of the templates below: the Insight takes the space, everything else has a fixed height. The type inside follows the widget <DocLink id="widget-type-system">Font System</DocLink>; the header follows the <b>Header Rule</b> below, which is the same for every widget.</p>
+          <p>A widget answers one question at a glance and opens into its Scope. It's built top to bottom from a <b>Header</b> (what this is), an <b>Insight</b> (the answer), <b>Evidence</b> (what backs it up) and, rarely, an <b>Action Bar</b>, in one of the templates below: the Insight takes the space, everything else has a fixed height. The type inside follows the widget <DocLink id="widget-type-system">Font System</DocLink>; the header follows the <b>Header Rule</b> below, which is the same for every widget. What a widget opens into is a Scope of Stories, built on their own skeleton: <DocLink id="story-structure">Story structure</DocLink>.</p>
         </Prose>
       </Section>
 
@@ -148,7 +148,7 @@ export default function WidgetStructureDoc() {
             </WidgetStage>
           </div>
         ))}
-        <Callout title="3x3">A 3x3 follows the 2x2 templates (a 68px Evidence Section, a 24px Action Bar).</Callout>
+        <Callout title="3x3">A 3x3 follows the 2x2 templates (an Evidence Section of 24 to 68px, a 24px Action Bar).</Callout>
       </Section>
 
       <Section id="structure" title="The structure rules" lead="The numbers behind the templates. They live in one place, STRUCTURE in lib/widgetStructure.js; the section components read them, so a widget can't drift.">

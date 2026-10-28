@@ -15,7 +15,11 @@ export const STRUCTURE = {
   padding: 16,          // card padding, all sides
   gap: 12,              // between every section, header included
   header: [12, 22],     // one line, two lines (the Header Rule, lib/widgetTypeSystem.js)
-  evidence: { "1x1": 24, "2x2": 68, "3x3": 68 }, // 1x1: the Evidence Bar; 2x2 and up: the Evidence Section
+  // 1x1: the Evidence Bar, always 24. 2x2 and up: the Evidence Section HUGS its content, between evidenceMin (24) and this
+  // maximum (68); it holds the full 68 only when it carries a bar-type element (a status bar, the Health Age scale) with
+  // its text. The Insight takes everything else, so a chart never sits over an empty band.
+  evidence: { "1x1": 24, "2x2": 68, "3x3": 68 },
+  evidenceMin: 24,
   action: 24,           // the Action Bar, any size; its content sits at the right
 };
 /* The board measures the 16px from the card's outer edge (Figma strokes sit inside the frame). Our shell draws a 1px
@@ -75,16 +79,122 @@ export function auditStructure(card, size) {
   if (Math.abs(last.r.bottom - innerBottom) > 1.1) issues.push(`Last section ends ${Math.round(innerBottom - last.r.bottom)}px above the padding`);
   parts.forEach((el) => {
     const id = el.dataset.part.replace("section-", ""), h = Math.round(el.getBoundingClientRect().height);
-    const want = id === "evidence" ? STRUCTURE.evidence[size] : id === "action" ? STRUCTURE.action : null;
-    if (want != null && Math.abs(h - want) > 1) issues.push(`${id} is ${h}px, should be ${want}`);
+    if (id === "evidence" && size !== "1x1") {
+      const max = STRUCTURE.evidence[size], min = STRUCTURE.evidenceMin;
+      if (h < min - 1 || h > max + 1) issues.push(`evidence is ${h}px, should be ${min} to ${max}`);
+      if (el.querySelector('[data-part="status-bar"], [data-part="age-scale"]') && Math.abs(h - max) > 1) issues.push(`evidence with a bar is ${h}px, should be ${max}`);
+    } else {
+      const want = id === "evidence" ? STRUCTURE.evidence[size] : id === "action" ? STRUCTURE.action : null;
+      if (want != null && Math.abs(h - want) > 1) issues.push(`${id} is ${h}px, should be ${want}`);
+    }
     // Nothing may spill out of its section. Content cut off on purpose by a clipping box inside the section (the Heat
     // Map's tiles running past the card's edge) doesn't count: what shows is the clip.
     const r = el.getBoundingClientRect();
     const clipped = (c) => { for (let p = c.parentElement; p && p !== el; p = p.parentElement) { const s = getComputedStyle(p); if (s.overflowX !== "visible" || s.overflowY !== "visible") return true; } return false; };
     const spill = [...el.querySelectorAll("*")].some((c) => { const q = c.getBoundingClientRect(); return q.width && q.height && (q.bottom > r.bottom + 1.5 || q.top < r.top - 1.5 || q.right > r.right + 1.5 || q.left < r.left - 1.5) && getComputedStyle(c).position !== "fixed" && !clipped(c); });
     if (spill) issues.push(`Something spills out of the ${id}`);
+    // Nor be squeezed: in a column, a box whose content runs down onto the box after it (a list compressed by flex to make
+    // room for evidence, its rows sliding under the "N more" line).
+    if (!spill && squeezedIn(el)) issues.push(`Something is squeezed in the ${id}`);
   });
+  // Nothing may be squeezed on top of anything else: two pieces of text that overlap (a list compressed under a "N more"
+  // line, a label run into a number) fail, even when both stay inside their section.
+  const clash = textOverlap(card);
+  if (clash) issues.push(`Text overlaps: “${clash[0]}” and “${clash[1]}”`);
   return { template: tpl, sections: ids, issues };
+}
+
+/* Is anything in this section stacked onto the box below it? For every column of in-flow boxes (block, or a flex column),
+   each box's content (itself and its in-flow descendants, ignoring anything clipped, absolutely placed or inside an SVG) must
+   end before the next box starts, unless the next box pulls itself up with a negative margin on purpose. And nothing may be
+   cut off at the bottom of a box that clips it. */
+function squeezedIn(section) {
+  const flow = (c) => { const p = getComputedStyle(c).position; return p !== "absolute" && p !== "fixed"; };
+  const bottomOf = (box) => {
+    let b = box.getBoundingClientRect().bottom;
+    const visit = (node) => {
+      for (const c of node.children) {
+        if (!(c instanceof HTMLElement) || !flow(c)) continue;
+        const r = c.getBoundingClientRect();
+        if (r.width && r.height) b = Math.max(b, r.bottom);
+        const cs = getComputedStyle(c);
+        if (cs.overflowX === "visible" && cs.overflowY === "visible") visit(c);
+      }
+    };
+    const cs = getComputedStyle(box);
+    if (cs.overflowX === "visible" && cs.overflowY === "visible") visit(box);
+    return b;
+  };
+  // A box that clips its children vertically and cuts one of them off (a list shrunk to make room, its last row sliced).
+  // One-line text cut with an ellipsis is a box with no element children, so it isn't caught here.
+  const cut = [...section.querySelectorAll("*")].some((c) => {
+    if (!(c instanceof HTMLElement) || c.closest("svg") || !c.children.length) return false;
+    const cs = getComputedStyle(c);
+    if (cs.overflowY === "visible") return false;
+    const bottom = c.getBoundingClientRect().bottom;
+    return [...c.children].some((k) => { const r = k.getBoundingClientRect(); return r.height > 0 && r.bottom > bottom + 2; });
+  });
+  if (cut) return true;
+  const columns = [section, ...section.querySelectorAll("*")].filter((c) => {
+    if (!(c instanceof HTMLElement) || c.closest("svg")) return false;
+    const cs = getComputedStyle(c);
+    return (cs.display === "flex" && cs.flexDirection.startsWith("column")) || cs.display === "block";
+  });
+  for (const col of columns) {
+    const kids = [...col.children].filter((c) => c instanceof HTMLElement && flow(c) && !getComputedStyle(c).display.startsWith("inline") && c.getBoundingClientRect().height > 0);
+    for (let i = 0; i + 1 < kids.length; i++) {
+      // A negative margin is a deliberate overlap (the Status word set over its illustration's outer rings).
+      if (parseFloat(getComputedStyle(kids[i + 1]).marginTop) < 0) continue;
+      if (bottomOf(kids[i]) > kids[i + 1].getBoundingClientRect().top + 2) return true;
+    }
+  }
+  return false;
+}
+
+/* The first two visible pieces of text in the card whose glyphs overlap (by more than 2px each way), or null. HTML text
+   only (chart labels inside an SVG are placed by the chart's own rules). Each box is the ink, not the line box: trimmed to
+   about the cap height plus descenders (0.8 × the font size, centred), so a 48px number with line height 1 doesn't count as
+   touching the date under it; and clipped to every clipping box around it, so text cut off with an ellipsis or by the card's
+   edge counts only for what shows. Hidden text is skipped. */
+export function textOverlap(card) {
+  const boxes = [];
+  const clipOf = (el) => {
+    let r = card.getBoundingClientRect();
+    r = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    for (let p = el; p && p !== card; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX !== "visible" || cs.overflowY !== "visible") {
+        const q = p.getBoundingClientRect();
+        r = { left: Math.max(r.left, q.left), right: Math.min(r.right, q.right), top: Math.max(r.top, q.top), bottom: Math.min(r.bottom, q.bottom) };
+      }
+    }
+    return r;
+  };
+  const walk = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const t = n.textContent.trim();
+    const p = n.parentElement;
+    if (!t || !p || p.closest("svg")) continue;
+    const cs = getComputedStyle(p);
+    if (cs.visibility === "hidden" || Number(cs.opacity) === 0) continue;
+    const fs = parseFloat(cs.fontSize) || 12, clip = clipOf(p);
+    const r = document.createRange();
+    r.selectNodeContents(n);
+    for (const q of r.getClientRects()) {
+      const mid = (q.top + q.bottom) / 2, half = Math.min(q.height, fs * 0.8) / 2;
+      const box = { left: Math.max(q.left, clip.left), right: Math.min(q.right, clip.right), top: Math.max(mid - half, clip.top), bottom: Math.min(mid + half, clip.bottom) };
+      if (box.right - box.left > 1 && box.bottom - box.top > 1) boxes.push({ q: box, p, t });
+    }
+  }
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i], b = boxes[j];
+      if (a.p === b.p || a.p.contains(b.p) || b.p.contains(a.p)) continue;
+      const w = Math.min(a.q.right, b.q.right) - Math.max(a.q.left, b.q.left), h = Math.min(a.q.bottom, b.q.bottom) - Math.max(a.q.top, b.q.top);
+      if (w > 2 && h > 2) return [a.t.slice(0, 24), b.t.slice(0, 24)];
+    }
+  }
+  return null;
 }
 
 /* THE SECTION RULES (product owner): what each section is for, what may and may not go in it. Read by the Widget structure
